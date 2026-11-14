@@ -73,6 +73,13 @@ input[type=text]{width:100%;background:var(--bg);color:var(--tx);border:1px soli
 .toggle input{accent-color:var(--acc)}
 .empty{text-align:center;padding:30px 10px}
 .empty p{color:var(--mut);font-size:14px;line-height:1.5}
+.hdr-btns{display:flex;gap:6px}
+.hdr-btns button{padding:8px 10px}
+button.on{border-color:var(--acc);color:var(--acc)}
+.ed{display:flex;gap:6px;flex:none}
+.ed button{padding:6px 10px;min-width:38px;font-weight:700;border-radius:8px}
+.note{font-size:13px;color:var(--mut);margin:-4px 2px 10px;line-height:1.5}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:9;max-width:90vw}
 footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-height:1.6}
 @media (max-width:360px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ring{width:72px;height:72px}}
 </style>
@@ -81,7 +88,7 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 <div class="wrap">
   <header>
     <h1>base<span>.</span>tracker</h1>
-    <button id="btnImport" class="pri">Import</button>
+    <div class="hdr-btns"><button id="btnSync">Sync</button><button id="btnEdit">Edit</button><button id="btnImport" class="pri">Import</button></div>
   </header>
 
   <div id="panel" class="card panel">
@@ -96,6 +103,9 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
       <button id="btnCancel">Cancel</button>
     </div>
     <div class="err" id="err"></div>
+    <div class="sub" style="margin-top:14px">GitHub token (saves edits and imports to every device). Paste once per device.</div>
+    <div class="actions" style="margin-top:6px"><input type="text" id="tok" autocomplete="off" placeholder="github_pat_…" style="flex:1;min-width:0"><button id="btnTok">Save token</button></div>
+    <div class="sub" id="tokState" style="margin-top:6px"></div>
   </div>
 
   <div id="chips" class="chips"></div>
@@ -143,11 +153,45 @@ function best(tag){
   if (l && r) return tsOf(l.raw) >= tsOf(r) ? l.raw : r;
   return l ? l.raw : (r || null);
 }
+const TOKKEY = "basetracker.token", GH = "https://api.github.com/repos/kingtrentz/base-tracker/contents/";
+const tok = () => { try { return localStorage.getItem(TOKKEY) || "" } catch(e) { return "" } };
+const SHA = {};
+const b64d = b => new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\s/g, "")), c => c.charCodeAt(0)));
+const b64e = t => { const u = new TextEncoder().encode(t); let s = ""; for (let i = 0; i < u.length; i += 8192) s += String.fromCharCode.apply(null, u.subarray(i, i + 8192)); return btoa(s); };
+function getFile(path){
+  const t = tok();
+  if (t) return fetch(GH + path + "?ref=main&t=" + Date.now(), { headers: { Authorization: "Bearer " + t, Accept: "application/vnd.github+json" }, cache: "no-store" })
+    .then(r => r.ok ? r.json() : null).then(j => { if (!j) return null; SHA[path] = j.sha; return b64d(j.content); });
+  return fetch(path + "?t=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.text() : null);
+}
+function putFile(path, text, msg){
+  const t = tok(); if (!t) return Promise.reject(new Error("no token"));
+  const send = () => fetch(GH + path, { method: "PUT", headers: { Authorization: "Bearer " + t, Accept: "application/vnd.github+json" },
+    body: JSON.stringify({ message: msg, content: b64e(text), branch: "main", ...(SHA[path] ? { sha: SHA[path] } : {}) }) });
+  return send().then(r => {
+    if (r.status === 409 || r.status === 422) return getFile(path).then(send);
+    return r;
+  }).then(r => { if (!r.ok) throw new Error("GitHub said " + r.status); return r.json(); }).then(j => { SHA[path] = j.content.sha; });
+}
 function loadRemote(){
-  return Promise.all(ACCOUNTS.map(a => fetch("data/" + a.tag.slice(1) + ".json", { cache: "no-store" })
-    .then(r => r.ok ? r.text() : null).then(t => { if (t && tsOf(t)) REMOTE[a.tag] = t.trim(); }).catch(() => {})
-    .then(() => fetch("data/api_" + a.tag.slice(1) + ".json", { cache: "no-store" }))
-    .then(r => r && r.ok ? r.json() : null).then(j => { if (j && j.levels) API[a.tag] = j; }).catch(() => {})));
+  return Promise.all(ACCOUNTS.map(a => getFile("data/" + a.tag.slice(1) + ".json")
+    .then(t => { if (t && tsOf(t)) REMOTE[a.tag] = t.trim(); }).catch(() => {})
+    .then(() => getFile("data/api_" + a.tag.slice(1) + ".json"))
+    .then(t => { if (t) { const j = JSON.parse(t); if (j && j.levels) API[a.tag] = j; } }).catch(() => {})));
+}
+let EDIT = null;
+function toast(m){ const d = document.createElement("div"); d.className = "toast"; d.textContent = m; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); }
+function serialize(v){
+  const now = Math.floor(Date.now() / 1000), age = now - v.ts, b = [{ data: 1000001, lvl: v.th, weapon: v.weapon || 0 }];
+  for (const [id, arr] of Object.entries(v.inst)) for (const h of arr) {
+    const e = { data: +id, lvl: h.l }, left = Math.max(0, (h.t || 0) - age); if (h.t && left > 0) e.timer = left; b.push(e);
+  }
+  return JSON.stringify({ tag: v.tag, timestamp: now, buildings: b });
+}
+function saveExport(tag, raw, msg){
+  S.acc[tag] = { raw, saved: Date.now() }; store.set(S); REMOTE[tag] = raw;
+  if (!tok()) { toast("Saved on this device. Add a token in Import to save to every device."); return; }
+  putFile("data/" + tag.slice(1) + ".json", raw, msg).then(() => toast("Saved to every device")).catch(e => toast("Saved here only (" + e.message + ")"));
 }
 
 function parse(raw){
@@ -264,11 +308,14 @@ function render(){
   let v = null;
   if (raw) { try { v = parse(raw) } catch(e) { app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return; } }
   v = applyApi(v, API[S.cur]);
+  if (EDIT && EDIT.tag === S.cur) v = EDIT.v;
+  $("#btnEdit").textContent = EDIT ? "Done" : "Edit"; $("#btnEdit").classList.toggle("on", !!EDIT);
   if (!v) {
     app.innerHTML = `<div class="card empty"><p><b>No data yet for ${esc(NAME[S.cur])}.</b><br>Tap Import, then paste the in-game village export.</p></div>`;
     return;
   }
   const AO = !!v.apiOnly;
+  const editNote = EDIT ? `<div class="note">Tap + when an upgrade finishes or starts done. Walls have +10. Tap Done to save.</div>` : "";
   const ago = s => s < 3600 ? Math.max(1, Math.round(s/60)) + "m" : dur(s);
   const now = Math.floor(Date.now() / 1000), R = compute(v, now), c = R.cats;
   const timed = (AO ? ["heroes","lab","pets"] : ["build","heroes","lab","pets"]).reduce((a, k) => ({ rem: a.rem + c[k].rem, tot: a.tot + c[k].tot }), { rem: 0, tot: 0 });
@@ -307,7 +354,9 @@ function render(){
     const rowHtml = r => {
       const done = r.rem <= 0;
       const rt = isW ? num(r.rem) : isE ? (r.rem + " lv") : dur(r.rem);
-      return `<div class="row"><div class="l"><div class="n">${esc(r.o.n)}${r.up.length ? `<span class="tag up">upgrading</span>` : ""}${done ? `<span class="tag mx">max</span>` : ""}</div><div class="lv">${isE ? esc(r.o.h) + " · " : ""}${lvSummary(r)}</div></div><div class="r">${done ? "" : `<div class="t">${rt}</div>`}${!done && !isW && !isE && r.cost > 0 ? `<div>${num(r.cost)}</div>` : ""}</div></div>`;
+      const key = r.o.i || "weapon";
+      const edBtns = EDIT ? `<div class="ed">${r.lv.some(l => l > 0) ? `<button data-ed="${key}" data-d="-1">−</button>` : ""}${!done ? `<button data-ed="${key}" data-d="1">+</button>${isW ? `<button data-ed="${key}" data-d="10">+10</button>` : ""}` : ""}</div>` : "";
+      return `<div class="row"><div class="l"><div class="n">${esc(r.o.n)}${r.up.length ? `<span class="tag up">upgrading</span>` : ""}${done ? `<span class="tag mx">max</span>` : ""}</div><div class="lv">${isE ? esc(r.o.h) + " · " : ""}${lvSummary(r)}</div></div><div class="r">${done ? "" : `<div class="t">${rt}</div>`}${!done && !isW && !isE && r.cost > 0 ? `<div>${num(r.cost)}</div>` : ""}</div>${edBtns}</div>`;
     };
     const open = !!S.open[g];
     h += `<div class="sec${open ? " open" : ""}" data-sec="${g}"><div class="head"><span class="nm">${g}</span><span class="pc mono">${p}%</span><div class="hb bar" style="margin:0"><i style="width:${p}%"></i></div><span class="car">▶</span></div><div class="body">` +
@@ -317,21 +366,68 @@ function render(){
       `</div></div>`;
   }
   h += `<label class="toggle"><input type="checkbox" id="hideMax"${S.hideMax ? " checked" : ""}> Hide maxed items</label>`;
-  app.innerHTML = h;
+  app.innerHTML = editNote + h;
 }
 
 // events
 document.addEventListener("click", e => {
+  const eb = e.target.closest("[data-ed]");
+  if (eb && EDIT) { bump(eb.dataset.ed, +eb.dataset.d); render(); return; }
   const chip = e.target.closest(".chip");
-  if (chip) { S.cur = chip.dataset.tag; store.set(S); render(); return; }
+  if (chip) { if (EDIT) finishEdit(); S.cur = chip.dataset.tag; store.set(S); render(); return; }
   const sm = e.target.closest("[data-showmax]");
   if (sm) { S.hideMax = false; store.set(S); render(); return; }
   const head = e.target.closest(".sec .head");
   if (head) { const sec = head.parentElement, k = sec.dataset.sec; sec.classList.toggle("open"); S.open[k] = sec.classList.contains("open"); store.set(S); }
 });
 document.addEventListener("change", e => { if (e.target.id === "hideMax") { S.hideMax = e.target.checked; store.set(S); render(); } });
+function bump(key, d){
+  const v = EDIT.v, R = compute(v, Math.floor(Date.now() / 1000));
+  if (key === "weapon") { const M = (DATA.weapon[Math.min(v.th, 18)] || []).length; v.weapon = Math.max(0, Math.min(M, (v.weapon || 0) + Math.sign(d))); EDIT.dirty = true; return; }
+  const id = +key, row = R.rows.find(r => r.o.i === id); if (!row) return;
+  const M = row.M, arr = v.inst[id] = v.inst[id] || [];
+  while (arr.length < row.n) arr.push({ l: 0, t: 0 });
+  for (let k = 0; k < Math.abs(d); k++) {
+    if (d > 0) {
+      const up = arr.filter(h => h.t > 0 && h.l < M);
+      const pick = up.length ? up[0] : arr.filter(h => h.l < M).sort((a, b) => a.l - b.l)[0];
+      if (!pick) break; pick.l++; pick.t = 0;
+    } else {
+      const pick = arr.filter(h => h.l > 0).sort((a, b) => b.l - a.l)[0];
+      if (!pick) break; pick.l--; pick.t = 0;
+    }
+  }
+  EDIT.dirty = true;
+}
+function startEdit(){
+  const raw = best(S.cur); let v = null;
+  if (raw) { try { v = parse(raw) } catch(e) {} }
+  v = applyApi(v, API[S.cur]);
+  if (!v || v.apiOnly) { toast("Paste an export first, then you can edit buildings."); return; }
+  EDIT = { tag: S.cur, v, dirty: false }; render();
+}
+function finishEdit(){
+  const E = EDIT; EDIT = null;
+  if (E && E.dirty) saveExport(E.tag, serialize(E.v), "Edit " + NAME[E.tag] + " levels");
+  render();
+}
+$("#btnEdit").onclick = () => EDIT ? finishEdit() : startEdit();
+$("#btnSync").onclick = () => {
+  if (EDIT) { toast("Tap Done first"); return; }
+  $("#btnSync").textContent = "…";
+  loadRemote().then(() => { $("#btnSync").textContent = "Sync"; render(); const a = API[S.cur];
+    toast(a ? "Synced. Levels from the game " + (Math.floor(Date.now()/1000) - a.ts < 3600 ? Math.max(1, Math.round((Date.now()/1000 - a.ts)/60)) + "m" : dur(Date.now()/1000 - a.ts)) + " ago" : "Synced"); });
+};
+$("#btnTok").onclick = () => {
+  const t = $("#tok").value.trim(); if (!t) return;
+  fetch("https://api.github.com/repos/kingtrentz/base-tracker", { headers: { Authorization: "Bearer " + t } }).then(r => r.json()).then(j => {
+    if (j && j.permissions && j.permissions.push) { try { localStorage.setItem(TOKKEY, t) } catch(e) {} $("#tok").value = ""; tokState(); toast("Token saved on this device"); }
+    else $("#tokState").textContent = "That token can't write to base-tracker.";
+  }).catch(() => { $("#tokState").textContent = "Couldn't check the token. Try again."; });
+};
+function tokState(){ $("#tokState").textContent = tok() ? "Token saved on this device." : "No token on this device yet."; }
 const panel = $("#panel");
-function openPanel(){ panel.classList.add("show"); $("#err").textContent = ""; $("#raw").value = ""; }
+function openPanel(){ panel.classList.add("show"); $("#err").textContent = ""; $("#raw").value = ""; tokState(); }
 $("#btnImport").onclick = () => panel.classList.contains("show") ? panel.classList.remove("show") : openPanel();
 $("#btnCancel").onclick = () => panel.classList.remove("show");
 $("#btnFile").onclick = () => $("#file").click();
@@ -341,8 +437,8 @@ $("#btnSave").onclick = () => {
   try {
     const v = parse(raw);
     if (!NAME[v.tag]) throw new Error("That export is for " + v.tag + ". This tracker only takes KingTrents and Khnum-Atum~ra.");
-    S.acc[v.tag] = { raw: raw.trim(), saved: Date.now() };
-    S.cur = v.tag; store.set(S); panel.classList.remove("show"); render();
+    S.cur = v.tag; panel.classList.remove("show");
+    saveExport(v.tag, raw.trim(), "Import " + NAME[v.tag] + " export"); render();
   } catch(err) { $("#err").textContent = err.message; }
 };
 setInterval(() => {
