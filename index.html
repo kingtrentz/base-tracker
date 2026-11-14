@@ -35,7 +35,10 @@ button:active{transform:scale(.98)}
 .box{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0}
 .box .k{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
 .box .v{font-size:18px;font-weight:700;margin-top:2px}
-.box .s{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.box .s{font-size:11px;color:var(--mut);line-height:1.4}
+.box{display:flex;flex-direction:column}
+.box .s{margin-bottom:6px}
+.box .bar{margin-top:auto}
 .bar{height:5px;background:var(--bar);border-radius:3px;overflow:hidden;margin-top:6px}
 .bar i{display:block;height:100%;background:var(--acc);border-radius:3px}
 .sec{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
@@ -220,7 +223,7 @@ function compute(v, now){
   const owned = id => (v.inst[id] || []).length;
   const age = now - v.ts;
   const rows = [], ups = [];
-  const cats = {}; ["build","heroes","lab","pets","equip","walls"].forEach(c => cats[c] = {rem:0, tot:0, cost:{g:0,e:0,d:0}, ore:[0,0,0]});
+  const cats = {}; ["build","heroes","lab","pets","equip","walls"].forEach(c => cats[c] = {rem:0, tot:0, upn:0, cost:{g:0,e:0,d:0}, ore:[0,0,0]});
   for (const o of DATA.items) {
     const M = o.m[t]; if (!M) continue;
     let need = o.k === "e" ? (owned(o.i) ? 1 : 0) : o.c[t];
@@ -229,10 +232,10 @@ function compute(v, now){
     const have = (v.inst[o.i] || []).slice().sort((a, b) => b.l - a.l);
     const n = Math.max(need, have.length); if (!n) continue;
     const cat = CAT[o.g], C = cats[cat];
-    const row = { o, n, lv: [], rem: 0, tot: 0, cost: 0, ore: [0,0,0], up: [], M };
+    const row = { o, n, lv: [], rem: 0, tot: 0, upn: 0, cost: 0, ore: [0,0,0], up: [], M };
     for (let i = 0; i < n; i++) {
       const h = have[i], l = h ? Math.min(h.l, M) : 0;
-      row.lv.push(l);
+      row.lv.push(l); row.upn += M - l;
       const isWall = o.g === "Walls";
       let r = sum(o.t, l+1, M), tot = sum(o.t, 1, M);
       if (isWall) { r = sum(o.co, l+1, M); tot = sum(o.co, 1, M); }
@@ -246,7 +249,7 @@ function compute(v, now){
       }
       row.rem += r; row.tot += tot;
     }
-    C.rem += row.rem; C.tot += row.tot;
+    C.rem += row.rem; C.tot += row.tot; C.upn += row.upn;
     if (o.k === "e") C.ore = C.ore.map((x, j) => x + row.ore[j]);
     else C.cost[o.r] = (C.cost[o.r] || 0) + row.cost;
     rows.push(row);
@@ -256,8 +259,8 @@ function compute(v, now){
   if (W) {
     const M = W.length, l = Math.min(v.weapon || 0, M);
     const r = W.slice(l).reduce((s, x) => s + x[0], 0), tot = W.reduce((s, x) => s + x[0], 0), cost = W.slice(l).reduce((s, x) => s + x[1], 0);
-    rows.push({ o: { n: "Town Hall weapon", g: "Defenses", k: "b", r: "g" }, n: 1, lv: [l], rem: r, tot, cost, ore: [0,0,0], up: [], M });
-    cats.build.rem += r; cats.build.tot += tot; cats.build.cost.g += cost;
+    rows.push({ o: { n: "Town Hall weapon", g: "Defenses", k: "b", r: "g" }, n: 1, lv: [l], rem: r, tot, upn: M - l, cost, ore: [0,0,0], up: [], M });
+    cats.build.rem += r; cats.build.tot += tot; cats.build.upn += M - l; cats.build.cost.g += cost;
   }
   const builders = owned(1000015) + (owned(1000064) ? 1 : 0);
   return { t, rows, ups, cats, builders, age };
@@ -321,17 +324,21 @@ function render(){
   const timed = (AO ? ["heroes","lab","pets"] : ["build","heroes","lab","pets"]).reduce((a, k) => ({ rem: a.rem + c[k].rem, tot: a.tot + c[k].tot }), { rem: 0, tot: 0 });
   const overall = pct(timed);
   const bTime = c.build.rem + c.heroes.rem;
+  const upTxt = n => n ? n + (n === 1 ? " upgrade" : " upgrades") : "maxed";
+  const gUp = g => R.rows.filter(r => r.o.g === g).reduce((a, r) => a + r.upn, 0);
+  const labParts = [["Troops","troop"],["Spells","spell"],["Sieges","siege"]].map(([g, w]) => { const n = gUp(g); return n ? n + " " + w + (n === 1 ? "" : "s") : ""; }).filter(Boolean);
+  const labTxt = labParts.length ? labParts.join("<br>") : "maxed";
   const box = (k, label, s) => AO && (k === "build" || k === "walls") ? `<div class="box"><div class="k">${label}</div><div class="v">–</div><div class="s">needs export</div><div class="bar"></div></div>` : !c[k].tot ? `<div class="box"><div class="k">${label}</div><div class="v">–</div><div class="s">not at TH${v.th}</div><div class="bar"></div></div>` : `<div class="box"><div class="k">${label}</div><div class="v">${pct(c[k])}%</div><div class="s">${s}</div><div class="bar"><i style="width:${pct(c[k])}%"></i></div></div>`;
   let h = `<div class="card"><div class="hero"><div class="ring">${ringSVG(overall)}<b>${Math.floor(overall)}%</b></div>
     <div class="meta"><div class="th">Town Hall ${v.th}</div>
     <div class="sub">${esc(NAME[S.cur])} · ${esc(v.tag)}<br>${AO ? "No export yet, so buildings and walls are blank" : "Exported " + ago(R.age) + " ago"}${v.apiTs ? "<br>Heroes, lab, pets, gear auto-updated " + ago(now - v.apiTs) + " ago" : ""}${overall >= 100 ? " · maxed for TH" + v.th : ""}</div></div></div>
     <div class="grid">
-      ${box("build","Buildings", dur(c.build.rem) + " left")}
-      ${box("heroes","Heroes", dur(c.heroes.rem) + " left")}
-      ${box("lab","Lab", dur(c.lab.rem) + " left")}
-      ${box("pets","Pets", dur(c.pets.rem) + " left")}
-      ${box("walls","Walls", num(c.walls.rem) + " left")}
-      ${box("equip","Equipment", c.equip.rem + " levels left")}
+      ${box("build","Buildings", upTxt(c.build.upn))}
+      ${box("heroes","Heroes", upTxt(c.heroes.upn))}
+      ${box("lab","Lab", labTxt)}
+      ${box("pets","Pets", upTxt(c.pets.upn))}
+      ${box("walls","Walls", upTxt(c.walls.upn))}
+      ${box("equip","Equipment", upTxt(c.equip.upn))}
     </div>
     ${AO ? "" : `<div class="sub" style="margin-top:10px">Builder work left: <b class="mono">${dur(bTime)}</b>${R.builders ? ` · about <b class="mono">${dur(bTime / R.builders)}</b> with ${R.builders} builders` : ""}</div>`}</div>`;
 
