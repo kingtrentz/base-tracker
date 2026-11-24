@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Base Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f12;--card:#161a1f;--line:#252b33;--tx:#e9edf1;--mut:#8a94a1;--acc:#7ee081;--acc2:#4fb85a;--warn:#f2b84b;--bar:#232931;--g:#f2c94c;--e:#d77be6;--d:#9aa7ff;--o:#6fd3e8}
+@media (prefers-color-scheme:light){:root{--bg:#f4f5f7;--card:#fff;--line:#e2e5ea;--tx:#14181d;--mut:#66707c;--acc:#2f9e44;--acc2:#2b8a3e;--warn:#c27a00;--bar:#e9ecef;--g:#b88a00;--e:#a03ab5;--d:#4a57c8;--o:#16829a}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:"Space Grotesk",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+body{overflow-x:hidden}
+.wrap{max-width:720px;margin:0 auto;padding:14px 14px 40px}
+.mono{font-family:"Space Mono",ui-monospace,monospace}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+h1{font-size:19px;margin:0;font-weight:700;letter-spacing:-.01em}
+h1 span{color:var(--acc)}
+button{font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer}
+button.pri{background:var(--acc);color:#0b130c;border-color:var(--acc);font-weight:600}
+button:active{transform:scale(.98)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{padding:6px 11px;border-radius:999px;font-size:13px}
+.chip.on{border-color:var(--acc);color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.hero{display:flex;align-items:center;gap:14px}
+.ring{width:84px;height:84px;flex:none;position:relative}
+.ring svg{transform:rotate(-90deg)}
+.ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px}
+.hero .meta{min-width:0}
+.hero .th{font-size:22px;font-weight:700}
+.sub{color:var(--mut);font-size:13px;line-height:1.45}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.box{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0}
+.box .k{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+.box .v{font-size:18px;font-weight:700;margin-top:2px}
+.box .s{font-size:11px;color:var(--mut);line-height:1.4}
+.box{display:flex;flex-direction:column}
+.box .s{margin-bottom:6px}
+.box .bar{margin-top:auto}
+.bar{height:5px;background:var(--bar);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--acc);border-radius:3px}
+.sec{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
+.sec .head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none}
+.sec .head .nm{font-weight:600;flex:1;min-width:0}
+.sec .head .pc{font-size:13px;color:var(--mut)}
+.sec .head .car{color:var(--mut);transition:transform .15s;font-size:12px}
+.sec.open .head .car{transform:rotate(90deg)}
+.sec .body{display:none;border-top:1px solid var(--line)}
+.sec.open .body{display:block}
+.sec .hb{width:56px;flex:none}
+.row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .l{flex:1;min-width:0}
+.row .n{font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .lv{font-size:12px;color:var(--mut);margin-top:2px;line-height:1.5}
+.row .r{text-align:right;flex:none;font-size:12px;color:var(--mut)}
+.row .r .t{font-size:14px;color:var(--tx);font-weight:600}
+.tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:6px;border:1px solid var(--line);color:var(--mut);margin-left:4px;vertical-align:1px}
+.tag.up{border-color:var(--warn);color:var(--warn)}
+.tag.mx{border-color:var(--acc);color:var(--acc)}
+.res{display:flex;gap:10px;flex-wrap:wrap;padding:10px 14px;font-size:12px;color:var(--mut);border-bottom:1px solid var(--line)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:1px}
+.more{padding:10px 14px;font-size:13px;color:var(--mut);cursor:pointer}
+.up-row .when{color:var(--warn)}
+.done{color:var(--acc)!important}
+.panel{display:none}
+.panel.show{display:block}
+textarea{width:100%;min-height:110px;background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:10px;font:12px "Space Mono",monospace;resize:vertical}
+input[type=text]{width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:9px 10px;font:inherit}
+.actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.err{color:#ff6b6b;font-size:13px;margin-top:8px}
+.steps{margin:0 0 10px;padding-left:18px;font-size:13px;color:var(--mut);line-height:1.6}
+.stale{color:var(--warn);font-weight:600}
+.maxline{padding:12px 14px;margin:0 0 10px;font-size:13px;color:var(--mut);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut);margin:4px 2px 12px}
+.toggle input{accent-color:var(--acc)}
+.empty{text-align:center;padding:30px 10px}
+.empty p{color:var(--mut);font-size:14px;line-height:1.5}
+.hdr-btns{display:flex;gap:6px}
+.hdr-btns button{padding:8px 10px}
+button.on{border-color:var(--acc);color:var(--acc)}
+.ed{display:flex;gap:6px;flex:none}
+.ed button{padding:6px 10px;min-width:38px;font-weight:700;border-radius:8px}
+.note{font-size:13px;color:var(--mut);margin:-4px 2px 10px;line-height:1.5}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:9;max-width:90vw}
+footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-height:1.6}
+@media (max-width:360px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ring{width:72px;height:72px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>base<span>.</span>tracker</h1>
+    <div class="hdr-btns"><button id="btnSync">Sync</button><button id="btnEdit">Edit</button><button id="btnImport" title="Paste by hand, pick a file, or add a token" aria-label="More">⋯</button><button id="btnPaste" class="pri" title="Read the export you copied in game">Paste</button></div>
+  </header>
+
+  <div id="panel" class="card panel">
+    <ol class="steps">
+      <li>In Clash: Settings → More Settings → Data Export → Copy</li>
+      <li>Paste it below (or pick the saved file)</li>
+    </ol>
+    <textarea id="raw" placeholder="Paste the KingTrents or Khnum-Atum~ra export"></textarea>
+    <div class="actions">
+      <button class="pri" id="btnSave">Save</button>
+      <label><button type="button" id="btnFile">Pick file</button><input type="file" id="file" accept=".json,.txt,application/json,text/plain" hidden></label>
+      <button id="btnCancel">Cancel</button>
+    </div>
+    <div class="err" id="err"></div>
+    <div class="sub" style="margin-top:14px">GitHub token (saves edits and imports to every device). Paste once per device.</div>
+    <div class="actions" style="margin-top:6px"><input type="text" id="tok" autocomplete="off" placeholder="github_pat_…" style="flex:1;min-width:0"><button id="btnTok">Save token</button></div>
+    <div class="sub" id="tokState" style="margin-top:6px"></div>
+  </div>
+
+  <div id="chips" class="chips"></div>
+  <div id="app"></div>
+  <footer>Game data: ClashKing static data (Nov 23, 2026) · buildings from the latest export, the rest auto-updates<br>built by kingtrents⚡️ x claude</footer>
+</div>
+<script>
+const DATA = __DATA__;
+(function(){
+"use strict";
+const $ = s => document.querySelector(s);
+const BY = {}; DATA.items.forEach(o => BY[o.i] = o);
+const GROUPS = ["Defenses","Traps","Army","Resources","Guardians","Walls","Heroes","Pets","Troops","Spells","Sieges","Squads","Equipment"];
+const CAT = {Defenses:"build",Traps:"build",Army:"build",Resources:"build",Guardians:"build",Walls:"walls",Heroes:"heroes",Pets:"pets",Troops:"lab",Spells:"lab",Sieges:"lab",Squads:"lab",Equipment:"equip"};
+const KEY = "basetracker.v1";
+const store = {
+  get(){ try { return JSON.parse(localStorage.getItem(KEY)) || {acc:{}, cur:null, hideMax:true, open:{}} } catch(e){ return {acc:{}, cur:null, hideMax:true, open:{}} } },
+  set(s){ try { localStorage.setItem(KEY, JSON.stringify(s)) } catch(e){} }
+};
+let S = store.get(); S.acc = S.acc || {}; S.open = S.open || {}; if (S.hideMax === undefined) S.hideMax = true;
+const ACCOUNTS = [{ tag: "#R0RRV0VQ", name: "KingTrents" }, { tag: "#QUV9Q8Q2", name: "Khnum-Atum~ra" }];
+const NAME = {}; ACCOUNTS.forEach(a => NAME[a.tag] = a.name);
+for (const t of Object.keys(S.acc)) if (!NAME[t]) delete S.acc[t];
+if (!NAME[S.cur]) S.cur = ACCOUNTS[0].tag;
+const REMOTE = {}, API = {};
+const norm = x => String(x).toLowerCase().replace(/[^a-z0-9]/g, "");
+const API_GROUPS = { Heroes: 1, Pets: 1, Troops: 1, Spells: 1, Sieges: 1, Squads: 1, Equipment: 1 };
+const BYNAME = {}; DATA.items.forEach(o => { if (API_GROUPS[o.g]) BYNAME[norm(o.n)] = o.i; });
+function settle(v, now){
+  if (!v || v.apiOnly) return v;
+  const age = now - v.ts; let n = 0;
+  for (const arr of Object.values(v.inst)) for (const h of arr) if (h.t > 0 && h.t <= age) { h.l++; h.t = 0; n++; }
+  v.autoDone = n; return v;
+}
+function view(tag){
+  const raw = best(tag); let v = null;
+  if (raw) v = parse(raw);
+  return applyApi(settle(v, Math.floor(Date.now() / 1000)), API[tag]);
+}
+function applyApi(v, a){
+  if (!a || !a.levels) return v;
+  if (!v) v = { tag: a.tag, ts: a.ts, th: a.th, weapon: 0, inst: {}, apiOnly: true };
+  else if (a.ts <= v.ts) return v;
+  for (const [n, lvl] of Object.entries(a.levels)) {
+    const id = BYNAME[norm(n)]; if (!id) continue;
+    const cur = v.inst[id] && v.inst[id][0];
+    if (!cur || lvl > cur.l) v.inst[id] = [{ l: lvl, t: 0 }];
+  }
+  if (a.th > v.th && !v.apiOnly) v.th = a.th;
+  v.apiTs = a.ts;
+  return v;
+}
+const tsOf = raw => { try { return JSON.parse(raw).timestamp || 0 } catch(e) { return 0 } };
+function best(tag){
+  const l = S.acc[tag], r = REMOTE[tag];
+  if (l && r) return tsOf(l.raw) >= tsOf(r) ? l.raw : r;
+  return l ? l.raw : (r || null);
+}
+const TOKKEY = "basetracker.token", GH = "https://api.github.com/repos/kingtrentz/base-tracker/contents/";
+const tok = () => { try { return localStorage.getItem(TOKKEY) || "" } catch(e) { return "" } };
+const SHA = {};
+const b64d = b => new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\s/g, "")), c => c.charCodeAt(0)));
+const b64e = t => { const u = new TextEncoder().encode(t); let s = ""; for (let i = 0; i < u.length; i += 8192) s += String.fromCharCode.apply(null, u.subarray(i, i + 8192)); return btoa(s); };
+function getFile(path){
+  const t = tok();
+  if (t) return fetch(GH + path + "?ref=main&t=" + Date.now(), { headers: { Authorization: "Bearer " + t, Accept: "application/vnd.github+json" }, cache: "no-store" })
+    .then(r => r.ok ? r.json() : null).then(j => { if (!j) return null; SHA[path] = j.sha; return b64d(j.content); });
+  return fetch(path + "?t=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.text() : null);
+}
+function putFile(path, text, msg){
+  const t = tok(); if (!t) return Promise.reject(new Error("no token"));
+  const send = () => fetch(GH + path, { method: "PUT", headers: { Authorization: "Bearer " + t, Accept: "application/vnd.github+json" },
+    body: JSON.stringify({ message: msg, content: b64e(text), branch: "main", ...(SHA[path] ? { sha: SHA[path] } : {}) }) });
+  return send().then(r => {
+    if (r.status === 409 || r.status === 422) return getFile(path).then(send);
+    return r;
+  }).then(r => { if (!r.ok) throw new Error("GitHub said " + r.status); return r.json(); }).then(j => { SHA[path] = j.content.sha; });
+}
+function loadRemote(){
+  return Promise.all(ACCOUNTS.map(a => getFile("data/" + a.tag.slice(1) + ".json")
+    .then(t => { if (t && tsOf(t)) REMOTE[a.tag] = t.trim(); }).catch(() => {})
+    .then(() => getFile("data/api_" + a.tag.slice(1) + ".json"))
+    .then(t => { if (t) { const j = JSON.parse(t); if (j && j.levels) API[a.tag] = j; } }).catch(() => {})));
+}
+let EDIT = null;
+function toast(m){ const d = document.createElement("div"); d.className = "toast"; d.textContent = m; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); }
+function serialize(v){
+  const now = Math.floor(Date.now() / 1000), age = now - v.ts, b = [{ data: 1000001, lvl: v.th, weapon: v.weapon || 0 }];
+  for (const [id, arr] of Object.entries(v.inst)) for (const h of arr) {
+    const e = { data: +id, lvl: h.l }, left = Math.max(0, (h.t || 0) - age); if (h.t && left > 0) e.timer = left; b.push(e);
+  }
+  return JSON.stringify({ tag: v.tag, timestamp: now, buildings: b });
+}
+function saveExport(tag, raw, msg){
+  S.acc[tag] = { raw, saved: Date.now() }; store.set(S); REMOTE[tag] = raw;
+  if (!tok()) { toast("Saved on this device. Add a token in Import to save to every device."); return; }
+  putFile("data/" + tag.slice(1) + ".json", raw, msg).then(() => toast("Saved to every device")).catch(e => toast("Saved here only (" + e.message + ")"));
+}
+
+function parse(raw){
+  let j; try { j = JSON.parse(raw.trim()) } catch(e){ throw new Error("That isn't valid JSON. Copy the export again and paste the whole thing.") }
+  if (!j || typeof j !== "object" || !Array.isArray(j.buildings)) throw new Error("No buildings found. Make sure it's the village data export.");
+  const inst = {}; let th = 0, weapon = 0;
+  for (const [k, v] of Object.entries(j)) {
+    if (!Array.isArray(v) || /2$/.test(k)) continue; // *2 arrays are Builder Base
+    for (const e of v) {
+      if (!e || typeof e.data !== "number") continue;
+      if (e.data === 1000001) { th = e.lvl || 0; weapon = e.weapon || 0; continue; }
+      if (!BY[e.data]) continue;
+      const n = Math.max(1, e.cnt || 1), a = (inst[e.data] = inst[e.data] || []);
+      for (let i = 0; i < n; i++) a.push({ l: e.lvl || 0, t: e.timer || 0 });
+    }
+  }
+  if (!th) throw new Error("Couldn't find your Town Hall in that export.");
+  return { tag: j.tag || "#?", ts: j.timestamp || Math.floor(Date.now()/1000), th, weapon, inst };
+}
+
+const sum = (arr, a, b) => { let s = 0; for (let L = a; L <= b; L++) s += arr[L-1] || 0; return s; };
+const sumOre = (arr, a, b) => { const s = [0,0,0]; for (let L = a; L <= b; L++) { const c = arr[L-1] || [0,0,0]; s[0]+=c[0]; s[1]+=c[1]; s[2]+=c[2]; } return s; };
+
+function compute(v, now){
+  const t = Math.min(Math.max(v.th, 1), DATA.top || 18);
+  const owned = id => (v.inst[id] || []).length;
+  const age = now - v.ts;
+  const rows = [], ups = [];
+  const cats = {}; ["build","heroes","lab","pets","equip","walls"].forEach(c => cats[c] = {rem:0, tot:0, upn:0, cost:{g:0,e:0,d:0}, ore:[0,0,0]});
+  for (const o of DATA.items) {
+    const M = o.m[t]; if (!M) continue;
+    let need = o.k === "e" ? (owned(o.i) ? 1 : 0) : o.c[t];
+    for (const [mid, src] of Object.entries(DATA.merges)) if (src[o.i]) need -= src[o.i] * owned(+mid);
+    need = Math.max(0, need);
+    const have = (v.inst[o.i] || []).slice().sort((a, b) => b.l - a.l);
+    const n = Math.max(need, have.length); if (!n) continue;
+    const cat = CAT[o.g], C = cats[cat];
+    const row = { o, n, lv: [], rem: 0, tot: 0, upn: 0, cost: 0, ore: [0,0,0], up: [], M };
+    for (let i = 0; i < n; i++) {
+      const h = have[i], l = h ? Math.min(h.l, M) : 0;
+      row.lv.push(l); row.upn += M - l;
+      const isWall = o.g === "Walls";
+      let r = sum(o.t, l+1, M), tot = sum(o.t, 1, M);
+      if (isWall) { r = sum(o.co, l+1, M); tot = sum(o.co, 1, M); }
+      if (o.k === "e") { r = M - l; tot = M; const ore = sumOre(o.co, l+1, M); row.ore = row.ore.map((x, j) => x + ore[j]); }
+      else row.cost += sum(o.co, l+1, M);
+      if (h && h.t && l < M) {
+        const left = Math.max(0, h.t - age);
+        if (!isWall && o.k !== "e") { r = r - (o.t[l] || 0) + left; row.cost -= o.co[l] || 0; }
+        row.up.push(l + 1);
+        ups.push({ name: o.n, to: l + 1, end: v.ts + h.t, cat });
+      }
+      row.rem += r; row.tot += tot;
+    }
+    C.rem += row.rem; C.tot += row.tot; C.upn += row.upn;
+    if (o.k === "e") C.ore = C.ore.map((x, j) => x + row.ore[j]);
+    else C.cost[o.r] = (C.cost[o.r] || 0) + row.cost;
+    rows.push(row);
+  }
+  // Town Hall weapon
+  const W = DATA.weapon[t];
+  if (W) {
+    const M = W.length, l = Math.min(v.weapon || 0, M);
+    const r = W.slice(l).reduce((s, x) => s + x[0], 0), tot = W.reduce((s, x) => s + x[0], 0), cost = W.slice(l).reduce((s, x) => s + x[1], 0);
+    rows.push({ o: { n: "Town Hall weapon", g: "Defenses", k: "b", r: "g" }, n: 1, lv: [l], rem: r, tot, upn: M - l, cost, ore: [0,0,0], up: [], M });
+    cats.build.rem += r; cats.build.tot += tot; cats.build.upn += M - l; cats.build.cost.g += cost;
+  }
+  const builders = owned(1000015) + (owned(1000064) ? 1 : 0);
+  return { t, rows, ups, cats, builders, age };
+}
+
+const pct = c => c.tot ? Math.floor(1000 * (1 - c.rem / c.tot)) / 10 : 100;
+function dur(s){
+  s = Math.max(0, Math.round(s));
+  if (s === 0) return "0";
+  const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+  if (d) return d + "d" + (h ? " " + h + "h" : "");
+  if (h) return h + "h" + (m ? " " + m + "m" : "");
+  return Math.max(1, m) + "m";
+}
+function num(x){
+  if (x >= 1e9) return (x/1e9).toFixed(x >= 1e10 ? 0 : 1).replace(/\.0$/,"") + "B";
+  if (x >= 1e6) return (x/1e6).toFixed(x >= 1e8 ? 0 : 1).replace(/\.0$/,"") + "M";
+  if (x >= 1e3) return Math.round(x/1e3) + "K";
+  return String(x);
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const RESN = { g: "Gold", e: "Elixir", d: "Dark" };
+function costLine(cost, isWalls){
+  const parts = [];
+  for (const k of ["g","e","d"]) if (cost[k] > 0) parts.push(`<span><i class="dot" style="background:var(--${k})"></i>${num(cost[k])} ${isWalls && k === "g" ? "Gold/Elixir" : RESN[k]}</span>`);
+  return parts.join("");
+}
+function oreLine(o){
+  const n = ["Shiny","Glowy","Starry"], p = [];
+  o.forEach((x, i) => { if (x > 0) p.push(`<span><i class="dot" style="background:var(--o);opacity:${1 - i*.3}"></i>${num(x)} ${n[i]}</span>`); });
+  return p.join("");
+}
+function ringSVG(p){
+  const r = 36, c = 2 * Math.PI * r;
+  return `<svg viewBox="0 0 84 84" width="100%" height="100%"><circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--bar)" stroke-width="8"/><circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--acc)" stroke-width="8" stroke-linecap="round" stroke-dasharray="${c * p / 100} ${c}"/></svg>`;
+}
+function lvSummary(row){
+  const m = {}; row.lv.forEach(l => m[l] = (m[l] || 0) + 1);
+  const ks = Object.keys(m).map(Number).sort((a, b) => b - a);
+  if (row.n === 1) return row.lv[0] ? `Level ${row.lv[0]} of ${row.M}` : `${row.o.k === "b" ? "Not built" : "Not unlocked"} · max ${row.M}`;
+  return ks.map(k => k ? `L${k} ×${m[k]}` : `not built ×${m[k]}`).join(" · ") + ` → ${row.M}`;
+}
+
+function render(){
+  const app = $("#app"), chips = $("#chips");
+  chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("");
+  let v = null;
+  try { v = view(S.cur) } catch(e) { app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return; }
+  if (EDIT && EDIT.tag === S.cur) v = EDIT.v;
+  $("#btnEdit").textContent = EDIT ? "Done" : "Edit"; $("#btnEdit").classList.toggle("on", !!EDIT);
+  if (!v) {
+    app.innerHTML = `<div class="card empty"><p><b>No data yet for ${esc(NAME[S.cur])}.</b><br>Tap Import, then paste the in-game village export.</p></div>`;
+    return;
+  }
+  const AO = !!v.apiOnly;
+  const editNote = EDIT ? `<div class="note">Tap + when an upgrade finishes or starts done. Walls have +10. Tap Done to save.</div>` : "";
+  const ago = s => s < 3600 ? Math.max(1, Math.round(s/60)) + "m" : dur(s);
+  const now = Math.floor(Date.now() / 1000), R = compute(v, now), c = R.cats;
+  const timed = (AO ? ["heroes","lab","pets"] : ["build","heroes","lab","pets"]).reduce((a, k) => ({ rem: a.rem + c[k].rem, tot: a.tot + c[k].tot }), { rem: 0, tot: 0 });
+  const overall = pct(timed);
+  const bTime = c.build.rem + c.heroes.rem;
+  const upTxt = n => n ? n + (n === 1 ? " upgrade" : " upgrades") : "maxed";
+  const gUp = g => R.rows.filter(r => r.o.g === g).reduce((a, r) => a + r.upn, 0);
+  const labParts = [["Troops","troop"],["Spells","spell"],["Sieges","siege"],["Squads","squad"]].map(([g, w]) => { const n = gUp(g); return n ? n + " " + w + (n === 1 ? "" : "s") : ""; }).filter(Boolean);
+  const labTxt = labParts.length ? labParts.join("<br>") : "maxed";
+  const box = (k, label, s) => AO && (k === "build" || k === "walls") ? `<div class="box"><div class="k">${label}</div><div class="v">–</div><div class="s">needs export</div><div class="bar"></div></div>` : !c[k].tot ? `<div class="box"><div class="k">${label}</div><div class="v">–</div><div class="s">not at TH${v.th}</div><div class="bar"></div></div>` : `<div class="box"><div class="k">${label}</div><div class="v">${pct(c[k])}%</div><div class="s">${s}</div><div class="bar"><i style="width:${pct(c[k])}%"></i></div></div>`;
+  let h = `<div class="card"><div class="hero"><div class="ring">${ringSVG(overall)}<b>${Math.floor(overall)}%</b></div>
+    <div class="meta"><div class="th">Town Hall ${v.th}</div>
+    <div class="sub">${esc(NAME[S.cur])} · ${esc(v.tag)}<br>${AO ? "No export yet, so buildings and walls are blank" : `<span class="${R.age > 3*86400 ? "stale" : ""}">Buildings from ${ago(R.age)} ago</span>`}${v.autoDone ? "<br>" + v.autoDone + " finished upgrade" + (v.autoDone === 1 ? "" : "s") + " counted automatically" : ""}${v.apiTs ? "<br>Heroes, lab, pets, gear auto-updated " + ago(now - v.apiTs) + " ago" : ""}${overall >= 100 ? " · maxed for TH" + v.th : ""}</div></div></div>
+    <div class="grid">
+      ${box("build","Buildings", upTxt(c.build.upn))}
+      ${box("heroes","Heroes", upTxt(c.heroes.upn))}
+      ${box("lab","Lab", labTxt)}
+      ${box("pets","Pets", upTxt(c.pets.upn))}
+      ${box("walls","Walls", upTxt(c.walls.upn))}
+      ${box("equip","Equipment", upTxt(c.equip.upn))}
+    </div>
+    ${AO ? "" : `<div class="sub" style="margin-top:10px">Builder work left: <b class="mono">${dur(bTime)}</b>${R.builders ? ` · about <b class="mono">${dur(bTime / R.builders)}</b> with ${R.builders} builders` : ""}</div>`}</div>`;
+
+  const live = R.ups.filter(u => u.end > now), gm = {};
+  live.forEach(u => { const k = u.name + "|" + u.to + "|" + u.end; (gm[k] = gm[k] || { ...u, x: 0 }).x++; });
+  if (live.length) {
+    const ups = Object.values(gm).sort((a, b) => a.end - b.end);
+    h += `<div class="sec${S.open.__ups !== false ? " open" : ""}" data-sec="__ups"><div class="head"><span class="nm">Upgrading now</span><span class="pc">${live.length}</span><span class="car">▶</span></div><div class="body">` +
+      ups.map(u => { const left = u.end - now; return `<div class="row up-row"><div class="l"><div class="n">${esc(u.name)}${u.x > 1 ? ` <span class="lv">×${u.x}</span>` : ""}</div><div class="lv">to level ${u.to}</div></div><div class="r"><div class="t ${left <= 0 ? "done" : "when"}" data-end="${u.end}">${left <= 0 ? "Done" : dur(left)}</div></div></div>`; }).join("") + `</div></div>`;
+  }
+
+  const maxedGroups = [];
+  for (const g of GROUPS) {
+    if (AO && !API_GROUPS[g]) continue;
+    const rs = R.rows.filter(r => r.o.g === g); if (!rs.length) continue;
+    const rem = rs.reduce((s, r) => s + r.rem, 0), tot = rs.reduce((s, r) => s + r.tot, 0);
+    if (rem <= 0 && S.hideMax && !EDIT) { maxedGroups.push(g); continue; }
+    const p = tot ? Math.floor(1000 * (1 - rem / tot)) / 10 : 100;
+    const isW = g === "Walls", isE = g === "Equipment";
+    const left = rs.filter(r => r.rem > 0).sort((a, b) => b.rem - a.rem), maxed = rs.filter(r => r.rem <= 0);
+    const cost = { g: 0, e: 0, d: 0 }, ore = [0,0,0];
+    rs.forEach(r => { if (isE) r.ore.forEach((x, i) => ore[i] += x); else cost[r.o.r] = (cost[r.o.r] || 0) + (isW ? r.rem : r.cost); });
+    const resHtml = isE ? oreLine(ore) : costLine(cost, isW);
+    const rowHtml = r => {
+      const done = r.rem <= 0;
+      const rt = isW ? num(r.rem) : isE ? (r.rem + " lv") : dur(r.rem);
+      const key = r.o.i || "weapon";
+      const edBtns = EDIT ? `<div class="ed">${r.lv.some(l => l > 0) ? `<button data-ed="${key}" data-d="-1">−</button>` : ""}${!done ? `<button data-ed="${key}" data-d="1">+</button>${isW ? `<button data-ed="${key}" data-d="10">+10</button>` : ""}` : ""}</div>` : "";
+      return `<div class="row"><div class="l"><div class="n">${esc(r.o.n)}${r.up.length ? `<span class="tag up">upgrading</span>` : ""}${done ? `<span class="tag mx">max</span>` : ""}</div><div class="lv">${isE ? esc(r.o.h) + " · " : ""}${lvSummary(r)}</div></div><div class="r">${done ? "" : `<div class="t">${rt}</div>`}${!done && !isW && !isE && r.cost > 0 ? `<div>${num(r.cost)}</div>` : ""}</div>${edBtns}</div>`;
+    };
+    const open = !!S.open[g];
+    h += `<div class="sec${open ? " open" : ""}" data-sec="${g}"><div class="head"><span class="nm">${g}</span><span class="pc mono">${p}%</span><div class="hb bar" style="margin:0"><i style="width:${p}%"></i></div><span class="car">▶</span></div><div class="body">` +
+      (resHtml && rem > 0 ? `<div class="res">${resHtml}</div>` : "") +
+      (left.length ? left.map(rowHtml).join("") : `<div class="more">Everything here is maxed for TH${v.th}.</div>`) +
+      (maxed.length ? (S.hideMax ? `<div class="more" data-showmax="1">${maxed.length} maxed · show</div>` : maxed.map(rowHtml).join("")) : "") +
+      `</div></div>`;
+  }
+  if (maxedGroups.length) h += `<div class="maxline"><b>Maxed:</b> ${maxedGroups.join(", ")}</div>`;
+  h += `<label class="toggle"><input type="checkbox" id="hideMax"${S.hideMax ? " checked" : ""}> Hide maxed items</label>`;
+  app.innerHTML = editNote + h;
+}
+
+// events
+document.addEventListener("click", e => {
+  const eb = e.target.closest("[data-ed]");
+  if (eb && EDIT) { bump(eb.dataset.ed, +eb.dataset.d); render(); return; }
+  const chip = e.target.closest(".chip");
+  if (chip) { if (EDIT) finishEdit(); S.cur = chip.dataset.tag; store.set(S); render(); return; }
+  const sm = e.target.closest("[data-showmax]");
+  if (sm) { S.hideMax = false; store.set(S); render(); return; }
+  const head = e.target.closest(".sec .head");
+  if (head) { const sec = head.parentElement, k = sec.dataset.sec; sec.classList.toggle("open"); S.open[k] = sec.classList.contains("open"); store.set(S); }
+});
+document.addEventListener("change", e => { if (e.target.id === "hideMax") { S.hideMax = e.target.checked; store.set(S); render(); } });
+function bump(key, d){
+  const v = EDIT.v, R = compute(v, Math.floor(Date.now() / 1000));
+  if (key === "weapon") { const M = (DATA.weapon[Math.min(v.th, DATA.top || 18)] || []).length; v.weapon = Math.max(0, Math.min(M, (v.weapon || 0) + Math.sign(d))); EDIT.dirty = true; return; }
+  const id = +key, row = R.rows.find(r => r.o.i === id); if (!row) return;
+  const M = row.M, arr = v.inst[id] = v.inst[id] || [];
+  while (arr.length < row.n) arr.push({ l: 0, t: 0 });
+  for (let k = 0; k < Math.abs(d); k++) {
+    if (d > 0) {
+      const up = arr.filter(h => h.t > 0 && h.l < M);
+      const pick = up.length ? up[0] : arr.filter(h => h.l < M).sort((a, b) => a.l - b.l)[0];
+      if (!pick) break; pick.l++; pick.t = 0;
+    } else {
+      const pick = arr.filter(h => h.l > 0).sort((a, b) => b.l - a.l)[0];
+      if (!pick) break; pick.l--; pick.t = 0;
+    }
+  }
+  EDIT.dirty = true;
+}
+function startEdit(){
+  let v = null;
+  try { v = view(S.cur) } catch(e) {}
+  if (!v || v.apiOnly) { toast("Paste an export first, then you can edit buildings."); return; }
+  EDIT = { tag: S.cur, v, dirty: false }; render();
+}
+function finishEdit(){
+  const E = EDIT; EDIT = null;
+  if (E && E.dirty) saveExport(E.tag, serialize(E.v), "Edit " + NAME[E.tag] + " levels");
+  render();
+}
+$("#btnEdit").onclick = () => EDIT ? finishEdit() : startEdit();
+$("#btnSync").onclick = () => {
+  if (EDIT) { toast("Tap Done first"); return; }
+  $("#btnSync").textContent = "…";
+  loadRemote().then(() => { $("#btnSync").textContent = "Sync"; render(); const a = API[S.cur];
+    toast(a ? "Synced. Levels from the game " + (Math.floor(Date.now()/1000) - a.ts < 3600 ? Math.max(1, Math.round((Date.now()/1000 - a.ts)/60)) + "m" : dur(Date.now()/1000 - a.ts)) + " ago" : "Synced"); });
+};
+$("#btnTok").onclick = () => {
+  const t = $("#tok").value.trim(); if (!t) return;
+  fetch("https://api.github.com/repos/kingtrentz/base-tracker", { headers: { Authorization: "Bearer " + t } }).then(r => r.json()).then(j => {
+    if (j && j.permissions && j.permissions.push) { try { localStorage.setItem(TOKKEY, t) } catch(e) {} $("#tok").value = ""; tokState(); toast("Token saved on this device"); }
+    else $("#tokState").textContent = "That token can't write to base-tracker.";
+  }).catch(() => { $("#tokState").textContent = "Couldn't check the token. Try again."; });
+};
+function tokState(){ $("#tokState").textContent = tok() ? "Token saved on this device." : "No token on this device yet."; }
+const panel = $("#panel");
+function openPanel(){ panel.classList.add("show"); $("#err").textContent = ""; $("#raw").value = ""; tokState(); }
+$("#btnImport").onclick = () => panel.classList.contains("show") ? panel.classList.remove("show") : openPanel();
+$("#btnCancel").onclick = () => panel.classList.remove("show");
+$("#btnFile").onclick = () => $("#file").click();
+$("#file").onchange = e => { const f = e.target.files[0]; if (!f) return; f.text().then(t => { $("#raw").value = t; }); };
+function importRaw(raw){
+  const v = parse(raw);
+  if (!NAME[v.tag]) throw new Error("That export is for " + v.tag + ". This tracker only takes KingTrents and Khnum-Atum~ra.");
+  S.cur = v.tag; panel.classList.remove("show");
+  saveExport(v.tag, raw.trim(), "Import " + NAME[v.tag] + " export"); render();
+}
+$("#btnPaste").onclick = () => {
+  if (EDIT) { toast("Tap Done first"); return; }
+  if (!navigator.clipboard || !navigator.clipboard.readText) { openPanel(); return; }
+  navigator.clipboard.readText().then(t => {
+    if (!t || !t.trim()) { toast("Clipboard is empty. Copy the export in game first."); return; }
+    try { importRaw(t); } catch(err) { openPanel(); $("#raw").value = t; $("#err").textContent = err.message; }
+  }).catch(() => openPanel());
+};
+$("#btnSave").onclick = () => {
+  const raw = $("#raw").value;
+  try {
+    importRaw(raw);
+  } catch(err) { $("#err").textContent = err.message; }
+};
+setInterval(() => {
+  const now = Math.floor(Date.now() / 1000);
+  document.querySelectorAll("[data-end]").forEach(el => { const left = +el.dataset.end - now; el.textContent = left <= 0 ? "Done" : dur(left); el.className = "t " + (left <= 0 ? "done" : "when"); });
+}, 30000);
+render();
+loadRemote().then(render);
+window.__bt = { parse, compute };
+})();
+</script>
+<script data-goatcounter="https://kingtrentz.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>
