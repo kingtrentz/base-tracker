@@ -110,6 +110,42 @@ button.on{border-color:var(--acc);color:var(--acc)}
 .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:9;max-width:90vw}
 footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-height:1.6}
 @media (max-width:360px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ring{width:72px;height:72px}}
+/* tracker layout */
+.top .pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.pill{font-size:12px;color:var(--mut);background:var(--soft);border-radius:999px;padding:3px 9px}
+.pill b{font-weight:600;color:var(--tx)}
+.pill.on{background:var(--accs);color:var(--acc)}
+.bars{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:14px}
+.cb{display:grid;grid-template-columns:72px 1fr 44px;align-items:center;gap:8px;font-size:12px}
+.cb .k{color:var(--mut)}
+.cb .bar{margin:0;height:6px}
+.cb .v{text-align:right;font-size:11px}
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:4px -14px 12px;padding:2px 14px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;border:0;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:500;background:var(--card);box-shadow:0 0 0 1px var(--hair);color:var(--tx)}
+.tab span{font-size:11px;font-weight:700}
+.tab.done{color:var(--acc)}
+.tab.up span{color:var(--warn)}
+.tab.on{background:var(--tx);color:var(--bg);box-shadow:none}
+.tab.on.done{background:var(--acc)}
+.tab.on span{color:inherit}
+.remain{margin:0 10px 10px;padding:10px 12px;border-radius:14px;background:var(--soft);font-size:12px;color:var(--mut)}
+.remain .rc{display:flex;gap:12px;flex-wrap:wrap;color:var(--tx);font-weight:600}
+.remain .rt{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.row.i .l{display:block;flex:1;min-width:0}
+.row.i .n{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row.i .lvl{font-size:11px;color:var(--mut);margin-top:1px}
+.row.i .nx{flex:none;text-align:right;font-size:12px;color:var(--mut);display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-variant-numeric:tabular-nums}
+.row.i .nx .tm{color:var(--tx);font-weight:600}
+.row.i .nx .cs{white-space:nowrap}
+.row.i .nx .cs .dot{margin-right:4px}
+.row.i .nx.up{color:var(--warn);font-weight:700;font-size:13px}
+.row.i .q.s{min-width:34px;background:var(--soft);color:var(--mut)}
+.row.i.upg{background:color-mix(in srgb,var(--warn) 7%,transparent)}
+.pb{height:4px;border-radius:3px;background:var(--bar);margin-top:5px;overflow:hidden;max-width:180px}
+.pb i{display:block;height:100%;background:var(--warn);border-radius:3px}
+.row.i.mx .ok{font-size:12px;color:var(--acc);font-weight:600;padding-right:8px}
+.sec .head .pc{margin-left:auto}
 /* softer look */
 :root{--soft:color-mix(in srgb,var(--tx) 6%,transparent);--hair:color-mix(in srgb,var(--line) 55%,transparent);--accs:color-mix(in srgb,var(--acc) 14%,transparent)}
 @media (prefers-color-scheme:light){:root{--card:#fff;--bg:#f2f3f5}}
@@ -405,6 +441,8 @@ function fbar(g, rs){
   parts.push(c("data-st", "time", "Time" + arrow("time"), st.startsWith("time")) + c("data-st", "cost", "Price" + arrow("cost"), st.startsWith("cost")));
   return `<div class="flt">${parts.join("<i></i>")}</div>`;
 }
+const TABS = [["Defenses"],["Traps"],["Army"],["Resources"],["Guardians"],["Walls"],["Heroes"],["Pets"],["Troops"],["Spells"],["Sieges"],["Squads"],["Equipment"]].map(x => x[0]);
+const BAR_CATS = [["build","Buildings"],["heroes","Heroes"],["lab","Lab"],["pets","Pets"],["walls","Walls"],["equip","Equipment"]];
 function render(){
   const app = $("#app"), chips = $("#chips");
   const gp = GP_STEPS.includes(S.gp) ? S.gp : 0;
@@ -413,109 +451,118 @@ function render(){
   let v = null;
   try { v = view(S.cur) } catch(e) { app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return; }
   if (EDIT && EDIT.tag === S.cur) v = EDIT.v;
-  if (!v) {
-    app.innerHTML = `<div class="card empty"><p><b>No data yet for ${esc(NAME[S.cur])}.</b><br>Tap Import, then paste the in-game village export.</p></div>`;
-    return;
-  }
+  if (!v) { app.innerHTML = `<div class="card empty"><p><b>No data yet for ${esc(NAME[S.cur])}.</b><br>Copy the village export in game, then tap Paste.</p></div>`; return; }
   const AO = !!v.apiOnly;
-  const editNote = EDIT ? `<div class="note fixbar"><span>Fixing levels: use − and + to correct anything, then save.</span><button class="pri" id="btnDone">Save</button></div>` : "";
   const ago = s => s < 3600 ? Math.max(1, Math.round(s/60)) + "m" : dur(s);
   const now = Math.floor(Date.now() / 1000), R = compute(v, now), c = R.cats;
   const timed = (AO ? ["heroes","lab","pets"] : ["build","heroes","lab","pets"]).reduce((a, k) => ({ rem: a.rem + c[k].rem, tot: a.tot + c[k].tot }), { rem: 0, tot: 0 });
   const overall = pct(timed);
-  const bTime = c.build.rem + c.heroes.rem;
-  const upTxt = n => n ? n + (n === 1 ? " upgrade" : " upgrades") : "maxed";
-  const gUp = g => R.rows.filter(r => r.o.g === g).reduce((a, r) => a + r.upn, 0);
-  const labParts = [["Troops","troop"],["Spells","spell"],["Sieges","siege"],["Squads","squad"]].map(([g, w]) => { const n = gUp(g); return n ? n + " " + w + (n === 1 ? "" : "s") : ""; }).filter(Boolean);
-  const labTxt = labParts.length ? labParts.join("<br>") : "maxed";
-  const box = (k, label, s) => AO && (k === "build" || k === "walls") ? `<div class="box"><div class="k">${label}</div><div class="v">–</div><div class="s">needs export</div><div class="bar"></div></div>` : !c[k].tot ? `<div class="box"><div class="k">${label}</div><div class="v">–</div><div class="s">not at TH${v.th}</div><div class="bar"></div></div>` : `<div class="box"><div class="k">${label}</div><div class="v">${pct(c[k])}%</div><div class="s">${s}</div><div class="bar"><i style="width:${pct(c[k])}%"></i></div></div>`;
-  let h = `<div class="card"><div class="hero"><div class="ring">${ringSVG(overall)}<b>${Math.floor(overall)}%</b></div>
-    <div class="meta"><div class="th">Town Hall ${v.th}</div>
-    <div class="sub">${esc(NAME[S.cur])}<br>Updated ${ago(now - Math.max(v.ts || 0, v.apiTs || 0))} ago${overall >= 100 ? " · maxed for TH" + v.th : ""}</div></div></div>
-    <div class="grid">
-      ${box("build","Buildings", upTxt(c.build.upn))}
-      ${box("heroes","Heroes", upTxt(c.heroes.upn))}
-      ${box("lab","Lab", labTxt)}
-      ${box("pets","Pets", upTxt(c.pets.upn))}
-      ${box("walls","Walls", upTxt(c.walls.upn))}
-      ${box("equip","Equipment", upTxt(c.equip.upn))}
-    </div>
-    ${AO ? "" : `<div class="sub" style="margin-top:10px">Builder work left: <b class="mono">${dur(bTime)}</b>${R.builders ? ` · about <b class="mono">${dur(bTime / R.builders)}</b> with ${R.builders} builders` : ""}</div>`}</div>`;
 
-  const live = R.ups.filter(u => u.end > now), gm = {};
-  live.forEach(u => { const k = u.name + "|" + u.to + "|" + u.end; (gm[k] = gm[k] || { ...u, x: 0 }).x++; });
-  if (live.length) {
-    const ups = Object.values(gm).sort((a, b) => a.end - b.end);
-    h += `<div class="sec${S.open.__ups !== false ? " open" : ""}" data-sec="__ups"><div class="head"><span class="nm">Upgrading now</span><span class="pc">${live.length}</span><span class="car">▶</span></div><div class="body">` +
-      ups.map(u => { const left = u.end - now; return `<div class="row up-row"><div class="l"><div class="n">${esc(u.name)}${u.x > 1 ? ` <span class="lv">×${u.x}</span>` : ""}</div><div class="lv">to level ${u.to}</div></div><div class="r"><div class="t ${left <= 0 ? "done" : "when"}" data-end="${u.end}">${left <= 0 ? "Done" : dur(left)}</div></div>${EDIT ? "" : `<button class="q" data-q="${u.id}" data-lv="${u.to - 1}" data-d="1" title="Mark done now">✓</button>`}</div>`; }).join("") + `</div></div>`;
-  }
+  // what's busy right now
+  const busy = { b: 0, l: null, p: null };
+  R.rows.forEach(r => r.inst.forEach(x => { if (!x.up) return;
+    if (r.o.k === "b" || r.o.k === "h") busy.b++;
+    else if (r.o.k === "l") busy.l = Math.max(busy.l || 0, x.left);
+    else if (r.o.k === "p") busy.p = Math.max(busy.p || 0, x.left); }));
+  const pill = (label, val, on) => `<span class="pill${on ? " on" : ""}"><b>${label}</b> ${val}</span>`;
 
-  const maxedGroups = [];
+  let h = `<div class="card top"><div class="hero"><div class="ring">${ringSVG(overall)}<b>${Math.floor(overall)}%</b></div>
+    <div class="meta"><div class="th">Town Hall ${v.th}</div><div class="sub">${esc(NAME[S.cur])} · updated ${ago(now - Math.max(v.ts || 0, v.apiTs || 0))} ago</div>
+    <div class="pills">${pill("Builders", busy.b + "/" + (R.builders || "?"), busy.b > 0)}${pill("Lab", busy.l != null ? dur(busy.l) : "free", busy.l != null)}${pill("Pets", busy.p != null ? dur(busy.p) : "free", busy.p != null)}</div></div></div>
+    <div class="bars">${BAR_CATS.map(([k, label]) => {
+      if (AO && (k === "build" || k === "walls")) return "";
+      if (!c[k].tot) return "";
+      const p = pct(c[k]);
+      return `<div class="cb"><span class="k">${label}</span><div class="bar"><i style="width:${p}%"></i></div><span class="v mono">${p}%</span></div>`;
+    }).join("")}</div></div>`;
 
-  for (const g of GROUPS) {
-    if (AO && !API_GROUPS[g]) continue;
-    const rs = R.rows.filter(r => r.o.g === g); if (!rs.length) continue;
-    const rem = rs.reduce((s, r) => s + r.rem, 0), tot = rs.reduce((s, r) => s + r.tot, 0);
-    if (rem <= 0 && S.hideMax && !EDIT) { maxedGroups.push(g); continue; }
-    const p = tot ? Math.floor(1000 * (1 - rem / tot)) / 10 : 100;
-    const isW = g === "Walls", isE = g === "Equipment";
-    const F = fstate(g), FON = !EDIT && !!(F.ft || F.fr);
-    const shown = EDIT ? rs : rs.filter(r => (!F.ft || (r.o.tg || "").includes(F.ft)) && (!F.fr || r.o.r === F.fr));
-    const left = shown.filter(r => r.rem > 0).sort((a, b) => b.rem - a.rem), maxed = shown.filter(r => r.rem <= 0);
-    const cost = { g: 0, e: 0, d: 0 }, ore = [0,0,0];
-    rs.forEach(r => { if (isE) r.ore.forEach((x, i) => ore[i] += x); else cost[r.o.r] = (cost[r.o.r] || 0) + (isW ? r.rem : r.cost); });
-    const resHtml = isE ? oreLine(ore) : costLine(cost, isW);
-    // one line per upgrade: every copy of a building gets its own line (walls grouped by level)
-    const lineObjs = r => {
-      const key = r.o.i || "weapon", name = esc(r.o.n);
-      if (r.rem <= 0) return [{ h: `<div class="row i"><div class="l"><span class="n">${name}</span><span class="to">max ${r.M}</span></div></div>`, time: 0, cost: 0 }];
-      const btn = (lv, d, label) => `<button class="q" data-q="${key}" data-lv="${lv}" data-d="${d}">${label}</button>`;
-      if (isW) {
-        const m = {}; r.inst.forEach(x => { if (x.l < r.M) m[x.l] = (m[x.l] || 0) + 1; });
-        return Object.keys(m).map(Number).sort((a, b) => b - a).map(l => ({ time: 0, cost: r.o.co[l] || 0, h:
-          `<div class="row i"><div class="l"><span class="n">${name} <span class="x">×${m[l]}</span></span><span class="to">${l ? l : "new"} → ${l + 1}</span></div><span class="t">${r.o.co[l] ? num(r.o.co[l]) : ""}</span>${btn(l, 10, "+10")}${btn(l, 1, "+1")}</div>` }));
+  // tabs: one category at a time, coloured by status
+  const tabInfo = TABS.map(g => {
+    if (AO && !API_GROUPS[g]) return null;
+    const rs = R.rows.filter(r => r.o.g === g); if (!rs.length) return null;
+    const rem = rs.reduce((s, r) => s + r.rem, 0), up = rs.reduce((s, r) => s + r.inst.filter(x => x.up).length, 0);
+    return { g, rs, rem, up, done: rem <= 0 };
+  }).filter(Boolean);
+  const anyUp = tabInfo.some(t => t.up);
+  if (!S.tab || (S.tab === "__up" && !anyUp) || (S.tab !== "__up" && !tabInfo.find(t => t.g === S.tab))) S.tab = (tabInfo.find(t => !t.done) || tabInfo[0] || {}).g;
+  h += `<div class="tabs">` + (anyUp ? `<button class="tab up${S.tab === "__up" ? " on" : ""}" data-tab="__up">Upgrading <span>${tabInfo.reduce((s, t) => s + t.up, 0)}</span></button>` : "") +
+    tabInfo.map(t => `<button class="tab${t.done ? " done" : t.up ? " up" : ""}${S.tab === t.g ? " on" : ""}" data-tab="${t.g}">${t.g}${t.done ? " ✓" : t.up ? ` <span>↑${t.up}</span>` : ""}</button>`).join("") + `</div>`;
+
+  // one line per copy
+  const lineObjs = (r, onlyUp) => {
+    const key = r.o.i || "weapon", name = esc(r.o.n), isW = r.o.g === "Walls", isE = r.o.k === "e";
+    const act = (a, lv, label, cls) => `<button class="q ${cls || ""}" data-act="${a}" data-q="${key}" data-lv="${lv}">${label}</button>`;
+    const costHtml = c => c ? `<span class="cs"><i class="dot" style="background:var(--${isW ? "g" : r.o.r})"></i>${num(c)}</span>` : "";
+    if (isW) {
+      if (onlyUp) return [];
+      const m = {}; r.inst.forEach(x => { if (x.l < r.M) m[x.l] = (m[x.l] || 0) + 1; });
+      return Object.keys(m).map(Number).sort((a, b) => b - a).map(l => ({ time: 0, cost: r.o.co[l] || 0, h:
+        `<div class="row i"><div class="l"><div class="n">${name} <span class="x">×${m[l]}</span></div><div class="lvl mono">${l}/${r.M}</div></div><div class="nx">${costHtml(r.o.co[l])}</div>${act("q", l, "+10", "s")}${act("q", l, "+1")}</div>` }));
+    }
+    return r.inst.filter(x => x.l < r.M && (!onlyUp || x.up)).sort((a, b) => (b.up - a.up) || (b.l - a.l)).map(x => {
+      const step = (r.o.t || [])[x.l] || 0, cost = isE ? 0 : ((r.o.co || [])[x.l] || 0);
+      const lvl = `<div class="lvl mono">${x.l}/${r.M}</div>`;
+      if (x.up) {
+        const p = step ? Math.max(2, Math.min(100, Math.round(100 * (1 - x.left / step)))) : 50;
+        return { time: x.left, cost: 0, h: `<div class="row i upg"><div class="l"><div class="n">${name}</div>${lvl}<div class="pb"><i style="width:${p}%"></i></div></div><div class="nx up" data-end="${now + Math.round(x.left)}">${dur(x.left)}</div>${act("cancel", x.l, "✕", "s")}${act("done", x.l, "✓")}</div>` };
       }
-      const list = r.inst.map(x => x).filter(x => x.l < r.M).sort((a, b) => (b.up - a.up) || (b.l - a.l));
-      return list.map(x => {
-        const to = (x.l ? x.l : "new") + " → " + (x.l + 1);
-        const step = (r.o.t || [])[x.l] || 0;
-        const t = x.up ? `<span class="t up" data-end="${Math.floor(Date.now()/1000) + Math.round(x.left)}">${dur(x.left)}</span>` : `<span class="t">${isE ? "" : (step ? dur(step) : "instant")}</span>`;
-        const c = isE ? 0 : ((r.o.co || [])[x.l] || 0);
-        return { time: x.up ? x.left : step, cost: typeof c === "number" ? c : 0, h: `<div class="row i"><div class="l"><span class="n">${name}</span><span class="to">${to}</span></div>${t}${btn(x.l, 1, x.up ? "✓" : "+1")}</div>` };
-      });
-    };
-    const lineHtml = r => lineObjs(r).map(x => x.h).join("");
-    const sortLines = (rows, sortKey) => {
-      const ls = rows.flatMap(lineObjs);
-      if (sortKey) { const [k, dir] = sortKey.split(":"); ls.sort((a, b) => dir === "up" ? a[k] - b[k] : b[k] - a[k]); }
-      return ls.map(x => x.h).join("");
-    };
-    const rowHtml = r => {
-      if (!EDIT) return lineHtml(r);
-      const done = r.rem <= 0;
-      const rt = isW ? num(r.rem) : isE ? (r.rem + " lv") : dur(r.rem);
-      const key = r.o.i || "weapon";
-      const qBtns = !EDIT && !done ? `${isW ? `<button class="q" data-q="${key}" data-d="10">+10</button>` : ""}<button class="q" data-q="${key}" data-d="1" title="Upgraded one level">+1</button>` : "";
-      const edBtns = EDIT ? `<div class="ed">${r.lv.some(l => l > 0) ? `<button data-ed="${key}" data-d="-1">−</button>` : ""}${!done ? `<button data-ed="${key}" data-d="1">+</button>${isW ? `<button data-ed="${key}" data-d="10">+10</button>` : ""}` : ""}</div>` : "";
-      return `<div class="row"><div class="l"><div class="n">${esc(r.o.n)}${r.up.length ? `<span class="tag up">upgrading</span>` : ""}${done ? `<span class="tag mx">max</span>` : ""}</div><div class="lv">${isE ? esc(r.o.h) + " · " : ""}${lvSummary(r)}</div></div><div class="r">${done ? "" : `<div class="t">${rt}</div>`}${!done && !isW && !isE && r.cost > 0 ? `<div>${num(r.cost)}</div>` : ""}</div>${edBtns}${qBtns}</div>`;
-    };
-    const open = !!S.open[g];
-    h += `<div class="sec${open ? " open" : ""}" data-sec="${g}"><div class="head"><span class="nm">${g}</span><span class="pc mono">${p}%</span><div class="hb bar" style="margin:0"><i style="width:${p}%"></i></div><span class="car">▶</span></div><div class="body">` +
-      (resHtml && rem > 0 ? `<div class="res">${resHtml}</div>` : "") +
-      (!EDIT && rem > 0 ? fbar(g, rs) : "") +
-      (left.length ? (EDIT ? left.map(rowHtml).join("") : sortLines(left, F.sort)) : FON ? `<div class="more" data-fg="${g}" data-fclear="1">Nothing matches · clear filter</div>` : `<div class="more">Everything here is maxed for TH${v.th}.</div>`) +
-      (maxed.length ? (S.hideMax ? `<div class="more" data-showmax="1">${maxed.length} maxed · show</div>` : maxed.map(rowHtml).join("")) : "") +
-      `</div></div>`;
+      const canTime = !isE && r.o.k !== "e" && step > 0 && key !== "weapon";
+      return { time: step, cost: typeof cost === "number" ? cost : 0, h: `<div class="row i"><div class="l"><div class="n">${name}</div>${lvl}</div><div class="nx">${costHtml(cost)}${step ? `<span class="tm">${dur(step)}</span>` : ""}</div>${canTime ? act("start", x.l, "↑") : act("q", x.l, "+1")}</div>` };
+    });
+  };
+
+  if (EDIT) {
+    h += `<div class="note fixbar"><span>Fixing levels: use − and + to correct anything, then save.</span><button class="pri" id="btnDone">Save</button></div>`;
   }
-  if (maxedGroups.length) h += `<div class="maxline"><b>Maxed:</b> ${maxedGroups.join(", ")}</div>`;
+  if (S.tab === "__up") {
+    const ls = tabInfo.flatMap(t => t.rs.flatMap(r => lineObjs(r, true))).sort((a, b) => a.time - b.time);
+    h += `<div class="sec open"><div class="head"><span class="nm">Upgrading</span><span class="pc">${ls.length}</span></div><div class="body">${ls.map(x => x.h).join("")}</div></div>`;
+  } else {
+    const T = tabInfo.find(t => t.g === S.tab);
+    if (T) {
+      const g = T.g, rs = T.rs, isW = g === "Walls", isE = g === "Equipment";
+      const tot = rs.reduce((s, r) => s + r.tot, 0), p = tot ? Math.floor(1000 * (1 - T.rem / tot)) / 10 : 100;
+      const F = fstate(g), FON = !EDIT && !!(F.ft || F.fr);
+      const shown = EDIT ? rs : rs.filter(r => (!F.ft || (r.o.tg || "").includes(F.ft)) && (!F.fr || r.o.r === F.fr));
+      const left = shown.filter(r => r.rem > 0).sort((a, b) => b.rem - a.rem), maxed = shown.filter(r => r.rem <= 0);
+      const cost = { g: 0, e: 0, d: 0 }, ore = [0,0,0];
+      rs.forEach(r => { if (isE) r.ore.forEach((x, i) => ore[i] += x); else cost[r.o.r] = (cost[r.o.r] || 0) + (isW ? r.rem : r.cost); });
+      const timeLeft = isW || isE ? 0 : rs.reduce((s, r) => s + r.rem, 0);
+      const usesBuilders = rs.some(r => r.o.k === "b" || r.o.k === "h");
+      const remain = T.rem > 0 ? `<div class="remain"><div class="rc">${isE ? oreLine(ore) : costLine(cost, isW)}</div>${timeLeft ? `<div class="rt"><span>${dur(timeLeft)} of upgrades</span>${usesBuilders && R.builders ? `<span>about ${dur(timeLeft / R.builders)} with ${R.builders} builders</span>` : ""}</div>` : ""}</div>` : "";
+      let body;
+      if (EDIT) body = left.concat(maxed).map(r => editRow(r)).join("");
+      else {
+        let ls = left.flatMap(r => lineObjs(r));
+        if (F.sort) { const [k, dir] = F.sort.split(":"); ls.sort((a, b) => dir === "up" ? a[k] - b[k] : b[k] - a[k]); }
+        body = ls.map(x => x.h).join("") || (FON ? `<div class="more" data-fg="${g}" data-fclear="1">Nothing matches · clear filter</div>` : `<div class="more">Everything here is maxed for TH${v.th}.</div>`);
+        if (maxed.length) body += S.hideMax ? `<div class="more" data-showmax="1">${maxed.length} maxed · show</div>` : maxed.map(r => `<div class="row i mx"><div class="l"><div class="n">${esc(r.o.n)}</div><div class="lvl mono">${r.M}/${r.M}</div></div><span class="ok">max</span></div>`).join("");
+      }
+      h += `<div class="sec open"><div class="head"><span class="nm">${g}</span><span class="pc mono">${p}%</span></div><div class="body">${remain}${!EDIT && T.rem > 0 ? fbar(g, rs) : ""}${body}</div></div>`;
+    }
+  }
   h += `<label class="toggle"><input type="checkbox" id="hideMax"${S.hideMax ? " checked" : ""}> Hide maxed items</label>`;
-  app.innerHTML = editNote + h;
+  app.innerHTML = h;
+}
+function editRow(r){
+  const isW = r.o.g === "Walls", done = r.rem <= 0, key = r.o.i || "weapon";
+  const ed = `<div class="ed">${r.lv.some(l => l > 0) ? `<button data-ed="${key}" data-d="-1">−</button>` : ""}${!done ? `<button data-ed="${key}" data-d="1">+</button>${isW ? `<button data-ed="${key}" data-d="10">+10</button>` : ""}` : ""}</div>`;
+  return `<div class="row"><div class="l"><div class="n">${esc(r.o.n)}</div><div class="lv">${lvSummary(r)}</div></div>${ed}</div>`;
 }
 
 // events
 document.addEventListener("click", e => {
-  const qb = e.target.closest("[data-q]");
-  if (qb && !EDIT) { quickUp(qb.dataset.q, +qb.dataset.d, qb.dataset.lv); return; }
+  const tb = e.target.closest("[data-tab]");
+  if (tb) { if (EDIT) finishEdit(); S.tab = tb.dataset.tab; store.set(S); render(); return; }
+  const qb = e.target.closest("[data-act]");
+  if (qb && !EDIT) {
+    const a = qb.dataset.act, key = qb.dataset.q, lv = qb.dataset.lv;
+    if (a === "start") changeCopy(key, lv, (h, row, o) => { const step = (o.t || [])[h.l] || 0; h.t = -1; h.start = step; }, (row, h) => `${row.o.n} started · ${dur(h.start || 0)}`);
+    else if (a === "cancel") changeCopy(key, lv, h => { h.t = 0; }, row => `${row.o.n} upgrade cancelled`, true);
+    else if (a === "done") changeCopy(key, lv, h => { h.l++; h.t = 0; }, (row, h) => `${row.o.n} done · level ${h.l}`, true);
+    else quickUp(key, qb.textContent.trim() === "+10" ? 10 : 1, lv);
+    return;
+  }
   if (e.target.closest("#btnDone")) { finishEdit(); return; }
   const eb = e.target.closest("[data-ed]");
   if (eb && EDIT) { bump(eb.dataset.ed, +eb.dataset.d); render(); return; }
@@ -558,6 +605,27 @@ function bump(key, d){
   EDIT.dirty = true;
 }
 let qTimer = null, qPending = null;
+function changeCopy(key, lvAt, fn, msg, wantUp){
+  let v; try { v = view(S.cur) } catch(e) { return; }
+  if (!v || v.apiOnly) { toast("Paste the village export first."); return; }
+  const tag = S.cur, before = best(tag), now = Math.floor(Date.now() / 1000), R0 = compute(v, now);
+  const row = R0.rows.find(r => String(r.o.i) === String(key)); if (!row) return;
+  const o = boosted().find(x => x.i === row.o.i) || row.o;
+  const arr = v.inst[row.o.i] = v.inst[row.o.i] || [];
+  while (arr.length < row.n) arr.push({ l: 0, t: 0 });
+  const age = now - v.ts;
+  const isUp = h => h.t > 0 && h.t - age > 0;
+  const pick = arr.filter(h => h.l === +lvAt && h.l < row.M && (wantUp ? isUp(h) : !isUp(h)))[0]; if (!pick) return;
+  fn(pick, row, o);
+  if (pick.t === -1) { pick.t = age + (pick.start || 0); if (!pick.start) { pick.l++; pick.t = 0; } }
+  const raw = serialize(v);
+  S.acc[tag] = { raw, saved: Date.now() }; store.set(S); REMOTE[tag] = raw;
+  render(); queueSave(tag, msg(row, pick));
+  toastUndo(msg(row, pick), () => {
+    if (before) { S.acc[tag] = { raw: before, saved: Date.now() }; REMOTE[tag] = before; } else { delete S.acc[tag]; delete REMOTE[tag]; }
+    store.set(S); render(); queueSave(tag, "Undo " + row.o.n);
+  });
+}
 function quickUp(key, d, lvAt){
   let v; try { v = view(S.cur) } catch(e) { return; }
   if (!v || v.apiOnly) { toast("Paste an export first, then you can mark upgrades."); return; }
@@ -662,7 +730,9 @@ $("#btnSave").onclick = () => {
 };
 setInterval(() => {
   const now = Math.floor(Date.now() / 1000);
-  document.querySelectorAll("[data-end]").forEach(el => { const left = +el.dataset.end - now; el.textContent = left <= 0 ? "Done" : dur(left); el.className = "t " + (el.classList.contains("up") ? "up " : "") + (left <= 0 ? "done" : "when"); });
+  let finished = false;
+  document.querySelectorAll("[data-end]").forEach(el => { const left = +el.dataset.end - now; if (left <= 0) finished = true; el.textContent = left <= 0 ? "Done" : dur(left); });
+  if (finished) render();
 }, 30000);
 render();
 loadRemote().then(render);
