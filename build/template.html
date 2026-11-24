@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0d0f12;--card:#161a1f;--line:#252b33;--tx:#e9edf1;--mut:#8a94a1;--acc:#7ee081;--acc2:#4fb85a;--warn:#f2b84b;--bar:#232931;--g:#f2c94c;--e:#d77be6;--d:#9aa7ff;--o:#6fd3e8}
-@media (prefers-color-scheme:light){:root{--bg:#f4f5f7;--card:#fff;--line:#e2e5ea;--tx:#14181d;--mut:#66707c;--acc:#2f9e44;--acc2:#2b8a3e;--warn:#c27a00;--bar:#e9ecef;--g:#b88a00;--e:#a03ab5;--d:#4a57c8;--o:#16829a}}
+:root{--bg:#0f1013;--card:#1a1b20;--line:#2b2c33;--tx:#ede8dd;--mut:#9b958a;--acc:#d9aa44;--acc2:#b98a2b;--warn:#ee7a3c;--red:#c0353d;--bar:#2a2b31;--g:#e4bc4f;--e:#c86fda;--d:#93a0ff;--o:#6fd3e8;--on-acc:#1b1405}
+@media (prefers-color-scheme:light){:root{--bg:#f2efe8;--card:#fffdf8;--line:#e3dccd;--tx:#1d1b18;--mut:#70695d;--acc:#a8791b;--acc2:#8c6414;--warn:#c9561f;--red:#a8262e;--bar:#ebe4d6;--g:#a8791b;--e:#9a3aad;--d:#4a57c8;--o:#16829a;--on-acc:#fffaf0}}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--tx);font-family:"Space Grotesk",system-ui,sans-serif;-webkit-text-size-adjust:100%}
 body{overflow-x:hidden}
@@ -18,7 +18,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:10px;ma
 h1{font-size:19px;margin:0;font-weight:700;letter-spacing:-.01em}
 h1 span{color:var(--acc)}
 button{font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer}
-button.pri{background:var(--acc);color:#0b130c;border-color:var(--acc);font-weight:600}
+button.pri{background:var(--acc);color:var(--on-acc);border-color:var(--acc);font-weight:600}
 button:active{transform:scale(.98)}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .chip{padding:6px 11px;border-radius:999px;font-size:13px}
@@ -34,7 +34,10 @@ button:active{transform:scale(.98)}
 .chip.on{border-color:var(--acc);color:var(--acc)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
 .hero{display:flex;align-items:center;gap:14px}
-.ring{width:84px;height:84px;flex:none;position:relative}
+.ringw{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px}
+.ringw .pct{font:700 20px "Space Grotesk",system-ui,sans-serif;color:var(--acc);line-height:1}
+.ring{width:104px;height:104px;flex:none;position:relative}
+.ring img{position:absolute;inset:14px;width:calc(100% - 28px);height:calc(100% - 28px);object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
 .ring svg{transform:rotate(-90deg)}
 .ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px}
 .hero .meta{min-width:0}
@@ -129,8 +132,11 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .tab.done span{color:var(--acc)}
 .tab.done{color:var(--acc)}
 .tab.up span{color:var(--warn)}
-.tab.on{background:var(--tx);color:var(--bg);box-shadow:none}
+.tab.on{background:var(--acc);color:var(--on-acc);box-shadow:none}
 .tab.on.done{background:var(--acc)}
+.row.i .q.s[data-act="cancel"]{color:var(--red)}
+.bar i,.cb .bar i,.pb i{background:linear-gradient(90deg,var(--acc),var(--warn))}
+.pb i{background:var(--warn)}
 .tab.on span{color:inherit}
 .remain{margin:0 10px 10px;padding:10px 12px;border-radius:14px;background:var(--soft);font-size:12px;color:var(--mut)}
 .remain .rc{display:flex;gap:12px;flex-wrap:wrap;color:var(--tx);font-weight:600}
@@ -177,7 +183,7 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .tsf input:focus{outline:2px solid var(--warn)}
 .sheet-a{display:flex;gap:10px;margin-top:16px}
 .sheet-a button{flex:1;padding:13px;border-radius:14px;font-size:15px;font-weight:600;border:0;background:var(--soft)}
-.sheet-a button.pri{background:var(--acc);color:#0b130c}
+.sheet-a button.pri{background:var(--acc);color:var(--on-acc)}
 .editbtn{display:block;width:calc(100% - 20px);margin:10px auto 4px;padding:10px;border:0;border-radius:12px;background:var(--soft);color:var(--mut);font-size:13px;font-weight:600}
 .editbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 10px 4px;padding:8px 8px 8px 12px;border-radius:14px;background:var(--accs);font-size:13px;color:var(--acc);position:sticky;bottom:10px}
 .editbar button{border:0;padding:10px 14px;border-radius:12px}
@@ -194,7 +200,7 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .ed .wn{width:64px;text-align:center;font-size:14px;font-weight:700;padding:7px 4px;border-radius:10px;border:0;background:var(--soft);color:var(--tx)}
 /* softer look */
 :root{--soft:color-mix(in srgb,var(--tx) 6%,transparent);--hair:color-mix(in srgb,var(--line) 55%,transparent);--accs:color-mix(in srgb,var(--acc) 14%,transparent)}
-@media (prefers-color-scheme:light){:root{--card:#fff;--bg:#f2f3f5}}
+
 .card,.sec,.maxline{border:0;border-radius:20px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 6px 20px rgba(0,0,0,.05)}
 @media (prefers-color-scheme:dark){.card,.sec,.maxline{box-shadow:0 0 0 1px var(--hair)}}
 .sec{margin-bottom:12px}
@@ -264,7 +270,7 @@ button{border-color:var(--hair)}
     <div class="err" id="tsErr"></div>
     <div class="sheet-a"><button id="tsCancel" type="button">Cancel</button><button id="tsSave" class="pri" type="button">Save</button></div>
   </div></div>
-  <footer>Game data: ClashKing static data (Nov 23, 2026) · buildings from the latest export, the rest auto-updates<br>built by kingtrents⚡️ x claude</footer>
+  <footer>Game data: ClashKing static data (Nov 23, 2026) · buildings from the latest export, the rest auto-updates<br>built by kingtrents⚡️ x claude<br>Unofficial fan tool, not endorsed by Supercell. Town Hall art © Supercell.</footer>
 </div>
 <script>
 const DATA = __DATA__;
@@ -472,9 +478,10 @@ function oreLine(o){
   o.forEach((x, i) => { if (x > 0) p.push(`<span><i class="dot" style="background:var(--o);opacity:${1 - i*.3}"></i>${num(x)} ${n[i]}</span>`); });
   return p.join("");
 }
+const TH_IMG = { 19: "assets/th19.png" };
 function ringSVG(p){
-  const r = 36, c = 2 * Math.PI * r;
-  return `<svg viewBox="0 0 84 84" width="100%" height="100%"><circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--bar)" stroke-width="8"/><circle cx="42" cy="42" r="${r}" fill="none" stroke="var(--acc)" stroke-width="8" stroke-linecap="round" stroke-dasharray="${c * p / 100} ${c}"/></svg>`;
+  const r = 46, c = 2 * Math.PI * r;
+  return `<svg viewBox="0 0 104 104" width="100%" height="100%"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--acc)"/><stop offset="1" stop-color="var(--warn)"/></linearGradient></defs><circle cx="52" cy="52" r="${r}" fill="none" stroke="var(--bar)" stroke-width="7"/><circle cx="52" cy="52" r="${r}" fill="none" stroke="url(#rg)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${c * p / 100} ${c}"/></svg>`;
 }
 function lvSummary(row){
   const m = {}; row.lv.forEach(l => m[l] = (m[l] || 0) + 1);
@@ -531,7 +538,7 @@ function render(){
     else if (r.o.k === "p") busy.p = Math.max(busy.p || 0, x.left); }));
   const pill = (label, val, on) => `<span class="pill${on ? " on" : ""}"><b>${label}</b> ${val}</span>`;
 
-  let h = `<div class="card top"><div class="hero"><div class="ring">${ringSVG(overall)}<b>${Math.floor(overall)}%</b></div>
+  let h = `<div class="card top"><div class="hero"><div class="ringw"><div class="pct">${Math.floor(overall)}%</div><div class="ring">${ringSVG(overall)}${TH_IMG[v.th] ? `<img src="${TH_IMG[v.th]}" alt="Town Hall ${v.th}">` : `<b>TH${v.th}</b>`}</div></div>
     <div class="meta"><div class="th">Town Hall ${v.th}</div><div class="sub">${esc(NAME[S.cur])} · updated ${ago(now - Math.max(v.ts || 0, v.apiTs || 0))} ago</div>
     <div class="pills">${pill("Builders", Math.max(0, (R.builders || 0) - busy.b) + "/" + (R.builders || "?") + " free", busy.b > 0)}${pill("Lab", busy.l != null ? dur(busy.l) : "free", busy.l != null)}${pill("Pets", busy.p != null ? dur(busy.p) : "free", busy.p != null)}</div></div></div>
     <div class="bars">${BAR_CATS.map(([k, label]) => {
