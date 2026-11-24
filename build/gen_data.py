@@ -7,7 +7,9 @@ Item format (one per building / trap / troop / spell / siege / hero / pet / equi
   i id, n name, g page group, k kind (b building, h hero, l lab, p pet, e equipment),
   r resource (g gold, e elixir, d dark, o ore), m[th] max level at that TH, c[th] how many you have at that TH,
   t[L-1] seconds to reach level L, co[L-1] cost to reach level L (equipment: [shiny, glowy, starry]),
-  h hero (equipment), ra rarity (equipment), opt guardian flag.
+  h hero (equipment), ra rarity (equipment), opt guardian flag,
+  tg air/ground: "a", "g" or "ag" (defenses and guardians: what they hit; traps: what sets them off;
+  troops, heroes, pets: "a" flying, "g" ground). Left out when it doesn't apply.
 Arrays m and c run TH0..TOP_TH (index = Town Hall level).
 """
 import json, os, sys
@@ -53,6 +55,16 @@ def counts(bid):
     c = _counts(bid)
     return [0 if t >= GONE_FROM.get(bid, 99) else c[t] for t in THS]
 
+def tg_hits(x):
+    a, g = x.get("is_air_targeting"), x.get("is_ground_targeting")
+    if a is None and g is None:
+        a, g = x.get("air_trigger"), x.get("ground_trigger")
+    v = ("a" if a else "") + ("g" if g else "")
+    return v or None
+def tg_unit(x):
+    f = x.get("is_flying")
+    return None if f is None else ("a" if f else "g")
+
 def rt(l, unlock_th):
     r = l.get("required_townhall")
     return unlock_th if r is None else r
@@ -77,6 +89,7 @@ for src, is_trap in ((BUILD, False), (TRAPS, True)):
                       "m": m, "c": c,
                       "t": [0 if g == "Walls" else (l.get("build_time") or 0) for l in lv],
                       "co": [l.get("build_cost") or 0 for l in lv]})
+        if g in ("Defenses", "Traps") and tg_hits(b): items[-1]["tg"] = tg_hits(b)
 
 bm = lambda name: bmax(next(b for b in BUILD.values() if b["name"] == name))
 LAB, HALL, PETH, SMITH = bm("Laboratory"), bm("Hero Hall"), bm("Pet House"), bm("Blacksmith")
@@ -118,6 +131,7 @@ def unit_items(fname, group_of, kind, gate_key, gate_max):
         else:
             it["r"] = RES.get(x.get("upgrade_resource"), "e")
             it["t"] = shifted(lv, "upgrade_time"); it["co"] = shifted(lv, "upgrade_cost")
+        if kind in ("l", "h", "p") and tg_unit(x): it["tg"] = tg_unit(x)
         items.append(it)
 
 def troop_group(x):
@@ -137,6 +151,7 @@ for x in load("guardians.json"):
     m = [max([l["level"] for l in lv if (l.get("required_townhall") or 99) <= t] or [0]) for t in THS]
     items.append({"i": x["_id"], "n": x["name"], "g": "Guardians", "k": "b", "r": RES.get(x.get("upgrade_resource"), "e"),
                   "m": m, "c": [1 if v else 0 for v in m], "t": shifted(lv, "upgrade_time"), "co": shifted(lv, "upgrade_cost"), "opt": 1})
+    if tg_hits(x): items[-1]["tg"] = tg_hits(x)
 
 # --- merged defenses: building X uses up N of building Y (Ricochet Cannon = 2 cannons, etc.) -------
 merges = {}

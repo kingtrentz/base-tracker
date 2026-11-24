@@ -22,6 +22,11 @@ button.pri{background:var(--acc);color:#0b130c;border-color:var(--acc);font-weig
 button:active{transform:scale(.98)}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .chip{padding:6px 11px;border-radius:999px;font-size:13px}
+.flt{display:flex;gap:3px;align-items:center;flex-basis:100%;order:3;overflow-x:auto;scrollbar-width:none;padding:2px 0}
+.flt::-webkit-scrollbar{display:none}
+.flt button{flex:none;padding:4px 8px;border-radius:999px;font-size:12px;color:var(--mut)}
+.flt button.on{border-color:var(--acc);color:var(--acc);font-weight:700}
+.flt i{flex:none;width:1px;height:16px;background:var(--line);margin:0 2px}
 .gp{display:flex;align-items:center;gap:2px;margin-left:auto;border:1px solid var(--line);border-radius:999px;padding:2px 2px 2px 10px;font-size:12px;color:var(--mut)}
 .gp span{margin-right:4px}
 .gp button{border:0;background:none;padding:4px 7px;border-radius:999px;font-size:12px;color:var(--mut)}
@@ -353,11 +358,20 @@ function lvSummary(row){
   return ks.map(k => k ? `L${k} ×${m[k]}` : `not built ×${m[k]}`).join(" · ") + ` → ${row.M}`;
 }
 
+function fbar(){
+  const c = (attr, val, label, on) => `<button class="${on ? "on" : ""}" ${attr}="${val}">${label}</button>`;
+  const st = S.sort || "", arrow = k => st === k + ":up" ? " ↑" : st === k + ":down" ? " ↓" : "";
+  return `<div class="flt">` +
+    c("data-ft", "a", "Air", S.ft === "a") + c("data-ft", "g", "Ground", S.ft === "g") + `<i></i>` +
+    c("data-fr", "g", "Gold", S.fr === "g") + c("data-fr", "e", "Elixir", S.fr === "e") + c("data-fr", "d", "Dark", S.fr === "d") + `<i></i>` +
+    c("data-st", "time", "Time" + arrow("time"), st.startsWith("time")) + c("data-st", "cost", "Price" + arrow("cost"), st.startsWith("cost")) +
+    `</div>`;
+}
 function render(){
   const app = $("#app"), chips = $("#chips");
   const gp = GP_STEPS.includes(S.gp) ? S.gp : 0;
   chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("") +
-    `<div class="gp" title="Gold Pass builder and research boost"><span>Gold Pass</span>${GP_STEPS.map(x => `<button class="${x === gp ? "on" : ""}" data-gp="${x}">${x ? x + "%" : "off"}</button>`).join("")}</div>`;
+    fbar() + `<div class="gp" title="Gold Pass builder and research boost"><span>Gold Pass</span>${GP_STEPS.map(x => `<button class="${x === gp ? "on" : ""}" data-gp="${x}">${x ? x + "%" : "off"}</button>`).join("")}</div>`;
   let v = null;
   try { v = view(S.cur) } catch(e) { app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return; }
   if (EDIT && EDIT.tag === S.cur) v = EDIT.v;
@@ -379,7 +393,7 @@ function render(){
   const box = (k, label, s) => AO && (k === "build" || k === "walls") ? `<div class="box"><div class="k">${label}</div><div class="v">–</div><div class="s">needs export</div><div class="bar"></div></div>` : !c[k].tot ? `<div class="box"><div class="k">${label}</div><div class="v">–</div><div class="s">not at TH${v.th}</div><div class="bar"></div></div>` : `<div class="box"><div class="k">${label}</div><div class="v">${pct(c[k])}%</div><div class="s">${s}</div><div class="bar"><i style="width:${pct(c[k])}%"></i></div></div>`;
   let h = `<div class="card"><div class="hero"><div class="ring">${ringSVG(overall)}<b>${Math.floor(overall)}%</b></div>
     <div class="meta"><div class="th">Town Hall ${v.th}</div>
-    <div class="sub">${esc(NAME[S.cur])} · ${esc(v.tag)}<br>${AO ? "No export yet, so buildings and walls are blank" : `<span class="${now - (v.exp || v.ts) > 3*86400 ? "stale" : ""}">Last export ${ago(now - (v.exp || v.ts))} ago</span>${v.exp && v.ts - v.exp > 60 ? " · marked by hand since" : ""}`}${v.autoDone ? "<br>" + v.autoDone + " finished upgrade" + (v.autoDone === 1 ? "" : "s") + " counted automatically" : ""}${v.apiTs ? "<br>Heroes, lab, pets, gear auto-updated " + ago(now - v.apiTs) + " ago" : ""}${overall >= 100 ? " · maxed for TH" + v.th : ""}</div></div></div>
+    <div class="sub">${esc(NAME[S.cur])}<br>Updated ${ago(now - Math.max(v.ts || 0, v.apiTs || 0))} ago${overall >= 100 ? " · maxed for TH" + v.th : ""}</div></div></div>
     <div class="grid">
       ${box("build","Buildings", upTxt(c.build.upn))}
       ${box("heroes","Heroes", upTxt(c.heroes.upn))}
@@ -399,6 +413,8 @@ function render(){
   }
 
   const maxedGroups = [];
+  const FON = !!(S.ft || S.fr);
+  const matchF = r => (!S.ft || (r.o.tg || "").includes(S.ft)) && (!S.fr || r.o.r === S.fr);
   for (const g of GROUPS) {
     if (AO && !API_GROUPS[g]) continue;
     const rs = R.rows.filter(r => r.o.g === g); if (!rs.length) continue;
@@ -406,27 +422,36 @@ function render(){
     if (rem <= 0 && S.hideMax && !EDIT) { maxedGroups.push(g); continue; }
     const p = tot ? Math.floor(1000 * (1 - rem / tot)) / 10 : 100;
     const isW = g === "Walls", isE = g === "Equipment";
-    const left = rs.filter(r => r.rem > 0).sort((a, b) => b.rem - a.rem), maxed = rs.filter(r => r.rem <= 0);
+    const shown = rs.filter(matchF);
+    if (FON && !EDIT && !shown.some(r => r.rem > 0)) continue;
+    const left = shown.filter(r => r.rem > 0).sort((a, b) => b.rem - a.rem), maxed = shown.filter(r => r.rem <= 0);
     const cost = { g: 0, e: 0, d: 0 }, ore = [0,0,0];
     rs.forEach(r => { if (isE) r.ore.forEach((x, i) => ore[i] += x); else cost[r.o.r] = (cost[r.o.r] || 0) + (isW ? r.rem : r.cost); });
     const resHtml = isE ? oreLine(ore) : costLine(cost, isW);
     // one line per upgrade: every copy of a building gets its own line (walls grouped by level)
-    const lineHtml = r => {
+    const lineObjs = r => {
       const key = r.o.i || "weapon", name = esc(r.o.n);
-      if (r.rem <= 0) return `<div class="row i"><div class="l"><span class="n">${name}</span><span class="to">max ${r.M}</span></div></div>`;
+      if (r.rem <= 0) return [{ h: `<div class="row i"><div class="l"><span class="n">${name}</span><span class="to">max ${r.M}</span></div></div>`, time: 0, cost: 0 }];
       const btn = (lv, d, label) => `<button class="q" data-q="${key}" data-lv="${lv}" data-d="${d}">${label}</button>`;
       if (isW) {
         const m = {}; r.inst.forEach(x => { if (x.l < r.M) m[x.l] = (m[x.l] || 0) + 1; });
-        return Object.keys(m).map(Number).sort((a, b) => b - a).map(l =>
-          `<div class="row i"><div class="l"><span class="n">${name} <span class="x">×${m[l]}</span></span><span class="to">${l ? l : "new"} → ${l + 1}</span></div><span class="t">${r.o.co[l] ? num(r.o.co[l]) : ""}</span>${btn(l, 10, "+10")}${btn(l, 1, "+1")}</div>`).join("");
+        return Object.keys(m).map(Number).sort((a, b) => b - a).map(l => ({ time: 0, cost: r.o.co[l] || 0, h:
+          `<div class="row i"><div class="l"><span class="n">${name} <span class="x">×${m[l]}</span></span><span class="to">${l ? l : "new"} → ${l + 1}</span></div><span class="t">${r.o.co[l] ? num(r.o.co[l]) : ""}</span>${btn(l, 10, "+10")}${btn(l, 1, "+1")}</div>` }));
       }
       const list = r.inst.map(x => x).filter(x => x.l < r.M).sort((a, b) => (b.up - a.up) || (b.l - a.l));
       return list.map(x => {
         const to = (x.l ? x.l : "new") + " → " + (x.l + 1);
         const step = (r.o.t || [])[x.l] || 0;
         const t = x.up ? `<span class="t up" data-end="${Math.floor(Date.now()/1000) + Math.round(x.left)}">${dur(x.left)}</span>` : `<span class="t">${isE ? "" : (step ? dur(step) : "instant")}</span>`;
-        return `<div class="row i"><div class="l"><span class="n">${name}</span><span class="to">${to}</span></div>${t}${btn(x.l, 1, x.up ? "✓" : "+1")}</div>`;
-      }).join("");
+        const c = isE ? 0 : ((r.o.co || [])[x.l] || 0);
+        return { time: x.up ? x.left : step, cost: typeof c === "number" ? c : 0, h: `<div class="row i"><div class="l"><span class="n">${name}</span><span class="to">${to}</span></div>${t}${btn(x.l, 1, x.up ? "✓" : "+1")}</div>` };
+      });
+    };
+    const lineHtml = r => lineObjs(r).map(x => x.h).join("");
+    const sortLines = rows => {
+      const ls = rows.flatMap(lineObjs);
+      if (S.sort) { const [k, dir] = S.sort.split(":"); ls.sort((a, b) => dir === "up" ? a[k] - b[k] : b[k] - a[k]); }
+      return ls.map(x => x.h).join("");
     };
     const rowHtml = r => {
       if (!EDIT) return lineHtml(r);
@@ -440,11 +465,12 @@ function render(){
     const open = !!S.open[g];
     h += `<div class="sec${open ? " open" : ""}" data-sec="${g}"><div class="head"><span class="nm">${g}</span><span class="pc mono">${p}%</span><div class="hb bar" style="margin:0"><i style="width:${p}%"></i></div><span class="car">▶</span></div><div class="body">` +
       (resHtml && rem > 0 ? `<div class="res">${resHtml}</div>` : "") +
-      (left.length ? left.map(rowHtml).join("") : `<div class="more">Everything here is maxed for TH${v.th}.</div>`) +
+      (left.length ? (EDIT ? left.map(rowHtml).join("") : sortLines(left)) : `<div class="more">Everything here is maxed for TH${v.th}.</div>`) +
       (maxed.length ? (S.hideMax ? `<div class="more" data-showmax="1">${maxed.length} maxed · show</div>` : maxed.map(rowHtml).join("")) : "") +
       `</div></div>`;
   }
-  if (maxedGroups.length) h += `<div class="maxline"><b>Maxed:</b> ${maxedGroups.join(", ")}</div>`;
+  if (FON && !EDIT) h += `<div class="more" style="text-align:center">Filtered: ${[S.ft === "a" ? "air" : S.ft === "g" ? "ground" : "", ({g:"gold",e:"elixir",d:"dark"})[S.fr] || ""].filter(Boolean).join(" + ")} · <a href="#" data-fclear="1">clear</a></div>`;
+  if (maxedGroups.length && !FON) h += `<div class="maxline"><b>Maxed:</b> ${maxedGroups.join(", ")}</div>`;
   h += `<label class="toggle"><input type="checkbox" id="hideMax"${S.hideMax ? " checked" : ""}> Hide maxed items</label>`;
   app.innerHTML = editNote + h;
 }
@@ -458,6 +484,15 @@ document.addEventListener("click", e => {
   if (eb && EDIT) { bump(eb.dataset.ed, +eb.dataset.d); render(); return; }
   const chip = e.target.closest(".chip");
   if (chip) { if (EDIT) finishEdit(); S.cur = chip.dataset.tag; store.set(S); render(); return; }
+  const fb = e.target.closest("[data-ft],[data-fr],[data-st],[data-fclear]");
+  if (fb) {
+    e.preventDefault();
+    if (fb.dataset.fclear) { S.ft = ""; S.fr = ""; S.sort = ""; }
+    else if (fb.dataset.ft) S.ft = S.ft === fb.dataset.ft ? "" : fb.dataset.ft;
+    else if (fb.dataset.fr) S.fr = S.fr === fb.dataset.fr ? "" : fb.dataset.fr;
+    else { const k = fb.dataset.st, cur = S.sort || ""; S.sort = cur === k + ":up" ? k + ":down" : cur === k + ":down" ? "" : k + ":up"; }
+    store.set(S); render(); return;
+  }
   const gpb = e.target.closest("[data-gp]");
   if (gpb) { S.gp = +gpb.dataset.gp; store.set(S); render(); return; }
   const sm = e.target.closest("[data-showmax]");
