@@ -22,6 +22,10 @@ button.pri{background:var(--acc);color:#0b130c;border-color:var(--acc);font-weig
 button:active{transform:scale(.98)}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .chip{padding:6px 11px;border-radius:999px;font-size:13px}
+.gp{display:flex;align-items:center;gap:2px;margin-left:auto;border:1px solid var(--line);border-radius:999px;padding:2px 2px 2px 10px;font-size:12px;color:var(--mut)}
+.gp span{margin-right:4px}
+.gp button{border:0;background:none;padding:4px 7px;border-radius:999px;font-size:12px;color:var(--mut)}
+.gp button.on{background:var(--acc);color:var(--bg);font-weight:700}
 .chip.on{border-color:var(--acc);color:var(--acc)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
 .hero{display:flex;align-items:center;gap:14px}
@@ -247,13 +251,27 @@ function parse(raw){
 const sum = (arr, a, b) => { let s = 0; for (let L = a; L <= b; L++) s += arr[L-1] || 0; return s; };
 const sumOre = (arr, a, b) => { const s = [0,0,0]; for (let L = a; L <= b; L++) { const c = arr[L-1] || [0,0,0]; s[0]+=c[0]; s[1]+=c[1]; s[2]+=c[2]; } return s; };
 
+// Gold Pass: Builder Boost (buildings, guardians, heroes) and Research Boost (lab) cut time and cost by the same %.
+const GP_STEPS = [0, 10, 15, 20];
+let GP_CACHE = { gp: -1, items: null };
+function boosted(){
+  const gp = GP_STEPS.includes(S.gp) ? S.gp : 0;
+  if (GP_CACHE.gp === gp) return GP_CACHE.items;
+  const f = 1 - gp / 100;
+  const items = !gp ? DATA.items : DATA.items.map(o => {
+    const builder = (o.k === "b" && o.g !== "Walls") || o.k === "h", lab = o.k === "l";
+    if (!builder && !lab) return o;
+    return { ...o, t: o.t.map(x => Math.round(x * f)), co: o.co.map(x => Math.round(x * f)) };
+  });
+  GP_CACHE = { gp, items }; return items;
+}
 function compute(v, now){
   const t = Math.min(Math.max(v.th, 1), DATA.top || 18);
   const owned = id => (v.inst[id] || []).length;
   const age = now - v.ts;
   const rows = [], ups = [];
   const cats = {}; ["build","heroes","lab","pets","equip","walls"].forEach(c => cats[c] = {rem:0, tot:0, upn:0, cost:{g:0,e:0,d:0}, ore:[0,0,0]});
-  for (const o of DATA.items) {
+  for (const o of boosted()) {
     const M = o.m[t]; if (!M) continue;
     let need = o.k === "e" ? (owned(o.i) ? 1 : 0) : o.c[t];
     for (const [mid, src] of Object.entries(DATA.merges)) if (src[o.i]) need -= src[o.i] * owned(+mid);
@@ -285,11 +303,12 @@ function compute(v, now){
     rows.push(row);
   }
   // Town Hall weapon
-  const W = DATA.weapon[t];
+  let W = DATA.weapon[t];
   if (W) {
-    const M = W.length, l = Math.min(v.weapon || 0, M);
+    const M = W.length, l = Math.min(v.weapon || 0, M), wf = 1 - (GP_STEPS.includes(S.gp) ? S.gp : 0) / 100;
+    W = W.map(x => [Math.round(x[0] * wf), Math.round(x[1] * wf)]);
     const r = W.slice(l).reduce((s, x) => s + x[0], 0), tot = W.reduce((s, x) => s + x[0], 0), cost = W.slice(l).reduce((s, x) => s + x[1], 0);
-    rows.push({ o: { n: "Town Hall weapon", g: "Defenses", k: "b", r: "g" }, n: 1, lv: [l], rem: r, tot, upn: M - l, cost, ore: [0,0,0], up: [], M });
+    rows.push({ o: { n: "Town Hall weapon", g: "Defenses", k: "b", r: "g", t: W.map(x => x[0]), co: W.map(x => x[1]) }, inst: [{ l, r, up: false, left: 0 }], n: 1, lv: [l], rem: r, tot, upn: M - l, cost, ore: [0,0,0], up: [], M });
     cats.build.rem += r; cats.build.tot += tot; cats.build.upn += M - l; cats.build.cost.g += cost;
   }
   const builders = owned(1000015) + (owned(1000064) ? 1 : 0);
@@ -336,7 +355,9 @@ function lvSummary(row){
 
 function render(){
   const app = $("#app"), chips = $("#chips");
-  chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("");
+  const gp = GP_STEPS.includes(S.gp) ? S.gp : 0;
+  chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("") +
+    `<div class="gp" title="Gold Pass builder and research boost"><span>Gold Pass</span>${GP_STEPS.map(x => `<button class="${x === gp ? "on" : ""}" data-gp="${x}">${x ? x + "%" : "off"}</button>`).join("")}</div>`;
   let v = null;
   try { v = view(S.cur) } catch(e) { app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return; }
   if (EDIT && EDIT.tag === S.cur) v = EDIT.v;
@@ -397,12 +418,13 @@ function render(){
       if (isW) {
         const m = {}; r.inst.forEach(x => { if (x.l < r.M) m[x.l] = (m[x.l] || 0) + 1; });
         return Object.keys(m).map(Number).sort((a, b) => b - a).map(l =>
-          `<div class="row i"><div class="l"><span class="n">${name} <span class="x">×${m[l]}</span></span><span class="to">${l ? l : "new"} → ${r.M}</span></div>${btn(l, 10, "+10")}${btn(l, 1, "+1")}</div>`).join("");
+          `<div class="row i"><div class="l"><span class="n">${name} <span class="x">×${m[l]}</span></span><span class="to">${l ? l : "new"} → ${l + 1}</span></div><span class="t">${r.o.co[l] ? num(r.o.co[l]) : ""}</span>${btn(l, 10, "+10")}${btn(l, 1, "+1")}</div>`).join("");
       }
       const list = r.inst.map(x => x).filter(x => x.l < r.M).sort((a, b) => (b.up - a.up) || (b.l - a.l));
       return list.map(x => {
-        const to = x.l ? `${x.l} → ${r.M}` : `new → ${r.M}`;
-        const t = x.up ? `<span class="t up" data-end="${Math.floor(Date.now()/1000) + Math.round(x.left)}">${dur(x.left)}</span>` : `<span class="t">${isE ? (r.M - x.l) + " lv" : dur(x.r)}</span>`;
+        const to = (x.l ? x.l : "new") + " → " + (x.l + 1);
+        const step = (r.o.t || [])[x.l] || 0;
+        const t = x.up ? `<span class="t up" data-end="${Math.floor(Date.now()/1000) + Math.round(x.left)}">${dur(x.left)}</span>` : `<span class="t">${isE ? "" : (step ? dur(step) : "instant")}</span>`;
         return `<div class="row i"><div class="l"><span class="n">${name}</span><span class="to">${to}</span></div>${t}${btn(x.l, 1, x.up ? "✓" : "+1")}</div>`;
       }).join("");
     };
@@ -436,6 +458,8 @@ document.addEventListener("click", e => {
   if (eb && EDIT) { bump(eb.dataset.ed, +eb.dataset.d); render(); return; }
   const chip = e.target.closest(".chip");
   if (chip) { if (EDIT) finishEdit(); S.cur = chip.dataset.tag; store.set(S); render(); return; }
+  const gpb = e.target.closest("[data-gp]");
+  if (gpb) { S.gp = +gpb.dataset.gp; store.set(S); render(); return; }
   const sm = e.target.closest("[data-showmax]");
   if (sm) { S.hideMax = false; store.set(S); render(); return; }
   const head = e.target.closest(".sec .head");
