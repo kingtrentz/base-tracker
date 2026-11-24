@@ -110,6 +110,39 @@ button.on{border-color:var(--acc);color:var(--acc)}
 .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:9;max-width:90vw}
 footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-height:1.6}
 @media (max-width:360px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ring{width:72px;height:72px}}
+/* softer look */
+:root{--soft:color-mix(in srgb,var(--tx) 6%,transparent);--hair:color-mix(in srgb,var(--line) 55%,transparent);--accs:color-mix(in srgb,var(--acc) 14%,transparent)}
+@media (prefers-color-scheme:light){:root{--card:#fff;--bg:#f2f3f5}}
+.card,.sec,.maxline{border:0;border-radius:20px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 6px 20px rgba(0,0,0,.05)}
+@media (prefers-color-scheme:dark){.card,.sec,.maxline{box-shadow:0 0 0 1px var(--hair)}}
+.sec{margin-bottom:12px}
+.sec .head{padding:15px 16px}
+.sec .head .nm{font-size:16px}
+.sec .head .pc{font-size:12px}
+.sec .body{border-top:0;padding:0 6px 6px}
+.res{border:0;padding:0 10px 8px}
+.flt{padding:2px 10px 10px;gap:4px;order:0;flex-basis:auto}
+.flt button{border:0;background:var(--soft);padding:5px 10px;font-weight:500}
+.flt button.on{background:var(--accs);color:var(--acc);font-weight:700}
+.flt i{background:transparent;width:4px}
+.row.i{border:0;border-radius:12px;padding:7px 6px 7px 10px;min-height:46px}
+.row.i + .row.i{box-shadow:inset 0 1px 0 var(--hair)}
+.row.i .n{font-weight:500}
+.row.i .to{background:var(--soft);border-radius:6px;padding:1px 6px}
+.q{border:0;background:var(--accs);color:var(--acc);border-radius:999px;font-weight:700}
+.row.i .q{min-width:44px;padding:6px 0}
+.q:active{background:var(--acc);color:var(--bg)}
+.box{border:0;background:var(--soft);border-radius:14px}
+.grid{gap:8px}
+button{border-color:var(--hair)}
+.hdr-btns button{border:0;background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.hdr-btns button.pri{background:var(--acc)}
+.chip{border:0;background:var(--card);box-shadow:0 0 0 1px var(--hair)}
+.chip.on{background:var(--accs);box-shadow:none;font-weight:600}
+.gp{border:0;background:var(--card);box-shadow:0 0 0 1px var(--hair)}
+.more{padding:10px 12px}
+.toast{border:0;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
+.toast button{border:0;background:var(--accs)}
 </style>
 </head>
 <body>
@@ -358,20 +391,25 @@ function lvSummary(row){
   return ks.map(k => k ? `L${k} ×${m[k]}` : `not built ×${m[k]}`).join(" · ") + ` → ${row.M}`;
 }
 
-function fbar(){
-  const c = (attr, val, label, on) => `<button class="${on ? "on" : ""}" ${attr}="${val}">${label}</button>`;
-  const st = S.sort || "", arrow = k => st === k + ":up" ? " ↑" : st === k + ":down" ? " ↓" : "";
-  return `<div class="flt">` +
-    c("data-ft", "a", "Air", S.ft === "a") + c("data-ft", "g", "Ground", S.ft === "g") + `<i></i>` +
-    c("data-fr", "g", "Gold", S.fr === "g") + c("data-fr", "e", "Elixir", S.fr === "e") + c("data-fr", "d", "Dark", S.fr === "d") + `<i></i>` +
-    c("data-st", "time", "Time" + arrow("time"), st.startsWith("time")) + c("data-st", "cost", "Price" + arrow("cost"), st.startsWith("cost")) +
-    `</div>`;
+function fstate(g){ S.sf = S.sf || {}; return S.sf[g] = S.sf[g] || {}; }
+function fbar(g, rs){
+  const f = fstate(g), live = rs.filter(r => r.rem > 0);
+  const hasT = t => live.some(r => (r.o.tg || "").includes(t)), hasR = x => live.some(r => r.o.r === x);
+  const c = (attr, val, label, on) => `<button class="${on ? "on" : ""}" data-fg="${g}" ${attr}="${val}">${label}</button>`;
+  const st = f.sort || "", arrow = k => st === k + ":up" ? " ↑" : st === k + ":down" ? " ↓" : "";
+  const parts = [];
+  const tg = (hasT("a") && hasT("g")) ? c("data-ft", "a", "Air", f.ft === "a") + c("data-ft", "g", "Ground", f.ft === "g") : "";
+  const rsrc = [["g", "Gold"], ["e", "Elixir"], ["d", "Dark"]].filter(([x]) => hasR(x));
+  const rr = rsrc.length > 1 ? rsrc.map(([x, l]) => c("data-fr", x, l, f.fr === x)).join("") : "";
+  if (tg) parts.push(tg); if (rr) parts.push(rr);
+  parts.push(c("data-st", "time", "Time" + arrow("time"), st.startsWith("time")) + c("data-st", "cost", "Price" + arrow("cost"), st.startsWith("cost")));
+  return `<div class="flt">${parts.join("<i></i>")}</div>`;
 }
 function render(){
   const app = $("#app"), chips = $("#chips");
   const gp = GP_STEPS.includes(S.gp) ? S.gp : 0;
   chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("") +
-    fbar() + `<div class="gp" title="Gold Pass builder and research boost"><span>Gold Pass</span>${GP_STEPS.map(x => `<button class="${x === gp ? "on" : ""}" data-gp="${x}">${x ? x + "%" : "off"}</button>`).join("")}</div>`;
+    `<div class="gp" title="Gold Pass builder and research boost"><span>Gold Pass</span>${GP_STEPS.map(x => `<button class="${x === gp ? "on" : ""}" data-gp="${x}">${x ? x + "%" : "off"}</button>`).join("")}</div>`;
   let v = null;
   try { v = view(S.cur) } catch(e) { app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return; }
   if (EDIT && EDIT.tag === S.cur) v = EDIT.v;
@@ -413,8 +451,7 @@ function render(){
   }
 
   const maxedGroups = [];
-  const FON = !!(S.ft || S.fr);
-  const matchF = r => (!S.ft || (r.o.tg || "").includes(S.ft)) && (!S.fr || r.o.r === S.fr);
+
   for (const g of GROUPS) {
     if (AO && !API_GROUPS[g]) continue;
     const rs = R.rows.filter(r => r.o.g === g); if (!rs.length) continue;
@@ -422,8 +459,8 @@ function render(){
     if (rem <= 0 && S.hideMax && !EDIT) { maxedGroups.push(g); continue; }
     const p = tot ? Math.floor(1000 * (1 - rem / tot)) / 10 : 100;
     const isW = g === "Walls", isE = g === "Equipment";
-    const shown = rs.filter(matchF);
-    if (FON && !EDIT && !shown.some(r => r.rem > 0)) continue;
+    const F = fstate(g), FON = !EDIT && !!(F.ft || F.fr);
+    const shown = EDIT ? rs : rs.filter(r => (!F.ft || (r.o.tg || "").includes(F.ft)) && (!F.fr || r.o.r === F.fr));
     const left = shown.filter(r => r.rem > 0).sort((a, b) => b.rem - a.rem), maxed = shown.filter(r => r.rem <= 0);
     const cost = { g: 0, e: 0, d: 0 }, ore = [0,0,0];
     rs.forEach(r => { if (isE) r.ore.forEach((x, i) => ore[i] += x); else cost[r.o.r] = (cost[r.o.r] || 0) + (isW ? r.rem : r.cost); });
@@ -448,9 +485,9 @@ function render(){
       });
     };
     const lineHtml = r => lineObjs(r).map(x => x.h).join("");
-    const sortLines = rows => {
+    const sortLines = (rows, sortKey) => {
       const ls = rows.flatMap(lineObjs);
-      if (S.sort) { const [k, dir] = S.sort.split(":"); ls.sort((a, b) => dir === "up" ? a[k] - b[k] : b[k] - a[k]); }
+      if (sortKey) { const [k, dir] = sortKey.split(":"); ls.sort((a, b) => dir === "up" ? a[k] - b[k] : b[k] - a[k]); }
       return ls.map(x => x.h).join("");
     };
     const rowHtml = r => {
@@ -465,12 +502,12 @@ function render(){
     const open = !!S.open[g];
     h += `<div class="sec${open ? " open" : ""}" data-sec="${g}"><div class="head"><span class="nm">${g}</span><span class="pc mono">${p}%</span><div class="hb bar" style="margin:0"><i style="width:${p}%"></i></div><span class="car">▶</span></div><div class="body">` +
       (resHtml && rem > 0 ? `<div class="res">${resHtml}</div>` : "") +
-      (left.length ? (EDIT ? left.map(rowHtml).join("") : sortLines(left)) : `<div class="more">Everything here is maxed for TH${v.th}.</div>`) +
+      (!EDIT && rem > 0 ? fbar(g, rs) : "") +
+      (left.length ? (EDIT ? left.map(rowHtml).join("") : sortLines(left, F.sort)) : FON ? `<div class="more" data-fg="${g}" data-fclear="1">Nothing matches · clear filter</div>` : `<div class="more">Everything here is maxed for TH${v.th}.</div>`) +
       (maxed.length ? (S.hideMax ? `<div class="more" data-showmax="1">${maxed.length} maxed · show</div>` : maxed.map(rowHtml).join("")) : "") +
       `</div></div>`;
   }
-  if (FON && !EDIT) h += `<div class="more" style="text-align:center">Filtered: ${[S.ft === "a" ? "air" : S.ft === "g" ? "ground" : "", ({g:"gold",e:"elixir",d:"dark"})[S.fr] || ""].filter(Boolean).join(" + ")} · <a href="#" data-fclear="1">clear</a></div>`;
-  if (maxedGroups.length && !FON) h += `<div class="maxline"><b>Maxed:</b> ${maxedGroups.join(", ")}</div>`;
+  if (maxedGroups.length) h += `<div class="maxline"><b>Maxed:</b> ${maxedGroups.join(", ")}</div>`;
   h += `<label class="toggle"><input type="checkbox" id="hideMax"${S.hideMax ? " checked" : ""}> Hide maxed items</label>`;
   app.innerHTML = editNote + h;
 }
@@ -487,10 +524,11 @@ document.addEventListener("click", e => {
   const fb = e.target.closest("[data-ft],[data-fr],[data-st],[data-fclear]");
   if (fb) {
     e.preventDefault();
-    if (fb.dataset.fclear) { S.ft = ""; S.fr = ""; S.sort = ""; }
-    else if (fb.dataset.ft) S.ft = S.ft === fb.dataset.ft ? "" : fb.dataset.ft;
-    else if (fb.dataset.fr) S.fr = S.fr === fb.dataset.fr ? "" : fb.dataset.fr;
-    else { const k = fb.dataset.st, cur = S.sort || ""; S.sort = cur === k + ":up" ? k + ":down" : cur === k + ":down" ? "" : k + ":up"; }
+    const f = fstate(fb.dataset.fg);
+    if (fb.dataset.fclear) { f.ft = ""; f.fr = ""; }
+    else if (fb.dataset.ft) f.ft = f.ft === fb.dataset.ft ? "" : fb.dataset.ft;
+    else if (fb.dataset.fr) f.fr = f.fr === fb.dataset.fr ? "" : fb.dataset.fr;
+    else { const k = fb.dataset.st, cur = f.sort || ""; f.sort = cur === k + ":up" ? k + ":down" : cur === k + ":down" ? "" : k + ":up"; }
     store.set(S); render(); return;
   }
   const gpb = e.target.closest("[data-gp]");
