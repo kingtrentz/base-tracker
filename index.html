@@ -273,6 +273,46 @@ button{border-color:var(--hair)}
 .more{padding:10px 12px}
 .toast{border:0;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
 .toast button{border:0;background:var(--accs)}
+/* builder snapshot */
+.bsnap{background:var(--card);border-radius:20px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.06),0 6px 20px rgba(0,0,0,.05)}
+:root:not([data-theme="light"]) .bsnap{box-shadow:0 0 0 1px var(--hair)}
+.bsnap-h{display:flex;align-items:center;gap:11px;width:100%;border:0;border-radius:0;background:none;padding:11px 14px;text-align:left;color:var(--tx);cursor:pointer}
+.bsnap-h:active{transform:none;background:var(--soft)}
+.bsnap-ico{width:42px;height:42px;flex:none;border-radius:13px;background:var(--accs);display:flex;align-items:center;justify-content:center;position:relative;overflow:visible}
+.bsnap-ico img{width:48px;height:48px;object-fit:contain;margin-top:-4px;filter:drop-shadow(0 3px 5px rgba(0,0,0,.38))}
+.bsnap-meta{flex:1;min-width:0}
+.bsnap-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.bsnap-t{font-size:15px;font-weight:700;letter-spacing:-.01em}
+.bsnap-cnt{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--mut)}
+.bsnap-cnt.free{background:var(--accs);color:var(--acc)}
+.bsnap-cnt.busy{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.bsnap-sub{font-size:12px;color:var(--mut);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bsnap-sub b{color:var(--tx);font-weight:600}
+.bsnap-car{color:var(--mut);font-size:12px;flex:none;padding-left:4px}
+.bsnap-b{padding:0 10px 11px}
+.bsnap-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.bslot{display:flex;flex-direction:column;gap:4px;border:0;text-align:left;width:100%;background:var(--soft);border-radius:13px;padding:8px 10px;color:var(--tx);cursor:pointer;min-width:0}
+.bslot:last-child:nth-child(odd){grid-column:1 / -1}
+.bslot.next{background:color-mix(in srgb,var(--warn) 10%,var(--soft));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--warn) 38%,transparent)}
+.bslot.free{background:var(--accs);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 45%,transparent)}
+.bslot-r1{display:flex;align-items:baseline;justify-content:space-between;gap:5px;min-width:0}
+.bslot-n{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.bslot-lv{font-size:10.5px;color:var(--mut);flex:none}
+.bslot-r2{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+.bslot-tm{font-size:15px;font-weight:700;color:var(--warn);font-variant-numeric:tabular-nums;line-height:1.15}
+.bslot.free .bslot-tm{color:var(--acc);font-size:13.5px}
+.bslot-eta{font-size:10.5px;color:var(--mut);white-space:nowrap}
+.bslot-bar{height:4px;border-radius:3px;background:var(--bar);overflow:hidden;margin-top:2px}
+.bslot-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--acc),var(--warn))}
+.bsnap-extra{display:flex;flex-direction:column;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid var(--hair)}
+.bex{display:flex;align-items:center;gap:8px;width:100%;border:0;background:var(--soft);border-radius:11px;padding:6px 10px;text-align:left;color:var(--tx);cursor:pointer;min-width:0}
+.bex-k{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);flex:none;min-width:28px}
+.bex-n{flex:1;min-width:0;font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bex-n small{color:var(--mut);margin-left:4px;font-size:11px}
+.bex-r{flex:none;text-align:right;display:flex;align-items:baseline;gap:6px}
+.bex-tm{font-size:12.5px;font-weight:700;color:var(--warn);font-variant-numeric:tabular-nums}
+.bex-tm.free{color:var(--acc)}
+.bex-eta{font-size:10.5px;color:var(--mut)}
 </style>
 <link id="lnkMan" rel="manifest" href="manifest.webmanifest">
 <link id="lnkApple" rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -581,6 +621,16 @@ function dur(s){
   if (h) return h + "h" + (m ? " " + m + "m" : "");
   return Math.max(1, m) + "m";
 }
+function eta(endSec){
+  const d = new Date(endSec * 1000), n = new Date();
+  const hr = d.getHours(), ap = hr >= 12 ? "p" : "a", h12 = hr % 12 || 12, mn = d.getMinutes();
+  const tm = h12 + (mn ? ":" + String(mn).padStart(2, "0") : "") + ap;
+  const dayDiff = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(n.getFullYear(), n.getMonth(), n.getDate())) / 86400000);
+  if (dayDiff <= 0) return "Today " + tm;
+  if (dayDiff === 1) return "Tom " + h12 + ap;
+  if (dayDiff < 7) return d.toLocaleDateString([], { weekday: "short" }) + " " + h12 + ap;
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
 function num(x){
   if (x >= 1e9) return (x/1e9).toFixed(x >= 1e10 ? 0 : 1).replace(/\.0$/,"") + "B";
   if (x >= 1e6) return (x/1e6).toFixed(x >= 1e8 ? 0 : 1).replace(/\.0$/,"") + "M";
@@ -760,6 +810,60 @@ function pickerList(){
 }
 function openPicker(w){ PK = w; $("#pkT").innerHTML = w === "b" ? "Add to the <b>builder plan</b>" : "Add to the <b>lab plan</b>"; $("#pkQ").value = ""; pickerList(); $("#psheet").classList.add("show"); }
 function closePicker(){ PK = null; $("#psheet").classList.remove("show"); render(); }
+function builderSnap(v, R, now, c){
+  if (v.apiOnly) return "";
+  const bld = [], lab = [], pet = [];
+  R.rows.forEach(r => r.inst.forEach(x => {
+    if (!x.up) return;
+    if (r.o.k === "b" || r.o.k === "h") bld.push({ r, x });
+    else if (r.o.k === "l") lab.push({ r, x });
+    else if (r.o.k === "p") pet.push({ r, x });
+  }));
+  if (!R.builders && !bld.length && !lab.length && !pet.length) return "";
+  bld.sort((a, b) => a.x.left - b.x.left);
+  lab.sort((a, b) => a.x.left - b.x.left);
+  pet.sort((a, b) => a.x.left - b.x.left);
+  const open = !S.snapClosed;
+  const freeB = Math.max(0, R.builders - bld.length), extraB = Math.max(0, bld.length - R.builders);
+  const badgeTxt = R.builders ? (freeB > 0 ? `${freeB}/${R.builders} free` : (extraB > 0 ? `0/${R.builders} free · +${extraB}` : `0/${R.builders} free`)) : `${bld.length} busy`;
+  const badgeCls = freeB > 0 ? "free" : "busy";
+  let sub = "all builders idle";
+  if (freeB > 0 && bld.length) {
+    const end0 = now + Math.round(bld[0].x.left);
+    sub = `${freeB} ready now · next in <b class="mono" data-end="${end0}">${dur(bld[0].x.left)}</b>`;
+  } else if (bld.length) {
+    const end0 = now + Math.round(bld[0].x.left);
+    sub = `next free in <b class="mono" data-end="${end0}">${dur(bld[0].x.left)}</b> · ${eta(end0)}`;
+  }
+  let body = "";
+  if (open) {
+    const tiles = [];
+    if (!bld.length && R.builders) {
+      tiles.push(`<button class="bslot free" data-tab="__plan"><div class="bslot-r1"><span class="bslot-n">All ${R.builders} builders free</span><span class="bslot-lv">idle</span></div><div class="bslot-r2"><span class="bslot-tm">READY</span><span class="bslot-eta">open plan →</span></div></button>`);
+    } else {
+      for (let i = 0; i < freeB; i++) {
+        tiles.push(`<button class="bslot free" data-tab="__plan"><div class="bslot-r1"><span class="bslot-n">Builder free</span><span class="bslot-lv">idle</span></div><div class="bslot-r2"><span class="bslot-tm">READY</span><span class="bslot-eta">open plan →</span></div></button>`);
+      }
+      bld.forEach(({ r, x }, idx) => {
+        const key = r.o.i || "weapon", nm = esc(r.o.n), step = (r.o.t || [])[x.l] || 0;
+        const p = step ? Math.max(3, Math.min(100, Math.round(100 * (1 - x.left / step)))) : 50;
+        const endSec = now + Math.round(x.left);
+        tiles.push(`<button class="bslot${idx === 0 && freeB === 0 ? " next" : ""}" data-act="settime" data-q="${key}" data-lv="${x.l}" data-ix="${x.ix}" data-n="${nm}" data-left="${Math.round(x.left)}" title="Tap to edit time left"><div class="bslot-r1"><span class="bslot-n">${nm}</span><span class="bslot-lv mono">→${x.l + 1}</span></div><div class="bslot-r2"><span class="bslot-tm mono" data-end="${endSec}">${dur(x.left)}</span><span class="bslot-eta">${eta(endSec)}</span></div><div class="bslot-bar"><i style="width:${p}%"></i></div></button>`);
+      });
+    }
+    const ex = [];
+    const exRow = (k, e) => {
+      const key = e.r.o.i || "weapon", nm = esc(e.r.o.n), endSec = now + Math.round(e.x.left);
+      return `<button class="bex" data-act="settime" data-q="${key}" data-lv="${e.x.l}" data-ix="${e.x.ix}" data-n="${nm}" data-left="${Math.round(e.x.left)}" title="Tap to edit time left"><span class="bex-k">${k}</span><span class="bex-n">${nm}<small class="mono">→${e.x.l + 1}</small></span><span class="bex-r"><span class="bex-tm mono" data-end="${endSec}">${dur(e.x.left)}</span><span class="bex-eta">${eta(endSec)}</span></span></button>`;
+    };
+    if (lab.length) lab.forEach(e => ex.push(exRow("Lab", e)));
+    else if (c.lab && c.lab.rem > 0) ex.push(`<button class="bex" data-tab="__plan"><span class="bex-k">Lab</span><span class="bex-n">nothing researching</span><span class="bex-r"><span class="bex-tm free">free</span></span></button>`);
+    if (pet.length) pet.forEach(e => ex.push(exRow("Pet", e)));
+    else if (c.pets && c.pets.rem > 0) ex.push(`<button class="bex" data-tab="Pets"><span class="bex-k">Pet</span><span class="bex-n">nothing upgrading</span><span class="bex-r"><span class="bex-tm free">free</span></span></button>`);
+    body = `<div class="bsnap-b"><div class="bsnap-g">${tiles.join("")}</div>${ex.length ? `<div class="bsnap-extra">${ex.join("")}</div>` : ""}</div>`;
+  }
+  return `<div class="bsnap"><button class="bsnap-h" type="button" data-bsnap="1" aria-expanded="${open}"><span class="bsnap-ico"><img src="assets/builder.webp" alt="Builder"></span><span class="bsnap-meta"><span class="bsnap-top"><span class="bsnap-t">Builders</span><span class="bsnap-cnt ${badgeCls}">${badgeTxt}</span></span><span class="bsnap-sub">${sub}</span></span><span class="bsnap-car">${open ? "▾" : "▸"}</span></button>${body}</div>`;
+}
 function render(){
   const app = $("#app"), chips = $("#chips");
   const gp = GP_STEPS.includes(S.gp) ? S.gp : 0;
@@ -793,6 +897,8 @@ function render(){
       const p = pct(c[k]);
       return `<div class="cb"><span class="k">${label}</span><div class="bar"><i style="width:${p}%"></i></div><span class="v mono">${p}%</span></div>`;
     }).join("")}</div></div>`;
+
+  h += builderSnap(v, R, now, c);
 
   // tabs: one category at a time, coloured by status
   const tabInfo = TABS.map(g => {
@@ -948,6 +1054,8 @@ function moveWalls(L, delta){
 
 // events
 document.addEventListener("click", e => {
+  const bsn = e.target.closest("[data-bsnap]");
+  if (bsn) { S.snapClosed = !S.snapClosed; store.set(S); render(); return; }
   const gob = e.target.closest("[data-go]");
   if (gob) { S.go = S.go || {}; S.go[gob.dataset.go] = !S.go[gob.dataset.go]; store.set(S); render(); return; }
   const tb = e.target.closest("[data-tab]");
