@@ -12,6 +12,14 @@
 :root[data-theme="light"]{--bg:#f2efe8;--card:#fffdf8;--line:#e3dccd;--tx:#1d1b18;--mut:#70695d;--acc:#a8791b;--acc2:#8c6414;--warn:#c9561f;--red:#a8262e;--bar:#ebe4d6;--g:#a8791b;--e:#9a3aad;--d:#4a57c8;--o:#16829a;--on-acc:#fffaf0}
 :root{color-scheme:dark}
 :root[data-theme="light"]{color-scheme:light}
+/* Town Hall palettes: the page takes on the look of the account's Town Hall (TH19 = the base colours above) */
+:root[data-th="16"]:not([data-theme="light"]){--bg:#140f0b;--card:#211913;--line:#33271d;--tx:#f2e9dc;--mut:#a3937e;--acc:#e9b43b;--acc2:#c99428;--warn:#ec5f2e;--red:#c23a2c;--bar:#30251b;--g:#eabd4c;--on-acc:#1c1203}
+:root[data-th="16"][data-theme="light"]{--bg:#f7efe2;--card:#fffaf2;--line:#eadcc6;--tx:#22180f;--mut:#76674f;--acc:#b07f12;--acc2:#916610;--warn:#c8431f;--red:#a72d22;--bar:#efe2cc;--g:#b07f12;--on-acc:#fffaf0}
+:root[data-th="17"]:not([data-theme="light"]){--bg:#0c0f17;--card:#161b27;--line:#252c3d;--tx:#e9ecf3;--mut:#8e97ab;--acc:#e3b23d;--acc2:#c29428;--warn:#5f93f0;--red:#c9423f;--bar:#232a3a;--g:#e6bc4e;--on-acc:#171003}
+:root[data-th="17"][data-theme="light"]{--bg:#eef0f6;--card:#ffffff;--line:#dde2ec;--tx:#141a28;--mut:#5f6880;--acc:#a67c16;--acc2:#866312;--warn:#2f62c9;--red:#b02f2f;--bar:#e3e7f0;--g:#a67c16;--on-acc:#fffaf0}
+:root[data-th="18"]:not([data-theme="light"]){--bg:#0e1217;--card:#18202a;--line:#27313d;--tx:#e8eef4;--mut:#8f9cab;--acc:#56b4ff;--acc2:#3b93dc;--warn:#e7b443;--red:#cf4545;--bar:#24303c;--g:#e7b443;--on-acc:#061524}
+:root[data-th="18"][data-theme="light"]{--bg:#edf1f5;--card:#ffffff;--line:#dbe3eb;--tx:#121a22;--mut:#5b6a79;--acc:#1f6fc2;--acc2:#1a5ea6;--warn:#b07d14;--red:#b3302f;--bar:#e1e8ef;--g:#b07d14;--on-acc:#ffffff}
+
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--tx);font-family:"Space Grotesk",system-ui,sans-serif;-webkit-text-size-adjust:100%}
 body{overflow-x:hidden}
@@ -527,6 +535,7 @@ function render(){
   let v = null;
   try { v = view(S.cur) } catch(e) { app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return; }
   if (EDIT && EDIT.tag === S.cur) v = EDIT.v;
+  if (v && v.th >= 16 && v.th <= 18) document.documentElement.setAttribute("data-th", v.th); else document.documentElement.removeAttribute("data-th");
   if (!v) { app.innerHTML = `<div class="card empty"><p><b>No data yet for ${esc(NAME[S.cur])}.</b><br>Copy the village export in game, then tap Paste.</p></div>`; return; }
   const AO = !!v.apiOnly;
   const ago = s => s < 3600 ? Math.max(1, Math.round(s/60)) + "m" : dur(s);
