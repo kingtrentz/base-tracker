@@ -82,6 +82,7 @@ for src, is_trap in ((BUILD, False), (TRAPS, True)):
         if first is None: continue
         g = "Traps" if is_trap else GROUP_BY_TYPE.get(b.get("type"))
         if not g: continue
+        if g == "Resources": g = "Storages" if "Storage" in b["name"] else "Collectors"
         lv = sorted(b["levels"], key=lambda l: l["level"])
         m = bmax(b, first)
         m = [m[t] if c[t] > 0 and b.get("type") not in NO_UPGRADES else 0 for t in THS]

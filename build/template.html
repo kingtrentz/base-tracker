@@ -154,6 +154,21 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .tset{display:flex;gap:6px;align-items:center;flex:none}
 .tset input{width:86px;padding:7px 8px;border-radius:10px;border:1px solid var(--warn);background:var(--bg);color:var(--tx);font:13px "Space Mono",monospace}
 .tset .q{min-width:44px;padding:7px 0}
+.dg + .dg{box-shadow:inset 0 1px 0 var(--hair)}
+.dg-h{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;padding:10px 8px 10px 10px;text-align:left;font:inherit;color:var(--tx);cursor:pointer;border-radius:12px}
+.dg-h .l{flex:1;min-width:0;display:block}
+.dg-h .n{display:block;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dg-h .lvl{display:block;font-size:11px;color:var(--mut);margin-top:1px}
+.dg-h .upc{color:var(--warn);font-weight:600}
+.dg-h .nx{font-size:12px;color:var(--mut)}
+.dg-h .nx .tm{color:var(--tx);font-weight:600}
+.dg-h .car{color:var(--mut);font-size:12px;width:14px;text-align:center}
+.dg.open{background:var(--soft);border-radius:14px;margin:2px 0}
+.dg.open + .dg{box-shadow:none}
+.dg-b{padding:0 4px 4px 10px}
+.dg-b .row.i{min-height:42px}
+.dg-b .row.i .n{display:none}
+.dg-b .row.i .lvl{font-size:13px;color:var(--tx);margin:0}
 /* softer look */
 :root{--soft:color-mix(in srgb,var(--tx) 6%,transparent);--hair:color-mix(in srgb,var(--line) 55%,transparent);--accs:color-mix(in srgb,var(--acc) 14%,transparent)}
 @media (prefers-color-scheme:light){:root{--card:#fff;--bg:#f2f3f5}}
@@ -224,8 +239,8 @@ const DATA = __DATA__;
 "use strict";
 const $ = s => document.querySelector(s);
 const BY = {}; DATA.items.forEach(o => BY[o.i] = o);
-const GROUPS = ["Defenses","Traps","Army","Resources","Guardians","Walls","Heroes","Pets","Troops","Spells","Sieges","Squads","Equipment"];
-const CAT = {Defenses:"build",Traps:"build",Army:"build",Resources:"build",Guardians:"build",Walls:"walls",Heroes:"heroes",Pets:"pets",Troops:"lab",Spells:"lab",Sieges:"lab",Squads:"lab",Equipment:"equip"};
+const GROUPS = ["Defenses","Traps","Army","Collectors","Storages","Guardians","Walls","Heroes","Pets","Troops","Spells","Sieges","Squads","Equipment"];
+const CAT = {Defenses:"build",Traps:"build",Army:"build",Collectors:"build",Storages:"build",Guardians:"build",Walls:"walls",Heroes:"heroes",Pets:"pets",Troops:"lab",Spells:"lab",Sieges:"lab",Squads:"lab",Equipment:"equip"};
 const KEY = "basetracker.v1";
 const store = {
   get(){ try { return JSON.parse(localStorage.getItem(KEY)) || {acc:{}, cur:null, hideMax:true, open:{}} } catch(e){ return {acc:{}, cur:null, hideMax:true, open:{}} } },
@@ -456,7 +471,7 @@ function parseDur(str){
   t.replace(/(\d+(?:\.\d+)?)\s*(d|h|m|s)?/g, (m, n, u) => { hit = true; s += parseFloat(n) * ({ d: 86400, h: 3600, m: 60, s: 1 }[u || "h"]); return m; });
   return hit && s > 0 ? Math.round(s) : null;
 }
-const TABS = [["Defenses"],["Traps"],["Army"],["Resources"],["Guardians"],["Walls"],["Heroes"],["Pets"],["Troops"],["Spells"],["Sieges"],["Squads"],["Equipment"]].map(x => x[0]);
+const TABS = [["Defenses"],["Traps"],["Army"],["Collectors"],["Storages"],["Guardians"],["Walls"],["Heroes"],["Pets"],["Troops"],["Spells"],["Sieges"],["Squads"],["Equipment"]].map(x => x[0]);
 const BAR_CATS = [["build","Buildings"],["heroes","Heroes"],["lab","Lab"],["pets","Pets"],["walls","Walls"],["equip","Equipment"]];
 function render(){
   const app = $("#app"), chips = $("#chips");
@@ -524,7 +539,7 @@ function render(){
     }
     return r.inst.filter(x => x.l < r.M && (!onlyUp || x.up)).sort((a, b) => (b.up - a.up) || (b.l - a.l)).map(x => {
       const step = (r.o.t || [])[x.l] || 0, cost = isE ? 0 : ((r.o.co || [])[x.l] || 0);
-      const lvl = `<div class="lvl mono">${x.l}/${r.M}</div>`;
+      const lvl = `<div class="lvl mono">${x.l ? x.l + "/" + r.M : "new · 0/" + r.M}</div>`;
       if (x.up) {
         const p = step ? Math.max(2, Math.min(100, Math.round(100 * (1 - x.left / step)))) : 50;
         const editing = TEDIT && String(TEDIT.key) === String(key) && TEDIT.lv === x.l;
@@ -560,7 +575,20 @@ function render(){
       let body;
       if (EDIT) body = left.concat(maxed).map(r => editRow(r)).join("");
       else {
-        let ls = left.flatMap(r => lineObjs(r));
+        let ls;
+        if (g === "Defenses") {
+          // one dropdown per defense: name, copies left, next upgrade; open it for each copy
+          S.go = S.go || {};
+          ls = left.map(r => {
+            const rows = lineObjs(r), key = r.o.i || "weapon", left_ = r.inst.filter(x => x.l < r.M).length, ups = r.inst.filter(x => x.up).length;
+            const mn = arr => arr.length ? Math.min(...arr) : 0;
+            const nextT = mn(rows.map(x => x.time).filter(Boolean)), nextC = mn(rows.map(x => x.cost).filter(Boolean));
+            const built = [...new Set(r.inst.filter(x => x.l > 0).map(x => x.l))].sort((a, b) => b - a), nNew = r.inst.filter(x => x.l === 0).length;
+            const open = !!S.go[key];
+            const head = `<button class="dg-h" data-go="${key}"><span class="l"><span class="n">${esc(r.o.n)}</span><span class="lvl mono">${built.length ? (built.length === 1 ? built[0] : built[built.length - 1] + "–" + built[0]) + "/" + r.M : "max " + r.M}${nNew ? ` · ${nNew} new` : ""} · ${left_} to go${ups ? ` · <b class="upc">${ups} upgrading</b>` : ""}</span></span><span class="nx">${nextT ? `<span class="tm">${dur(nextT)}</span>` : ""}</span><span class="car">${open ? "▾" : "▸"}</span></button>`;
+            return { time: nextT, cost: nextC, h: `<div class="dg${open ? " open" : ""}">${head}${open ? `<div class="dg-b">${rows.map(x => x.h).join("")}</div>` : ""}</div>` };
+          });
+        } else ls = left.flatMap(r => lineObjs(r));
         if (F.sort) { const [k, dir] = F.sort.split(":"); ls.sort((a, b) => dir === "up" ? a[k] - b[k] : b[k] - a[k]); }
         body = ls.map(x => x.h).join("") || (FON ? `<div class="more" data-fg="${g}" data-fclear="1">Nothing matches · clear filter</div>` : `<div class="more">Everything here is maxed for TH${v.th}.</div>`);
         if (maxed.length) body += S.hideMax ? `<div class="more" data-showmax="1">${maxed.length} maxed · show</div>` : maxed.map(r => `<div class="row i mx"><div class="l"><div class="n">${esc(r.o.n)}</div><div class="lvl mono">${r.M}/${r.M}</div></div><span class="ok">max</span></div>`).join("");
@@ -579,6 +607,8 @@ function editRow(r){
 
 // events
 document.addEventListener("click", e => {
+  const gob = e.target.closest("[data-go]");
+  if (gob) { S.go = S.go || {}; S.go[gob.dataset.go] = !S.go[gob.dataset.go]; store.set(S); render(); return; }
   const tb = e.target.closest("[data-tab]");
   if (tb) { if (EDIT) finishEdit(); S.tab = tb.dataset.tab; store.set(S); render(); return; }
   const qb = e.target.closest("[data-act]");
