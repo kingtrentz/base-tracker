@@ -416,7 +416,7 @@ function compute(v, now){
     let need = o.k === "e" ? (owned(o.i) ? 1 : 0) : o.c[t];
     for (const [mid, src] of Object.entries(DATA.merges)) if (src[o.i]) need -= src[o.i] * owned(+mid);
     need = Math.max(0, need);
-    const have = (v.inst[o.i] || []).slice().sort((a, b) => b.l - a.l);
+    const have = (v.inst[o.i] || []).map((h, ix) => ({ ...h, ix })).sort((a, b) => b.l - a.l);
     const n = Math.max(need, have.length); if (!n) continue;
     const cat = CAT[o.g], C = cats[cat];
     const row = { o, n, lv: [], inst: [], rem: 0, tot: 0, upn: 0, cost: 0, ore: [0,0,0], up: [], M };
@@ -434,7 +434,7 @@ function compute(v, now){
         row.up.push(l + 1);
         ups.push({ id: o.i, name: o.n, to: l + 1, end: v.ts + h.t, cat });
       }
-      row.inst.push({ l, r, up: !!(h && h.t && l < M), left: h && h.t ? Math.max(0, h.t - age) : 0 });
+      row.inst.push({ l, r, up: !!(h && h.t && l < M), left: h && h.t ? Math.max(0, h.t - age) : 0, ix: h ? h.ix : -1 });
       row.rem += r; row.tot += tot;
     }
     C.rem += row.rem; C.tot += row.tot; C.upn += row.upn;
@@ -575,7 +575,8 @@ function render(){
   // one line per copy
   const lineObjs = (r, onlyUp) => {
     const key = r.o.i || "weapon", name = esc(r.o.n), isW = r.o.g === "Walls", isE = r.o.k === "e";
-    const act = (a, lv, label, cls) => `<button class="q ${cls || ""}" data-act="${a}" data-q="${key}" data-lv="${lv}">${label}</button>`;
+    let curIx = -1;
+    const act = (a, lv, label, cls) => `<button class="q ${cls || ""}" data-act="${a}" data-q="${key}" data-lv="${lv}" data-ix="${curIx}">${label}</button>`;
     const costHtml = c => c ? `<span class="cs"><i class="dot" style="background:var(--${isW ? "g" : r.o.r})"></i>${num(c)}</span>` : "";
     if (isW) {
       if (onlyUp) return [];
@@ -584,11 +585,11 @@ function render(){
         `<div class="row i"><div class="l"><div class="n">${name} <span class="x">×${m[l]}</span></div><div class="lvl mono">${l ? l + "/" + r.M : "not built"}</div></div><div class="nx">${costHtml(r.o.co[l])}</div>${act("q", l, "+10", "s")}${act("q", l, "+1")}</div>` }));
     }
     return r.inst.filter(x => x.l < r.M && (!onlyUp || x.up)).sort((a, b) => (b.up - a.up) || (b.l - a.l)).map(x => {
-      const step = (r.o.t || [])[x.l] || 0, cost = isE ? 0 : ((r.o.co || [])[x.l] || 0);
+      curIx = x.ix; const step = (r.o.t || [])[x.l] || 0, cost = isE ? 0 : ((r.o.co || [])[x.l] || 0);
       const lvl = `<div class="lvl mono">${x.l ? x.l + "/" + r.M : "new · 0/" + r.M}</div>`;
       if (x.up) {
         const p = step ? Math.max(2, Math.min(100, Math.round(100 * (1 - x.left / step)))) : 50;
-        const timeCell = `<button class="nx up tl" data-act="settime" data-q="${key}" data-lv="${x.l}" data-n="${name}" data-left="${Math.round(x.left)}" title="Tap to change the time left"><span data-end="${now + Math.round(x.left)}">${dur(x.left)}</span><small>edit</small></button>`;
+        const timeCell = `<button class="nx up tl" data-act="settime" data-q="${key}" data-lv="${x.l}" data-ix="${x.ix}" data-n="${name}" data-left="${Math.round(x.left)}" title="Tap to change the time left"><span data-end="${now + Math.round(x.left)}">${dur(x.left)}</span><small>edit</small></button>`;
         return { time: x.left, cost: 0, h: `<div class="row i upg"><div class="l"><div class="n">${name}</div>${lvl}<div class="pb"><i style="width:${p}%"></i></div></div>${timeCell}${act("cancel", x.l, "✕", "s") + act("done", x.l, "✓")}</div>` };
       }
       const canTime = !isE && r.o.k !== "e" && step > 0 && key !== "weapon";
@@ -704,11 +705,11 @@ document.addEventListener("click", e => {
   if (tb) { if (EDIT) finishEdit(); S.tab = tb.dataset.tab; store.set(S); render(); return; }
   const qb = e.target.closest("[data-act]");
   if (qb && !EDIT) {
-    const a = qb.dataset.act, key = qb.dataset.q, lv = qb.dataset.lv;
-    if (a === "settime") { openTimeSheet(key, +lv, qb.dataset.n, +qb.dataset.left); return; }
-    if (a === "start") changeCopy(key, lv, (h, row, o) => { const step = (o.t || [])[h.l] || 0; h.t = -1; h.start = step; }, (row, h) => `${row.o.n} started · ${dur(h.start || 0)} (tap the time to change it)`);
-    else if (a === "cancel") changeCopy(key, lv, h => { h.t = 0; }, row => `${row.o.n} upgrade cancelled`, true);
-    else if (a === "done") changeCopy(key, lv, h => { h.l++; h.t = 0; }, (row, h) => `${row.o.n} done · level ${h.l}`, true);
+    const a = qb.dataset.act, key = qb.dataset.q, lv = qb.dataset.lv, ix = qb.dataset.ix;
+    if (a === "settime") { openTimeSheet(key, +lv, qb.dataset.n, +qb.dataset.left, ix); return; }
+    if (a === "start") changeCopy(key, lv, (h, row, o) => { const step = (o.t || [])[h.l] || 0; h.t = -1; h.start = step; }, (row, h) => `${row.o.n} started · ${dur(h.start || 0)} (tap the time to change it)`, false, ix);
+    else if (a === "cancel") changeCopy(key, lv, h => { h.t = 0; }, row => `${row.o.n} upgrade cancelled`, true, ix);
+    else if (a === "done") changeCopy(key, lv, h => { h.l++; h.t = 0; }, (row, h) => `${row.o.n} done · level ${h.l}`, true, ix);
     else quickUp(key, qb.textContent.trim() === "+10" ? 10 : 1, lv);
     return;
   }
@@ -741,8 +742,8 @@ document.addEventListener("click", e => {
 });
 // time-left sheet: separate days / hours / minutes boxes with number keypads
 let TS = null;
-function openTimeSheet(key, lv, name, left){
-  TS = { key, lv };
+function openTimeSheet(key, lv, name, left, ix){
+  TS = { key, lv, ix };
   const d = Math.floor(left / 86400), h = Math.floor(left % 86400 / 3600), m = Math.floor(left % 3600 / 60);
   $("#tsName").textContent = name;
   $("#tsD").value = d || ""; $("#tsH").value = h || ""; $("#tsM").value = m || "";
@@ -755,8 +756,8 @@ function saveTimeSheet(){
   const n = id => Math.max(0, parseInt($(id).value, 10) || 0);
   const secs = n("#tsD") * 86400 + n("#tsH") * 3600 + n("#tsM") * 60;
   if (!secs) { $("#tsErr").textContent = "Put in at least a minute."; return; }
-  const { key, lv } = TS; closeTimeSheet();
-  changeCopy(key, lv, h => { const age = Math.floor(Date.now() / 1000) - view(S.cur).ts; h.t = age + secs; }, row => `${row.o.n} · ${dur(secs)} left`, true);
+  const { key, lv, ix } = TS; closeTimeSheet();
+  changeCopy(key, lv, h => { const age = Math.floor(Date.now() / 1000) - view(S.cur).ts; h.t = age + secs; }, row => `${row.o.n} · ${dur(secs)} left`, true, ix);
 }
 document.addEventListener("click", e => {
   if (e.target.id === "tsSave") { e.preventDefault(); saveTimeSheet(); }
@@ -789,7 +790,7 @@ function bump(key, d){
   EDIT.dirty = true;
 }
 let qTimer = null, qPending = null;
-function changeCopy(key, lvAt, fn, msg, wantUp){
+function changeCopy(key, lvAt, fn, msg, wantUp, ixAt){
   let v; try { v = view(S.cur) } catch(e) { return; }
   if (!v || v.apiOnly) { toast("Paste the village export first."); return; }
   const tag = S.cur, before = best(tag), now = Math.floor(Date.now() / 1000), R0 = compute(v, now);
@@ -799,7 +800,10 @@ function changeCopy(key, lvAt, fn, msg, wantUp){
   while (arr.length < row.n) arr.push({ l: 0, t: 0 });
   const age = now - v.ts;
   const isUp = h => h.t > 0 && h.t - age > 0;
-  const pick = arr.filter(h => h.l === +lvAt && h.l < row.M && (wantUp ? isUp(h) : !isUp(h)))[0]; if (!pick) return;
+  // the exact copy that was tapped; fall back to any copy at that level in the same state
+  const ok = h => h && h.l === +lvAt && h.l < row.M && (wantUp ? isUp(h) : !isUp(h));
+  const ixn = ixAt === undefined || ixAt === "" ? -1 : +ixAt;
+  const pick = (ixn >= 0 && ok(arr[ixn])) ? arr[ixn] : arr.filter(ok)[0]; if (!pick) return;
   fn(pick, row, o);
   if (pick.t === -1) { pick.t = age + (pick.start || 0); if (!pick.start) { pick.l++; pick.t = 0; } }
   const raw = serialize(v);
