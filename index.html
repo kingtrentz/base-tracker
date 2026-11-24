@@ -185,6 +185,9 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .row.i .ed b{min-width:24px;text-align:center;font-size:14px}
 .row.i .ed button{min-width:38px;padding:7px 0;border:0;border-radius:10px;background:var(--soft);font-weight:700;font-size:16px}
 .row.i .ed button:disabled{opacity:.3}
+.subh{display:flex;justify-content:space-between;align-items:center;margin:12px 10px 4px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--mut)}
+.subh:first-of-type{margin-top:4px}
+.subh span{font-weight:500;letter-spacing:0}
 /* softer look */
 :root{--soft:color-mix(in srgb,var(--tx) 6%,transparent);--hair:color-mix(in srgb,var(--line) 55%,transparent);--accs:color-mix(in srgb,var(--acc) 14%,transparent)}
 @media (prefers-color-scheme:light){:root{--card:#fff;--bg:#f2f3f5}}
@@ -497,6 +500,7 @@ function parseDur(str){
 }
 // price sort: 1 dark elixir counted like 100 gold/elixir so dark upgrades don't all look cheapest
 const DARK_W = 100;
+const HERO_ORDER = ["Barbarian King", "Archer Queen", "Minion Prince", "Grand Warden", "Royal Champion", "Dragon Duke"];
 const DROPDOWN_TABS = { Defenses: 1, Collectors: 1, Storages: 1 };
 const TABS = [["Defenses"],["Traps"],["Army"],["Collectors"],["Storages"],["Guardians"],["Walls"],["Heroes"],["Pets"],["Troops"],["Spells"],["Sieges"],["Squads"],["Equipment"]].map(x => x[0]);
 const BAR_CATS = [["build","Buildings"],["heroes","Heroes"],["lab","Lab"],["pets","Pets"],["walls","Walls"],["equip","Equipment"]];
@@ -612,8 +616,14 @@ function render(){
             const head = `<button class="dg-h" data-go="${key}"><span class="l"><span class="n">${esc(r.o.n)}</span><span class="lvl mono">${built.length ? (built.length === 1 ? built[0] : built[built.length - 1] + "–" + built[0]) + "/" + r.M : "max " + r.M}${nNew ? ` · ${nNew} new` : ""} · ${left_} to go${ups ? ` · <b class="upc">${ups} upgrading</b>` : ""}</span></span><span class="nx">${nextT ? `<span class="tm">${dur(nextT)}</span>` : ""}</span><span class="car">${open ? "▾" : "▸"}</span></button>`;
             return { time: nextT, cost: nextC, h: `<div class="dg${open ? " open" : ""}">${head}${open ? `<div class="dg-b">${rows.map(x => x.h).join("")}</div>` : ""}</div>` };
           });
-        } else ls = left.flatMap(r => lineObjs(r));
+        } else ls = left.flatMap(r => lineObjs(r).map(x => ({ ...x, hero: r.o.h })));
         if (F.sort) { const [k, dir] = F.sort.split(":"); ls.sort((a, b) => dir === "up" ? a[k] - b[k] : b[k] - a[k]); }
+        if (g === "Equipment") {
+          // grouped under each hero, in Hero Hall order
+          const by = {}; ls.forEach(x => (by[x.hero || "Other"] = by[x.hero || "Other"] || []).push(x));
+          const order = HERO_ORDER.filter(n => by[n]).concat(Object.keys(by).filter(n => !HERO_ORDER.includes(n)));
+          ls = order.flatMap(n => [{ h: `<div class="subh">${esc(n)}<span>${by[n].length}</span></div>` }].concat(by[n]));
+        }
         body = ls.map(x => x.h).join("") || (FON ? `<div class="more" data-fg="${g}" data-fclear="1">Nothing matches · clear filter</div>` : `<div class="more">Everything here is maxed for TH${v.th}.</div>`);
         if (maxed.length) body += S.hideMax ? `<div class="more" data-showmax="1">${maxed.length} maxed · show</div>` : maxed.map(r => `<div class="row i mx"><div class="l"><div class="n">${esc(r.o.n)}</div><div class="lvl mono">${r.M}/${r.M}</div></div><span class="ok">max</span></div>`).join("");
       }
