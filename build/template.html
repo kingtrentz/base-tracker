@@ -178,6 +178,13 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .sheet-a{display:flex;gap:10px;margin-top:16px}
 .sheet-a button{flex:1;padding:13px;border-radius:14px;font-size:15px;font-weight:600;border:0;background:var(--soft)}
 .sheet-a button.pri{background:var(--acc);color:#0b130c}
+.editbtn{display:block;width:calc(100% - 20px);margin:10px auto 4px;padding:10px;border:0;border-radius:12px;background:var(--soft);color:var(--mut);font-size:13px;font-weight:600}
+.editbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 10px 4px;padding:8px 8px 8px 12px;border-radius:14px;background:var(--accs);font-size:13px;color:var(--acc);position:sticky;bottom:10px}
+.editbar button{border:0;padding:10px 14px;border-radius:12px}
+.row.i .ed{display:flex;align-items:center;gap:8px;flex:none}
+.row.i .ed b{min-width:24px;text-align:center;font-size:14px}
+.row.i .ed button{min-width:38px;padding:7px 0;border:0;border-radius:10px;background:var(--soft);font-weight:700;font-size:16px}
+.row.i .ed button:disabled{opacity:.3}
 /* softer look */
 :root{--soft:color-mix(in srgb,var(--tx) 6%,transparent);--hair:color-mix(in srgb,var(--line) 55%,transparent);--accs:color-mix(in srgb,var(--acc) 14%,transparent)}
 @media (prefers-color-scheme:light){:root{--card:#fff;--bg:#f2f3f5}}
@@ -570,7 +577,7 @@ function render(){
   };
 
   if (EDIT) {
-    h += `<div class="note fixbar"><span>Fixing levels: use − and + to correct anything, then save.</span><button class="pri" id="btnDone">Save</button></div>`;
+    h += `<div class="note fixbar"><span>Editing levels for this tab. Save at the bottom.</span></div>`;
   }
   if (S.tab === "__up") {
     const ls = tabInfo.flatMap(t => t.rs.flatMap(r => lineObjs(r, true))).sort((a, b) => a.time - b.time);
@@ -609,16 +616,27 @@ function render(){
         body = ls.map(x => x.h).join("") || (FON ? `<div class="more" data-fg="${g}" data-fclear="1">Nothing matches · clear filter</div>` : `<div class="more">Everything here is maxed for TH${v.th}.</div>`);
         if (maxed.length) body += S.hideMax ? `<div class="more" data-showmax="1">${maxed.length} maxed · show</div>` : maxed.map(r => `<div class="row i mx"><div class="l"><div class="n">${esc(r.o.n)}</div><div class="lvl mono">${r.M}/${r.M}</div></div><span class="ok">max</span></div>`).join("");
       }
-      h += `<div class="sec open"><div class="head"><span class="nm">${g}</span><span class="pc mono">${p}%</span></div><div class="body">${remain}${!EDIT && T.rem > 0 ? fbar(g, rs) : ""}${body}</div></div>`;
+      const editBtn = EDIT ? `<div class="editbar"><span>Set each one with − and +</span><button class="pri" id="btnDone">Save levels</button></div>` : `<button class="editbtn" id="btnEditLv">Edit levels</button>`;
+      h += `<div class="sec open"><div class="head"><span class="nm">${g}</span><span class="pc mono">${p}%</span></div><div class="body">${remain}${!EDIT && T.rem > 0 ? fbar(g, rs) : ""}${body}${editBtn}</div></div>`;
     }
   }
   h += `<label class="toggle"><input type="checkbox" id="hideMax"${S.hideMax ? " checked" : ""}> Hide maxed items</label>`;
   app.innerHTML = h;
 }
 function editRow(r){
-  const isW = r.o.g === "Walls", done = r.rem <= 0, key = r.o.i || "weapon";
-  const ed = `<div class="ed">${r.lv.some(l => l > 0) ? `<button data-ed="${key}" data-d="-1">−</button>` : ""}${!done ? `<button data-ed="${key}" data-d="1">+</button>${isW ? `<button data-ed="${key}" data-d="10">+10</button>` : ""}` : ""}</div>`;
-  return `<div class="row"><div class="l"><div class="n">${esc(r.o.n)}</div><div class="lv">${lvSummary(r)}</div></div>${ed}</div>`;
+  const isW = r.o.g === "Walls", key = r.o.i || "weapon";
+  if (isW || key === "weapon") {
+    const done = r.rem <= 0;
+    const ed = `<div class="ed">${r.lv.some(l => l > 0) ? `<button data-ed="${key}" data-d="-1">−</button>` : ""}${!done ? `<button data-ed="${key}" data-d="1">+</button>${isW ? `<button data-ed="${key}" data-d="10">+10</button>` : ""}` : ""}</div>`;
+    return `<div class="row i"><div class="l"><div class="n">${esc(r.o.n)}</div><div class="lvl">${lvSummary(r)}</div></div>${ed}</div>`;
+  }
+  // one row per copy, each with its own − / +
+  const arr = EDIT.v.inst[r.o.i] = EDIT.v.inst[r.o.i] || [];
+  while (arr.length < r.n) arr.push({ l: 0, t: 0 });
+  const order = arr.map((h, i) => i).sort((a, b) => arr[b].l - arr[a].l);
+  return order.map((i, k) => { const h = arr[i], l = Math.min(h.l, r.M);
+    return `<div class="row i"><div class="l"><div class="n">${esc(r.o.n)}${r.n > 1 ? ` <span class="x">#${k + 1}</span>` : ""}</div><div class="lvl mono">${l ? l + "/" + r.M : "not built · 0/" + r.M}</div></div><div class="ed"><button data-edc="${r.o.i}" data-i="${i}" data-d="-1"${l <= 0 ? " disabled" : ""}>−</button><b class="mono">${l}</b><button data-edc="${r.o.i}" data-i="${i}" data-d="1"${l >= r.M ? " disabled" : ""}>+</button></div></div>`;
+  }).join("");
 }
 
 // events
@@ -638,6 +656,9 @@ document.addEventListener("click", e => {
     return;
   }
   if (e.target.closest("#btnDone")) { finishEdit(); return; }
+  if (e.target.id === "btnEditLv") { startEdit(); return; }
+  const ec = e.target.closest("[data-edc]");
+  if (ec && EDIT) { const arr = EDIT.v.inst[+ec.dataset.edc] || [], h = arr[+ec.dataset.i]; if (h) { h.l = Math.max(0, h.l + +ec.dataset.d); h.t = 0; EDIT.dirty = true; } render(); return; }
   const eb = e.target.closest("[data-ed]");
   if (eb && EDIT) { bump(eb.dataset.ed, +eb.dataset.d); render(); return; }
   const chip = e.target.closest(".chip");
