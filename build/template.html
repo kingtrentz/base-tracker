@@ -120,8 +120,11 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .cb .k{color:var(--mut)}
 .cb .bar{margin:0;height:6px}
 .cb .v{text-align:right;font-size:11px}
-.tabs{display:grid;gap:5px;margin:4px 0 12px}
-.tab{min-width:0;border:0;border-radius:12px;padding:6px 2px 5px;font-size:11px;font-weight:600;line-height:1.2;background:var(--card);box-shadow:0 0 0 1px var(--hair);color:var(--tx);display:flex;flex-direction:column;align-items:center;gap:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs{display:flex;flex-direction:column;gap:5px;margin:4px 0 12px}
+.tabs .tr{display:flex;gap:4px}
+.tabs .tr .tab{flex:1 1 auto}
+@media (max-width:380px){.tab{font-size:10px;padding:6px 2px 5px}}
+.tab{min-width:0;border:0;border-radius:12px;padding:6px 3px 5px;font-size:11px;letter-spacing:-.01em;font-weight:600;line-height:1.2;background:var(--card);box-shadow:0 0 0 1px var(--hair);color:var(--tx);display:flex;flex-direction:column;align-items:center;gap:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tab span{font-size:10px;font-weight:700;color:var(--mut);height:12px}
 .tab.done span{color:var(--acc)}
 .tab.done{color:var(--acc)}
@@ -498,10 +501,15 @@ function render(){
   const anyUp = tabInfo.some(t => t.up);
   if (!S.tab || (S.tab === "__up" && !anyUp) || (S.tab !== "__up" && !tabInfo.find(t => t.g === S.tab))) S.tab = (tabInfo.find(t => !t.done) || tabInfo[0] || {}).g;
   // two even rows of tabs, no scrolling
-  const SHORT = { Defenses: "Defense", Resources: "Res", Guardians: "Guards", Equipment: "Gear" };
+  const SHORT = {};
   const nTabs = tabInfo.length + (anyUp ? 1 : 0);
-  h += `<div class="tabs" style="grid-template-columns:repeat(${Math.ceil(nTabs / 2)},minmax(0,1fr))">` + (anyUp ? `<button class="tab up${S.tab === "__up" ? " on" : ""}" data-tab="__up">Active<span>↑${tabInfo.reduce((s, t) => s + t.up, 0)}</span></button>` : "") +
-    tabInfo.map(t => `<button class="tab${t.done ? " done" : t.up ? " up" : ""}${S.tab === t.g ? " on" : ""}" data-tab="${t.g}">${SHORT[t.g] || t.g}<span>${t.done ? "✓" : t.up ? "↑" + t.up : "&nbsp;"}</span></button>`).join("") + `</div>`;
+  const tabBtns = (anyUp ? [`<button class="tab up${S.tab === "__up" ? " on" : ""}" data-tab="__up">Active<span>↑${tabInfo.reduce((s, t) => s + t.up, 0)}</span></button>`] : []).concat(
+    tabInfo.map(t => `<button class="tab${t.done ? " done" : t.up ? " up" : ""}${S.tab === t.g ? " on" : ""}" data-tab="${t.g}">${SHORT[t.g] || t.g}<span>${t.done ? "✓" : t.up ? "↑" + t.up : "&nbsp;"}</span></button>`));
+  // split where both rows carry about the same amount of text, so long names get room
+  const wts = tabBtns.map(b => b.replace(/<span>.*?<\/span>/, "").replace(/<[^>]+>/g, "").length + 3);
+  let half = 1, bestD = Infinity, tot = wts.reduce((a, b) => a + b, 0);
+  for (let k = 1, acc = 0; k < wts.length; k++) { acc += wts[k - 1]; const d = Math.abs(tot - 2 * acc); if (d < bestD) { bestD = d; half = k; } }
+  h += `<div class="tabs"><div class="tr">${tabBtns.slice(0, half).join("")}</div><div class="tr">${tabBtns.slice(half).join("")}</div></div>`;
 
   // one line per copy
   const lineObjs = (r, onlyUp) => {

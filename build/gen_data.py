@@ -30,7 +30,7 @@ RES = {"Gold": "g", "Elixir": "e", "Dark Elixir": "d"}
 SKIP_BUILD = {1000001, 1000097, 1000105}
 SKIP_NAMES = {"Sour Elixir Cauldron"}
 GROUP_BY_TYPE = {"Army": "Army", "Resource": "Resources", "Defense": "Defenses", "Wall": "Walls",
-                 "Worker": "Army", "Worker2": "Army", "Helper": "Army"}
+                 "Worker": "Defenses", "Worker2": "Army", "Helper": "Army"}
 # Kept for counting (builders) but their upgrades are not tracked.
 NO_UPGRADES = {"Worker2", "Helper"}
 
