@@ -120,10 +120,10 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .cb .k{color:var(--mut)}
 .cb .bar{margin:0;height:6px}
 .cb .v{text-align:right;font-size:11px}
-.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:4px -14px 12px;padding:2px 14px}
-.tabs::-webkit-scrollbar{display:none}
-.tab{flex:none;border:0;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:500;background:var(--card);box-shadow:0 0 0 1px var(--hair);color:var(--tx)}
-.tab span{font-size:11px;font-weight:700}
+.tabs{display:grid;gap:5px;margin:4px 0 12px}
+.tab{min-width:0;border:0;border-radius:12px;padding:6px 2px 5px;font-size:11px;font-weight:600;line-height:1.2;background:var(--card);box-shadow:0 0 0 1px var(--hair);color:var(--tx);display:flex;flex-direction:column;align-items:center;gap:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tab span{font-size:10px;font-weight:700;color:var(--mut);height:12px}
+.tab.done span{color:var(--acc)}
 .tab.done{color:var(--acc)}
 .tab.up span{color:var(--warn)}
 .tab.on{background:var(--tx);color:var(--bg);box-shadow:none}
@@ -485,8 +485,11 @@ function render(){
   }).filter(Boolean);
   const anyUp = tabInfo.some(t => t.up);
   if (!S.tab || (S.tab === "__up" && !anyUp) || (S.tab !== "__up" && !tabInfo.find(t => t.g === S.tab))) S.tab = (tabInfo.find(t => !t.done) || tabInfo[0] || {}).g;
-  h += `<div class="tabs">` + (anyUp ? `<button class="tab up${S.tab === "__up" ? " on" : ""}" data-tab="__up">Upgrading <span>${tabInfo.reduce((s, t) => s + t.up, 0)}</span></button>` : "") +
-    tabInfo.map(t => `<button class="tab${t.done ? " done" : t.up ? " up" : ""}${S.tab === t.g ? " on" : ""}" data-tab="${t.g}">${t.g}${t.done ? " ✓" : t.up ? ` <span>↑${t.up}</span>` : ""}</button>`).join("") + `</div>`;
+  // two even rows of tabs, no scrolling
+  const SHORT = { Defenses: "Defense", Resources: "Res", Guardians: "Guards", Equipment: "Gear" };
+  const nTabs = tabInfo.length + (anyUp ? 1 : 0);
+  h += `<div class="tabs" style="grid-template-columns:repeat(${Math.ceil(nTabs / 2)},minmax(0,1fr))">` + (anyUp ? `<button class="tab up${S.tab === "__up" ? " on" : ""}" data-tab="__up">Active<span>↑${tabInfo.reduce((s, t) => s + t.up, 0)}</span></button>` : "") +
+    tabInfo.map(t => `<button class="tab${t.done ? " done" : t.up ? " up" : ""}${S.tab === t.g ? " on" : ""}" data-tab="${t.g}">${SHORT[t.g] || t.g}<span>${t.done ? "✓" : t.up ? "↑" + t.up : "&nbsp;"}</span></button>`).join("") + `</div>`;
 
   // one line per copy
   const lineObjs = (r, onlyUp) => {
