@@ -231,7 +231,7 @@ button{border-color:var(--hair)}
 <div class="wrap">
   <header>
     <h1>base<span>.</span>tracker</h1>
-    <div class="hdr-btns"><button id="btnSync">Sync</button><button id="btnImport" title="Paste by hand, pick a file, or add a token" aria-label="More">⋯</button><button id="btnPaste" class="pri" title="Read the export you copied in game">Paste</button></div>
+    <div class="hdr-btns"><button id="btnImport" title="Paste by hand, pick a file, or add a token" aria-label="More">⋯</button><button id="btnPaste" class="pri" title="Read the export you copied in game">Paste</button></div>
   </header>
 
   <div id="panel" class="card panel">
@@ -859,12 +859,13 @@ function finishEdit(){
   render();
 }
 $("#btnEdit").onclick = () => { panel.classList.remove("show"); if (!EDIT) startEdit(); };
-$("#btnSync").onclick = () => {
-  if (EDIT) { toast("Save your fixes first"); return; }
-  $("#btnSync").textContent = "…";
-  loadRemote().then(() => { $("#btnSync").textContent = "Sync"; render(); const a = API[S.cur];
-    toast(a ? "Synced. Levels from the game " + (Math.floor(Date.now()/1000) - a.ts < 3600 ? Math.max(1, Math.round((Date.now()/1000 - a.ts)/60)) + "m" : dur(Date.now()/1000 - a.ts)) + " ago" : "Synced"); });
-};
+// keeps itself fresh: re-reads the saved data every 2 minutes and whenever the page comes back on screen
+function autoRefresh(){
+  if (EDIT || TS || document.hidden) return;
+  loadRemote().then(() => { if (!EDIT && !TS) render(); });
+}
+setInterval(autoRefresh, 120000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) autoRefresh(); });
 $("#btnTok").onclick = () => {
   const t = $("#tok").value.trim(); if (!t) return;
   fetch("https://api.github.com/repos/kingtrentz/base-tracker", { headers: { Authorization: "Bearer " + t } }).then(r => r.json()).then(j => {
