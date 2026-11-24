@@ -600,8 +600,11 @@ function render(){
 
   }
   if (S.tab === "__up") {
-    const ls = tabInfo.flatMap(t => t.rs.flatMap(r => lineObjs(r, true))).sort((a, b) => a.time - b.time);
-    h += `<div class="sec open"><div class="head"><span class="nm">Upgrading</span><span class="pc">${ls.length}</span></div><div class="body">${ls.map(x => x.h).join("")}</div></div>`;
+    // split by who's doing the work: builders, lab, pet house
+    const all = tabInfo.flatMap(t => t.rs.flatMap(r => lineObjs(r, true).map(x => ({ ...x, k: r.o.k }))));
+    const groups = [["Builders", x => x.k === "b" || x.k === "h", `${busy.b}/${R.builders || "?"} busy`], ["Lab", x => x.k === "l", ""], ["Pet House", x => x.k === "p", ""]];
+    const parts = groups.map(([label, fn, extra]) => { const ls = all.filter(fn).sort((a, b) => a.time - b.time); return ls.length ? `<div class="subh">${label}<span>${extra || ls.length}</span></div>` + ls.map(x => x.h).join("") : ""; }).join("");
+    h += `<div class="sec open"><div class="head"><span class="nm">Upgrading</span><span class="pc">${all.length}</span></div><div class="body">${parts}</div></div>`;
   } else {
     const T = tabInfo.find(t => t.g === S.tab);
     if (T) {
