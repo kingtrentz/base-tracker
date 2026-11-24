@@ -468,7 +468,7 @@ function render(){
 
   let h = `<div class="card top"><div class="hero"><div class="ring">${ringSVG(overall)}<b>${Math.floor(overall)}%</b></div>
     <div class="meta"><div class="th">Town Hall ${v.th}</div><div class="sub">${esc(NAME[S.cur])} · updated ${ago(now - Math.max(v.ts || 0, v.apiTs || 0))} ago</div>
-    <div class="pills">${pill("Builders", busy.b + "/" + (R.builders || "?"), busy.b > 0)}${pill("Lab", busy.l != null ? dur(busy.l) : "free", busy.l != null)}${pill("Pets", busy.p != null ? dur(busy.p) : "free", busy.p != null)}</div></div></div>
+    <div class="pills">${pill("Builders", Math.max(0, (R.builders || 0) - busy.b) + "/" + (R.builders || "?") + " free", busy.b > 0)}${pill("Lab", busy.l != null ? dur(busy.l) : "free", busy.l != null)}${pill("Pets", busy.p != null ? dur(busy.p) : "free", busy.p != null)}</div></div></div>
     <div class="bars">${BAR_CATS.map(([k, label]) => {
       if (AO && (k === "build" || k === "walls")) return "";
       if (!c[k].tot) return "";
