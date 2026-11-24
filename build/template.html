@@ -210,6 +210,7 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .dg.eq .dg-b .row.i .lvl{font-size:11px;color:var(--mut);margin-top:1px}
 .wallhint{font-size:12px;color:var(--mut);padding:6px 12px 8px}
 .ed .wn{width:64px;text-align:center;font-size:14px;font-weight:700;padding:7px 4px;border-radius:10px;border:0;background:var(--soft);color:var(--tx)}
+.chip.add{color:var(--mut);background:transparent;box-shadow:0 0 0 1px var(--hair) inset}
 /* softer look */
 :root{--soft:color-mix(in srgb,var(--tx) 6%,transparent);--hair:color-mix(in srgb,var(--line) 55%,transparent);--accs:color-mix(in srgb,var(--acc) 14%,transparent)}
 
@@ -253,11 +254,8 @@ button{border-color:var(--hair)}
   </header>
 
   <div id="panel" class="card panel">
-    <ol class="steps">
-      <li>In Clash: Settings → More Settings → Data Export → Copy</li>
-      <li>Paste it below (or pick the saved file)</li>
-    </ol>
-    <textarea id="raw" placeholder="Paste the KingTrents or Khnum-Atum~ra export"></textarea>
+    <div class="sub" style="margin-bottom:8px"><b>Add your account</b>: copy your village export in game (Settings → More Settings → Data Export → Copy) and paste it here. It's saved on this phone only.</div>
+    <textarea id="raw" placeholder="Paste your village export"></textarea>
     <div class="actions">
       <button class="pri" id="btnSave">Save</button>
       <label><button type="button" id="btnFile">Pick file</button><input type="file" id="file" accept=".json,.txt,application/json,text/plain" hidden></label>
@@ -265,7 +263,10 @@ button{border-color:var(--hair)}
       <button id="btnCancel">Cancel</button>
     </div>
     <div class="err" id="err"></div>
-    <div class="sub" style="margin-top:14px">GitHub token (saves edits and imports to every device). Paste once per device.</div>
+    <div class="sub" style="margin-top:14px">No export handy? Add your player tag for now (heroes, lab and pets fill in if you're in Den of Thieves).</div>
+    <div class="actions" style="margin-top:6px"><input type="text" id="addTag" autocomplete="off" placeholder="#ABC123" style="flex:1;min-width:0"><button id="btnAddTag">Add tag</button></div>
+    <div class="actions" id="rmWrap" style="margin-top:10px"><button id="btnRemove" type="button">Remove this account from this phone</button></div>
+    <div class="sub" style="margin-top:18px;opacity:.7">Site owner only: GitHub token</div>
     <div class="actions" style="margin-top:6px"><input type="text" id="tok" autocomplete="off" placeholder="github_pat_…" style="flex:1;min-width:0"><button id="btnTok">Save token</button></div>
     <div class="sub" id="tokState" style="margin-top:6px"></div>
   </div>
@@ -298,11 +299,26 @@ const store = {
   set(s){ try { localStorage.setItem(KEY, JSON.stringify(s)) } catch(e){} }
 };
 let S = store.get(); S.acc = S.acc || {}; S.open = S.open || {}; if (S.hideMax === undefined) S.hideMax = true;
-const ACCOUNTS = [{ tag: "#R0RRV0VQ", name: "KingTrents" }, { tag: "#QUV9Q8Q2", name: "Khnum-Atum~ra" }];
-const NAME = {}; ACCOUNTS.forEach(a => NAME[a.tag] = a.name);
+// Trent's two accounts are the only ones ever saved to the repo. Anyone else's account lives on their own phone only.
+const MINE = { "#R0RRV0VQ": "KingTrents", "#QUV9Q8Q2": "Khnum-Atum~ra" };
+S.extra = Array.isArray(S.extra) ? S.extra.filter(a => a && a.tag && !MINE[a.tag]) : [];
+let ACCOUNTS = [], NAME = {};
+function syncAccounts(){
+  // on someone else's phone their own accounts come first; Trent's stay available after them
+  const mine = Object.entries(MINE).map(([tag, name]) => ({ tag, name, mine: true }));
+  ACCOUNTS = S.extra.map(a => ({ tag: a.tag, name: a.name || a.tag })).concat(mine);
+  NAME = {}; ACCOUNTS.forEach(a => NAME[a.tag] = a.name);
+}
+syncAccounts();
 for (const t of Object.keys(S.acc)) if (!NAME[t]) delete S.acc[t];
 if (!NAME[S.cur]) S.cur = ACCOUNTS[0].tag;
-const REMOTE = {}, API = {};
+const normTag = t => { t = String(t || "").toUpperCase().replace(/[^0-9A-Z]/g, "").replace(/O/g, "0"); return t ? "#" + t : ""; };
+function addAccount(tag, name){
+  tag = normTag(tag); if (!tag || tag.length < 4) return null;
+  if (!MINE[tag] && !S.extra.find(a => a.tag === tag)) S.extra.push({ tag, name: name || (CLAN[tag] && CLAN[tag].name) || tag });
+  syncAccounts(); S.cur = tag; store.set(S); return tag;
+}
+const REMOTE = {}, API = {}, CLAN = {};
 const norm = x => String(x).toLowerCase().replace(/[^a-z0-9]/g, "");
 const API_GROUPS = { Heroes: 1, Pets: 1, Troops: 1, Spells: 1, Sieges: 1, Squads: 1, Equipment: 1 };
 const BYNAME = {}; DATA.items.forEach(o => { if (API_GROUPS[o.g]) BYNAME[norm(o.n)] = o.i; });
@@ -357,10 +373,15 @@ function putFile(path, text, msg){
   }).then(r => { if (!r.ok) throw new Error("GitHub said " + r.status); return r.json(); }).then(j => { SHA[path] = j.content.sha; });
 }
 function loadRemote(){
-  return Promise.all(ACCOUNTS.map(a => getFile("data/" + a.tag.slice(1) + ".json")
+  // everyone else in the clan: one read-only file of hero/lab/pet levels from Trent's PC
+  const clan = fetch("data/clan_levels.json?t=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.json() : {}).then(j => {
+    Object.assign(CLAN, j || {});
+    S.extra.forEach(a => { const c = CLAN[a.tag]; if (c) { API[a.tag] = c; if (c.name && a.name !== c.name) { a.name = c.name; syncAccounts(); store.set(S); } } });
+  }).catch(() => {});
+  return Promise.all([clan].concat(Object.keys(MINE).map(t => ({ tag: t })).map(a => getFile("data/" + a.tag.slice(1) + ".json")
     .then(t => { if (t && tsOf(t)) REMOTE[a.tag] = t.trim(); }).catch(() => {})
     .then(() => getFile("data/api_" + a.tag.slice(1) + ".json"))
-    .then(t => { if (t) { const j = JSON.parse(t); if (j && j.levels) API[a.tag] = j; } }).catch(() => {})));
+    .then(t => { if (t) { const j = JSON.parse(t); if (j && j.levels) API[a.tag] = j; } }).catch(() => {}))));
 }
 let EDIT = null;
 function toast(m){ const d = document.createElement("div"); d.className = "toast"; d.textContent = m; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); }
@@ -373,6 +394,7 @@ function serialize(v){
 }
 function saveExport(tag, raw, msg){
   S.acc[tag] = { raw, saved: Date.now() }; store.set(S); REMOTE[tag] = raw;
+  if (!MINE[tag]) { toast("Saved on this phone"); return; }
   if (!tok()) { toast("Saved on this device. Add a token in Import to save to every device."); return; }
   putFile("data/" + tag.slice(1) + ".json", raw, msg).then(() => toast("Saved to every device")).catch(e => toast("Saved here only (" + e.message + ")"));
 }
@@ -530,7 +552,7 @@ const BAR_CATS = [["build","Buildings"],["heroes","Heroes"],["lab","Lab"],["pets
 function render(){
   const app = $("#app"), chips = $("#chips");
   const gp = GP_STEPS.includes(S.gp) ? S.gp : 0;
-  chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("") +
+  chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("") + `<button class="chip add" id="btnAdd">+ Add</button>` +
     `<div class="gp" title="Gold Pass builder and research boost"><span>Gold Pass</span>${GP_STEPS.map(x => `<button class="${x === gp ? "on" : ""}" data-gp="${x}">${x ? x + "%" : "off"}</button>`).join("")}</div>`;
   let v = null;
   try { v = view(S.cur) } catch(e) { app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return; }
@@ -730,6 +752,7 @@ document.addEventListener("click", e => {
   if (ec && EDIT) { const arr = EDIT.v.inst[+ec.dataset.edc] || [], h = arr[+ec.dataset.i]; if (h) { h.l = Math.max(0, h.l + +ec.dataset.d); h.t = 0; EDIT.dirty = true; } render(); return; }
   const eb = e.target.closest("[data-ed]");
   if (eb && EDIT) { bump(eb.dataset.ed, +eb.dataset.d); render(); return; }
+  if (e.target.id === "btnAdd") { if (EDIT) finishEdit(); openPanel(); return; }
   const chip = e.target.closest(".chip");
   if (chip) { if (EDIT) finishEdit(); S.cur = chip.dataset.tag; store.set(S); render(); return; }
   const fb = e.target.closest("[data-ft],[data-fr],[data-st],[data-fclear]");
@@ -861,6 +884,7 @@ function quickUp(key, d, lvAt){
   });
 }
 function queueSave(tag, msg){
+  if (!MINE[tag]) return; // other people's accounts never leave their phone
   if (!tok()) { if (!S.warnedTok) { S.warnedTok = 1; store.set(S); toast("Saved on this device. Add your token in ⋯ to sync every device."); } return; }
   qPending = { tag, msg }; clearTimeout(qTimer);
   qTimer = setTimeout(() => { const p = qPending; qPending = null; const raw = S.acc[p.tag] && S.acc[p.tag].raw; if (!raw) return;
@@ -910,14 +934,25 @@ $("#btnTok").onclick = () => {
 };
 function tokState(){ $("#tokState").textContent = tok() ? "Token saved on this device." : "No token on this device yet."; }
 const panel = $("#panel");
-function openPanel(){ panel.classList.add("show"); $("#err").textContent = ""; $("#raw").value = ""; tokState(); }
+function openPanel(){ $("#rmWrap").style.display = MINE[S.cur] ? "none" : ""; panel.classList.add("show"); $("#err").textContent = ""; $("#raw").value = ""; tokState(); }
 $("#btnImport").onclick = () => panel.classList.contains("show") ? panel.classList.remove("show") : openPanel();
 $("#btnCancel").onclick = () => panel.classList.remove("show");
+$("#btnAddTag").onclick = () => {
+  const t = addAccount($("#addTag").value); if (!t) { $("#err").textContent = "That doesn't look like a player tag."; return; }
+  $("#addTag").value = ""; panel.classList.remove("show");
+  if (CLAN[t]) API[t] = CLAN[t];
+  render(); toast(CLAN[t] ? "Added " + CLAN[t].name : "Added. Paste your export to fill in buildings.");
+};
+$("#btnRemove").onclick = () => {
+  const t = S.cur; if (MINE[t]) return;
+  S.extra = S.extra.filter(a => a.tag !== t); delete S.acc[t]; delete REMOTE[t]; delete API[t];
+  syncAccounts(); S.cur = ACCOUNTS[0].tag; store.set(S); panel.classList.remove("show"); render(); toast("Removed from this phone");
+};
 $("#btnFile").onclick = () => $("#file").click();
 $("#file").onchange = e => { const f = e.target.files[0]; if (!f) return; f.text().then(t => { $("#raw").value = t; }); };
 function importRaw(raw){
   const v = parse(raw);
-  if (!NAME[v.tag]) throw new Error("That export is for " + v.tag + ". This tracker only takes KingTrents and Khnum-Atum~ra.");
+  if (!NAME[v.tag]) addAccount(v.tag);
   S.cur = v.tag; panel.classList.remove("show");
   saveExport(v.tag, raw.trim(), "Import " + NAME[v.tag] + " export"); render();
 }
