@@ -82,6 +82,12 @@ input[type=text]{width:100%;background:var(--bg);color:var(--tx);border:1px soli
 .hdr-btns button{padding:8px 10px}
 button.on{border-color:var(--acc);color:var(--acc)}
 .ed{display:flex;gap:6px;flex:none}
+.q{flex:none;padding:7px 10px;min-width:42px;font-weight:700;border-radius:9px;color:var(--acc);border-color:var(--acc)}
+.q:active{background:var(--acc);color:var(--bg)}
+.toast{display:flex;align-items:center;gap:12px;white-space:nowrap;max-width:92vw}
+.toast span{overflow:hidden;text-overflow:ellipsis}
+.toast button{padding:4px 10px;font-weight:700;color:var(--acc);border-color:var(--acc)}
+.fixbar{display:flex;align-items:center;gap:10px;justify-content:space-between}
 .ed button{padding:6px 10px;min-width:38px;font-weight:700;border-radius:8px}
 .note{font-size:13px;color:var(--mut);margin:-4px 2px 10px;line-height:1.5}
 .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:9;max-width:90vw}
@@ -93,7 +99,7 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 <div class="wrap">
   <header>
     <h1>base<span>.</span>tracker</h1>
-    <div class="hdr-btns"><button id="btnSync">Sync</button><button id="btnEdit">Edit</button><button id="btnImport" title="Paste by hand, pick a file, or add a token" aria-label="More">⋯</button><button id="btnPaste" class="pri" title="Read the export you copied in game">Paste</button></div>
+    <div class="hdr-btns"><button id="btnSync">Sync</button><button id="btnImport" title="Paste by hand, pick a file, or add a token" aria-label="More">⋯</button><button id="btnPaste" class="pri" title="Read the export you copied in game">Paste</button></div>
   </header>
 
   <div id="panel" class="card panel">
@@ -105,6 +111,7 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
     <div class="actions">
       <button class="pri" id="btnSave">Save</button>
       <label><button type="button" id="btnFile">Pick file</button><input type="file" id="file" accept=".json,.txt,application/json,text/plain" hidden></label>
+      <button id="btnEdit" type="button">Fix levels</button>
       <button id="btnCancel">Cancel</button>
     </div>
     <div class="err" id="err"></div>
@@ -153,7 +160,7 @@ function view(tag){
 function applyApi(v, a){
   if (!a || !a.levels) return v;
   if (!v) v = { tag: a.tag, ts: a.ts, th: a.th, weapon: 0, inst: {}, apiOnly: true };
-  else if (a.ts <= v.ts) return v;
+  else if (a.ts <= v.ts) { v.apiTs = a.ts; return v; }
   for (const [n, lvl] of Object.entries(a.levels)) {
     const id = BYNAME[norm(n)]; if (!id) continue;
     const cur = v.inst[id] && v.inst[id][0];
@@ -202,7 +209,7 @@ function serialize(v){
   for (const [id, arr] of Object.entries(v.inst)) for (const h of arr) {
     const e = { data: +id, lvl: h.l }, left = Math.max(0, (h.t || 0) - age); if (h.t && left > 0) e.timer = left; b.push(e);
   }
-  return JSON.stringify({ tag: v.tag, timestamp: now, buildings: b });
+  return JSON.stringify({ tag: v.tag, timestamp: now, exported: v.exp || v.ts, buildings: b });
 }
 function saveExport(tag, raw, msg){
   S.acc[tag] = { raw, saved: Date.now() }; store.set(S); REMOTE[tag] = raw;
@@ -225,7 +232,8 @@ function parse(raw){
     }
   }
   if (!th) throw new Error("Couldn't find your Town Hall in that export.");
-  return { tag: j.tag || "#?", ts: j.timestamp || Math.floor(Date.now()/1000), th, weapon, inst };
+  const ts = j.timestamp || Math.floor(Date.now()/1000);
+  return { tag: j.tag || "#?", ts, exp: j.exported || ts, th, weapon, inst };
 }
 
 const sum = (arr, a, b) => { let s = 0; for (let L = a; L <= b; L++) s += arr[L-1] || 0; return s; };
@@ -258,7 +266,7 @@ function compute(v, now){
         const left = Math.max(0, h.t - age);
         if (!isWall && o.k !== "e") { r = r - (o.t[l] || 0) + left; row.cost -= o.co[l] || 0; }
         row.up.push(l + 1);
-        ups.push({ name: o.n, to: l + 1, end: v.ts + h.t, cat });
+        ups.push({ id: o.i, name: o.n, to: l + 1, end: v.ts + h.t, cat });
       }
       row.rem += r; row.tot += tot;
     }
@@ -323,13 +331,12 @@ function render(){
   let v = null;
   try { v = view(S.cur) } catch(e) { app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return; }
   if (EDIT && EDIT.tag === S.cur) v = EDIT.v;
-  $("#btnEdit").textContent = EDIT ? "Done" : "Edit"; $("#btnEdit").classList.toggle("on", !!EDIT);
   if (!v) {
     app.innerHTML = `<div class="card empty"><p><b>No data yet for ${esc(NAME[S.cur])}.</b><br>Tap Import, then paste the in-game village export.</p></div>`;
     return;
   }
   const AO = !!v.apiOnly;
-  const editNote = EDIT ? `<div class="note">Tap + when an upgrade finishes or starts done. Walls have +10. Tap Done to save.</div>` : "";
+  const editNote = EDIT ? `<div class="note fixbar"><span>Fixing levels: use − and + to correct anything, then save.</span><button class="pri" id="btnDone">Save</button></div>` : "";
   const ago = s => s < 3600 ? Math.max(1, Math.round(s/60)) + "m" : dur(s);
   const now = Math.floor(Date.now() / 1000), R = compute(v, now), c = R.cats;
   const timed = (AO ? ["heroes","lab","pets"] : ["build","heroes","lab","pets"]).reduce((a, k) => ({ rem: a.rem + c[k].rem, tot: a.tot + c[k].tot }), { rem: 0, tot: 0 });
@@ -342,7 +349,7 @@ function render(){
   const box = (k, label, s) => AO && (k === "build" || k === "walls") ? `<div class="box"><div class="k">${label}</div><div class="v">–</div><div class="s">needs export</div><div class="bar"></div></div>` : !c[k].tot ? `<div class="box"><div class="k">${label}</div><div class="v">–</div><div class="s">not at TH${v.th}</div><div class="bar"></div></div>` : `<div class="box"><div class="k">${label}</div><div class="v">${pct(c[k])}%</div><div class="s">${s}</div><div class="bar"><i style="width:${pct(c[k])}%"></i></div></div>`;
   let h = `<div class="card"><div class="hero"><div class="ring">${ringSVG(overall)}<b>${Math.floor(overall)}%</b></div>
     <div class="meta"><div class="th">Town Hall ${v.th}</div>
-    <div class="sub">${esc(NAME[S.cur])} · ${esc(v.tag)}<br>${AO ? "No export yet, so buildings and walls are blank" : `<span class="${R.age > 3*86400 ? "stale" : ""}">Buildings from ${ago(R.age)} ago</span>`}${v.autoDone ? "<br>" + v.autoDone + " finished upgrade" + (v.autoDone === 1 ? "" : "s") + " counted automatically" : ""}${v.apiTs ? "<br>Heroes, lab, pets, gear auto-updated " + ago(now - v.apiTs) + " ago" : ""}${overall >= 100 ? " · maxed for TH" + v.th : ""}</div></div></div>
+    <div class="sub">${esc(NAME[S.cur])} · ${esc(v.tag)}<br>${AO ? "No export yet, so buildings and walls are blank" : `<span class="${now - (v.exp || v.ts) > 3*86400 ? "stale" : ""}">Last export ${ago(now - (v.exp || v.ts))} ago</span>${v.exp && v.ts - v.exp > 60 ? " · marked by hand since" : ""}`}${v.autoDone ? "<br>" + v.autoDone + " finished upgrade" + (v.autoDone === 1 ? "" : "s") + " counted automatically" : ""}${v.apiTs ? "<br>Heroes, lab, pets, gear auto-updated " + ago(now - v.apiTs) + " ago" : ""}${overall >= 100 ? " · maxed for TH" + v.th : ""}</div></div></div>
     <div class="grid">
       ${box("build","Buildings", upTxt(c.build.upn))}
       ${box("heroes","Heroes", upTxt(c.heroes.upn))}
@@ -358,7 +365,7 @@ function render(){
   if (live.length) {
     const ups = Object.values(gm).sort((a, b) => a.end - b.end);
     h += `<div class="sec${S.open.__ups !== false ? " open" : ""}" data-sec="__ups"><div class="head"><span class="nm">Upgrading now</span><span class="pc">${live.length}</span><span class="car">▶</span></div><div class="body">` +
-      ups.map(u => { const left = u.end - now; return `<div class="row up-row"><div class="l"><div class="n">${esc(u.name)}${u.x > 1 ? ` <span class="lv">×${u.x}</span>` : ""}</div><div class="lv">to level ${u.to}</div></div><div class="r"><div class="t ${left <= 0 ? "done" : "when"}" data-end="${u.end}">${left <= 0 ? "Done" : dur(left)}</div></div></div>`; }).join("") + `</div></div>`;
+      ups.map(u => { const left = u.end - now; return `<div class="row up-row"><div class="l"><div class="n">${esc(u.name)}${u.x > 1 ? ` <span class="lv">×${u.x}</span>` : ""}</div><div class="lv">to level ${u.to}</div></div><div class="r"><div class="t ${left <= 0 ? "done" : "when"}" data-end="${u.end}">${left <= 0 ? "Done" : dur(left)}</div></div>${EDIT ? "" : `<button class="q" data-q="${u.id}" data-d="1" title="Mark done now">✓</button>`}</div>`; }).join("") + `</div></div>`;
   }
 
   const maxedGroups = [];
@@ -377,8 +384,9 @@ function render(){
       const done = r.rem <= 0;
       const rt = isW ? num(r.rem) : isE ? (r.rem + " lv") : dur(r.rem);
       const key = r.o.i || "weapon";
+      const qBtns = !EDIT && !done ? `${isW ? `<button class="q" data-q="${key}" data-d="10">+10</button>` : ""}<button class="q" data-q="${key}" data-d="1" title="Upgraded one level">+1</button>` : "";
       const edBtns = EDIT ? `<div class="ed">${r.lv.some(l => l > 0) ? `<button data-ed="${key}" data-d="-1">−</button>` : ""}${!done ? `<button data-ed="${key}" data-d="1">+</button>${isW ? `<button data-ed="${key}" data-d="10">+10</button>` : ""}` : ""}</div>` : "";
-      return `<div class="row"><div class="l"><div class="n">${esc(r.o.n)}${r.up.length ? `<span class="tag up">upgrading</span>` : ""}${done ? `<span class="tag mx">max</span>` : ""}</div><div class="lv">${isE ? esc(r.o.h) + " · " : ""}${lvSummary(r)}</div></div><div class="r">${done ? "" : `<div class="t">${rt}</div>`}${!done && !isW && !isE && r.cost > 0 ? `<div>${num(r.cost)}</div>` : ""}</div>${edBtns}</div>`;
+      return `<div class="row"><div class="l"><div class="n">${esc(r.o.n)}${r.up.length ? `<span class="tag up">upgrading</span>` : ""}${done ? `<span class="tag mx">max</span>` : ""}</div><div class="lv">${isE ? esc(r.o.h) + " · " : ""}${lvSummary(r)}</div></div><div class="r">${done ? "" : `<div class="t">${rt}</div>`}${!done && !isW && !isE && r.cost > 0 ? `<div>${num(r.cost)}</div>` : ""}</div>${edBtns}${qBtns}</div>`;
     };
     const open = !!S.open[g];
     h += `<div class="sec${open ? " open" : ""}" data-sec="${g}"><div class="head"><span class="nm">${g}</span><span class="pc mono">${p}%</span><div class="hb bar" style="margin:0"><i style="width:${p}%"></i></div><span class="car">▶</span></div><div class="body">` +
@@ -394,6 +402,9 @@ function render(){
 
 // events
 document.addEventListener("click", e => {
+  const qb = e.target.closest("[data-q]");
+  if (qb && !EDIT) { quickUp(qb.dataset.q, +qb.dataset.d); return; }
+  if (e.target.closest("#btnDone")) { finishEdit(); return; }
   const eb = e.target.closest("[data-ed]");
   if (eb && EDIT) { bump(eb.dataset.ed, +eb.dataset.d); render(); return; }
   const chip = e.target.closest(".chip");
@@ -422,6 +433,50 @@ function bump(key, d){
   }
   EDIT.dirty = true;
 }
+let qTimer = null, qPending = null;
+function quickUp(key, d){
+  let v; try { v = view(S.cur) } catch(e) { return; }
+  if (!v || v.apiOnly) { toast("Paste an export first, then you can mark upgrades."); return; }
+  const before = best(S.cur), tag = S.cur, R0 = compute(v, Math.floor(Date.now() / 1000));
+  const row = key === "weapon" ? null : R0.rows.find(r => String(r.o.i) === String(key));
+  let lastLv = 0;
+  if (key === "weapon" || !row) { EDIT = { tag, v, dirty: false }; bump(key, d); EDIT = null; }
+  else {
+    // one tap = one instance up a level: an upgrade in progress first, else the highest one not maxed yet
+    const arr = v.inst[row.o.i] = v.inst[row.o.i] || [];
+    while (arr.length < row.n) arr.push({ l: 0, t: 0 });
+    for (let k = 0; k < d; k++) {
+      const up = arr.filter(h => h.t > 0 && h.l < row.M);
+      const pick = up.length ? up[0] : arr.filter(h => h.l < row.M).sort((x, y) => y.l - x.l)[0];
+      if (!pick) break; pick.l++; pick.t = 0; lastLv = pick.l;
+    }
+  }
+  const raw = serialize(v);
+  S.acc[tag] = { raw, saved: Date.now() }; store.set(S); REMOTE[tag] = raw;
+  const R1 = compute(view(tag), Math.floor(Date.now() / 1000));
+  const r1 = row && R1.rows.find(r => r.o.i === row.o.i);
+  const name = row ? row.o.n : "Town Hall weapon";
+  const lvTxt = r1 ? (r1.n === 1 ? "level " + r1.lv[0] : (d > 1 ? d + " pieces up" : (lastLv ? "one now at level " + lastLv : ""))) : "";
+  render();
+  queueSave(tag, "Upgrade " + name);
+  toastUndo(name + (lvTxt ? " · " + lvTxt : ""), () => {
+    if (before) { S.acc[tag] = { raw: before, saved: Date.now() }; REMOTE[tag] = before; } else { delete S.acc[tag]; delete REMOTE[tag]; }
+    store.set(S); render(); queueSave(tag, "Undo " + name);
+  });
+}
+function queueSave(tag, msg){
+  if (!tok()) { if (!S.warnedTok) { S.warnedTok = 1; store.set(S); toast("Saved on this device. Add your token in ⋯ to sync every device."); } return; }
+  qPending = { tag, msg }; clearTimeout(qTimer);
+  qTimer = setTimeout(() => { const p = qPending; qPending = null; const raw = S.acc[p.tag] && S.acc[p.tag].raw; if (!raw) return;
+    putFile("data/" + p.tag.slice(1) + ".json", raw, p.msg).catch(e => toast("Couldn't save to GitHub (" + e.message + "). Kept on this device.")); }, 1500);
+}
+function toastUndo(m, undo){
+  document.querySelectorAll(".toast").forEach(t => t.remove());
+  const d = document.createElement("div"); d.className = "toast"; d.innerHTML = `<span></span><button>Undo</button>`;
+  d.querySelector("span").textContent = m;
+  d.querySelector("button").onclick = () => { d.remove(); undo(); };
+  document.body.appendChild(d); setTimeout(() => d.remove(), 5000);
+}
 function startEdit(){
   let v = null;
   try { v = view(S.cur) } catch(e) {}
@@ -433,9 +488,9 @@ function finishEdit(){
   if (E && E.dirty) saveExport(E.tag, serialize(E.v), "Edit " + NAME[E.tag] + " levels");
   render();
 }
-$("#btnEdit").onclick = () => EDIT ? finishEdit() : startEdit();
+$("#btnEdit").onclick = () => { panel.classList.remove("show"); if (!EDIT) startEdit(); };
 $("#btnSync").onclick = () => {
-  if (EDIT) { toast("Tap Done first"); return; }
+  if (EDIT) { toast("Save your fixes first"); return; }
   $("#btnSync").textContent = "…";
   loadRemote().then(() => { $("#btnSync").textContent = "Sync"; render(); const a = API[S.cur];
     toast(a ? "Synced. Levels from the game " + (Math.floor(Date.now()/1000) - a.ts < 3600 ? Math.max(1, Math.round((Date.now()/1000 - a.ts)/60)) + "m" : dur(Date.now()/1000 - a.ts)) + " ago" : "Synced"); });
@@ -461,7 +516,7 @@ function importRaw(raw){
   saveExport(v.tag, raw.trim(), "Import " + NAME[v.tag] + " export"); render();
 }
 $("#btnPaste").onclick = () => {
-  if (EDIT) { toast("Tap Done first"); return; }
+  if (EDIT) { toast("Save your fixes first"); return; }
   if (!navigator.clipboard || !navigator.clipboard.readText) { openPanel(); return; }
   navigator.clipboard.readText().then(t => {
     if (!t || !t.trim()) { toast("Clipboard is empty. Copy the export in game first."); return; }
