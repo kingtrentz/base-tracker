@@ -188,6 +188,8 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .subh{display:flex;justify-content:space-between;align-items:center;margin:12px 10px 4px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--mut)}
 .subh:first-of-type{margin-top:4px}
 .subh span{font-weight:500;letter-spacing:0}
+.dg.eq .dg-b .row.i .n{display:block}
+.dg.eq .dg-b .row.i .lvl{font-size:11px;color:var(--mut);margin-top:1px}
 /* softer look */
 :root{--soft:color-mix(in srgb,var(--tx) 6%,transparent);--hair:color-mix(in srgb,var(--line) 55%,transparent);--accs:color-mix(in srgb,var(--acc) 14%,transparent)}
 @media (prefers-color-scheme:light){:root{--card:#fff;--bg:#f2f3f5}}
@@ -616,19 +618,26 @@ function render(){
             const head = `<button class="dg-h" data-go="${key}"><span class="l"><span class="n">${esc(r.o.n)}</span><span class="lvl mono">${built.length ? (built.length === 1 ? built[0] : built[built.length - 1] + "–" + built[0]) + "/" + r.M : "max " + r.M}${nNew ? ` · ${nNew} new` : ""} · ${left_} to go${ups ? ` · <b class="upc">${ups} upgrading</b>` : ""}</span></span><span class="nx">${nextT ? `<span class="tm">${dur(nextT)}</span>` : ""}</span><span class="car">${open ? "▾" : "▸"}</span></button>`;
             return { time: nextT, cost: nextC, h: `<div class="dg${open ? " open" : ""}">${head}${open ? `<div class="dg-b">${rows.map(x => x.h).join("")}</div>` : ""}</div>` };
           });
-        } else ls = left.flatMap(r => lineObjs(r).map(x => ({ ...x, hero: r.o.h })));
+        } else ls = left.flatMap(r => lineObjs(r).map(x => ({ ...x, hero: r.o.h, lvLeft: r.rem, nm: r.o.n })));
         if (F.sort) { const [k, dir] = F.sort.split(":"); ls.sort((a, b) => dir === "up" ? a[k] - b[k] : b[k] - a[k]); }
         if (g === "Equipment") {
           // grouped under each hero, in Hero Hall order
           const by = {}; ls.forEach(x => (by[x.hero || "Other"] = by[x.hero || "Other"] || []).push(x));
           const order = HERO_ORDER.filter(n => by[n]).concat(Object.keys(by).filter(n => !HERO_ORDER.includes(n)));
-          ls = order.flatMap(n => [{ h: `<div class="subh">${esc(n)}<span>${by[n].length}</span></div>` }].concat(by[n]));
+          // one dropdown per hero; pieces stay in a fixed A-Z order unless a sort is on, so rows don't jump when tapped
+          if (!F.sort) Object.values(by).forEach(a => a.sort((x, y) => x.nm.localeCompare(y.nm)));
+          S.go = S.go || {};
+          ls = order.map(n => {
+            const k = "eq:" + n, open = !!S.go[k], lv = by[n].reduce((a, x) => a + (x.lvLeft || 0), 0);
+            const head = `<button class="dg-h" data-go="${esc(k)}"><span class="l"><span class="n">${esc(n)}</span><span class="lvl mono">${by[n].length} piece${by[n].length === 1 ? "" : "s"} · ${lv} level${lv === 1 ? "" : "s"} to go</span></span><span class="car">${open ? "▾" : "▸"}</span></button>`;
+            return { h: `<div class="dg eq${open ? " open" : ""}">${head}${open ? `<div class="dg-b">${by[n].map(x => x.h).join("")}</div>` : ""}</div>` };
+          });
         }
         body = ls.map(x => x.h).join("") || (FON ? `<div class="more" data-fg="${g}" data-fclear="1">Nothing matches · clear filter</div>` : `<div class="more">Everything here is maxed for TH${v.th}.</div>`);
         if (maxed.length) body += S.hideMax ? `<div class="more" data-showmax="1">${maxed.length} maxed · show</div>` : maxed.map(r => `<div class="row i mx"><div class="l"><div class="n">${esc(r.o.n)}</div><div class="lvl mono">${r.M}/${r.M}</div></div><span class="ok">max</span></div>`).join("");
       }
       const editBtn = EDIT ? `<div class="editbar"><span>Set each one with − and +</span><button class="pri" id="btnDone">Save levels</button></div>` : `<button class="editbtn" id="btnEditLv">Edit levels</button>`;
-      h += `<div class="sec open"><div class="head"><span class="nm">${g}</span><span class="pc mono">${p}%</span></div><div class="body">${remain}${!EDIT && T.rem > 0 ? fbar(g, rs) : ""}${body}${editBtn}</div></div>`;
+      h += `<div class="sec open"><div class="head"><span class="nm">${g}</span><span class="pc mono">${p}%</span></div><div class="body">${remain}${!EDIT && T.rem > 0 && g !== "Equipment" ? fbar(g, rs) : ""}${body}${editBtn}</div></div>`;
     }
   }
   h += `<label class="toggle"><input type="checkbox" id="hideMax"${S.hideMax ? " checked" : ""}> Hide maxed items</label>`;
