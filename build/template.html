@@ -45,14 +45,14 @@ button:active{transform:scale(.98)}
 .chip.on{border-color:var(--acc);color:var(--acc)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
 .hero{display:flex;align-items:center;gap:14px}
-.ringw{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px}
-.ringw .pct{font:700 20px "Space Grotesk",system-ui,sans-serif;color:var(--acc);line-height:1}
-.ring{width:104px;height:104px;flex:none;position:relative}
-.ring img{position:absolute;inset:14px;width:calc(100% - 28px);height:calc(100% - 28px);object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
+.ringw{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;padding:0;cursor:pointer}
+.ringw .pct{font:700 18px "Space Grotesk",system-ui,sans-serif;color:var(--acc);line-height:1}
+.ring{width:84px;height:84px;flex:none;position:relative}
+.ring img{position:absolute;inset:12px;width:calc(100% - 24px);height:calc(100% - 24px);object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
 .ring svg{transform:rotate(-90deg)}
-.ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px}
+.ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px}
 .hero .meta{min-width:0}
-.hero .th{font-size:22px;font-weight:700}
+.hero .th{font-size:21px;font-weight:700}
 .sub{color:var(--mut);font-size:13px;line-height:1.45}
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
 .box{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0}
@@ -199,6 +199,12 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .sheet-a{display:flex;gap:10px;margin-top:16px}
 .sheet-a button{flex:1;padding:13px;border-radius:14px;font-size:15px;font-weight:600;border:0;background:var(--soft)}
 .sheet-a button.pri{background:var(--acc);color:var(--on-acc)}
+.sheet-a.sheet-sub{margin-top:8px}
+.sheet-a.sheet-sub button{padding:11px;font-size:13.5px}
+.sheet-a.sheet-sub button.bad{color:var(--red);background:color-mix(in srgb,var(--red) 12%,transparent)}
+.sheet-a.sheet-sub button.ok{color:var(--acc);background:var(--accs)}
+.gp-tag{margin-left:auto;border:0;background:var(--accs);color:var(--acc);font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px}
+.card.top{padding:12px 14px}
 .pin{font:inherit;font-size:11px;color:var(--mut);background:var(--soft);border:0;border-radius:8px;padding:3px 6px;margin-top:3px;max-width:170px}
 .pin.on{color:var(--acc);background:var(--accs);font-weight:600}
 .row.i.auto{opacity:.85}
@@ -290,9 +296,9 @@ button{border-color:var(--hair)}
 .bsnap-sub{font-size:12px;color:var(--mut);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bsnap-sub b{color:var(--tx);font-weight:600}
 .bsnap-car{color:var(--mut);font-size:12px;flex:none;padding-left:4px}
-.bsnap-b{padding:0 10px 11px}
-.bsnap-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-.bslot{display:flex;flex-direction:column;gap:4px;border:0;text-align:left;width:100%;background:var(--soft);border-radius:13px;padding:8px 10px;color:var(--tx);cursor:pointer;min-width:0}
+.bsnap-b{padding:0 10px 10px}
+.bsnap-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.bslot{display:flex;flex-direction:column;gap:3px;border:0;text-align:left;width:100%;background:var(--soft);border-radius:12px;padding:7px 9px;color:var(--tx);cursor:pointer;min-width:0}
 .bslot:last-child:nth-child(odd){grid-column:1 / -1}
 .bslot.next{background:color-mix(in srgb,var(--warn) 10%,var(--soft));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--warn) 38%,transparent)}
 .bslot.free{background:var(--accs);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 45%,transparent)}
@@ -351,6 +357,7 @@ html.app:is(.settle,.glide) .ptr{transition:transform .45s cubic-bezier(.22,1,.3
       <button id="btnCancel">Cancel</button>
     </div>
     <div class="err" id="err"></div>
+    <div class="iconpick"><span>Gold Pass</span><div class="gp" id="gpOpts" style="margin-left:0;padding:2px"></div></div>
     <div class="iconpick"><span>App icon</span><div id="iconOpts"></div></div>
     <div class="note" style="margin:6px 0 0">On iPhone, remove the app and Add to Home Screen again to see a new icon.</div>
     <div class="actions" style="margin-top:14px"><button id="btnLock" type="button">Lock this browser</button></div>
@@ -378,6 +385,7 @@ html.app:is(.settle,.glide) .ptr{transition:transform .45s cubic-bezier(.22,1,.3
     </div>
     <div class="err" id="tsErr"></div>
     <div class="sheet-a"><button id="tsCancel" type="button">Cancel</button><button id="tsSave" class="pri" type="button">Save</button></div>
+    <div class="sheet-a sheet-sub"><button id="tsDrop" type="button" class="bad">Cancel upgrade</button><button id="tsDone" type="button" class="ok">Mark done ✓</button></div>
   </div></div>
   <div id="psheet" class="sheet"><div class="sheet-c" role="dialog" aria-label="Add to plan">
     <div class="sheet-t" id="pkT"></div>
@@ -878,8 +886,10 @@ function builderSnap(v, R, now, c){
 function render(){
   const app = $("#app"), chips = $("#chips");
   const gp = GP_STEPS.includes(S.gp) ? S.gp : 0;
-  chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("") + 
-    `<div class="gp" title="Gold Pass builder and research boost"><span>Gold Pass</span>${GP_STEPS.map(x => `<button class="${x === gp ? "on" : ""}" data-gp="${x}">${x ? x + "%" : "off"}</button>`).join("")}</div>`;
+  const gpEl = $("#gpOpts");
+  if (gpEl) gpEl.innerHTML = GP_STEPS.map(x => `<button type="button" class="${x === gp ? "on" : ""}" data-gp="${x}">${x ? x + "%" : "off"}</button>`).join("");
+  chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("") +
+    (gp ? `<button class="gp-tag" id="btnGpTag" type="button" title="Gold Pass boost">GP ${gp}%</button>` : "");
   let v = null;
   try { v = view(S.cur) } catch(e) { app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return; }
   if (EDIT && EDIT.tag === S.cur) v = EDIT.v;
@@ -892,23 +902,15 @@ function render(){
   const timed = (AO ? ["heroes","lab","pets"] : ["build","heroes","lab","pets"]).reduce((a, k) => ({ rem: a.rem + c[k].rem, tot: a.tot + c[k].tot }), { rem: 0, tot: 0 });
   const overall = pct(timed);
 
-  // what's busy right now
-  const busy = { b: 0, l: null, p: null };
-  R.rows.forEach(r => r.inst.forEach(x => { if (!x.up) return;
-    if (r.o.k === "b" || r.o.k === "h") busy.b++;
-    else if (r.o.k === "l") busy.l = Math.max(busy.l || 0, x.left);
-    else if (r.o.k === "p") busy.p = Math.max(busy.p || 0, x.left); }));
-  const pill = (label, val, on) => `<span class="pill${on ? " on" : ""}"><b>${label}</b> ${val}</span>`;
+  const barsHtml = S.showBars ? `<div class="bars">${BAR_CATS.map(([k, label]) => {
+    if (AO && (k === "build" || k === "walls")) return "";
+    if (!c[k].tot) return "";
+    const p = pct(c[k]);
+    return `<div class="cb"><span class="k">${label}</span><div class="bar"><i style="width:${p}%"></i></div><span class="v mono">${p}%</span></div>`;
+  }).join("")}</div>` : "";
 
-  let h = `<div class="card top"><div class="hero"><div class="ringw"><div class="pct">${Math.floor(overall)}%</div><div class="ring">${ringSVG(overall)}${TH_IMG[v.th] ? `<img src="${TH_IMG[v.th]}" alt="Town Hall ${v.th}">` : `<b>TH${v.th}</b>`}</div></div>
-    <div class="meta"><div class="th">Town Hall ${v.th}</div><div class="sub">${esc(NAME[S.cur])} · updated ${ago(now - Math.max(v.ts || 0, v.apiTs || 0))} ago</div>${syncLine()}
-    <div class="pills">${R.builders ? pill("Builders", Math.max(0, R.builders - busy.b) + "/" + R.builders + " free", busy.b > 0) : ""}${pill("Lab", busy.l != null ? dur(busy.l) : "free", busy.l != null)}${pill("Pets", busy.p != null ? dur(busy.p) : "free", busy.p != null)}</div></div></div>
-    <div class="bars">${BAR_CATS.map(([k, label]) => {
-      if (AO && (k === "build" || k === "walls")) return "";
-      if (!c[k].tot) return "";
-      const p = pct(c[k]);
-      return `<div class="cb"><span class="k">${label}</span><div class="bar"><i style="width:${p}%"></i></div><span class="v mono">${p}%</span></div>`;
-    }).join("")}</div></div>`;
+  let h = `<div class="card top"><div class="hero"><button class="ringw" type="button" data-bars="1" title="Tap for category breakdown"><span class="pct">${Math.floor(overall)}%</span><span class="ring">${ringSVG(overall)}${TH_IMG[v.th] ? `<img src="${TH_IMG[v.th]}" alt="Town Hall ${v.th}">` : `<b>TH${v.th}</b>`}</span></button>
+    <div class="meta"><div class="th">Town Hall ${v.th}</div><div class="sub">${esc(NAME[S.cur])} · updated ${ago(now - Math.max(v.ts || 0, v.apiTs || 0))} ago</div>${syncLine()}</div></div>${barsHtml}</div>`;
 
   h += builderSnap(v, R, now, c);
 
@@ -919,14 +921,11 @@ function render(){
     const rem = rs.reduce((s, r) => s + r.rem, 0), up = rs.reduce((s, r) => s + r.inst.filter(x => x.up).length, 0);
     return { g, rs, rem, up, done: rem <= 0 };
   }).filter(Boolean);
-  const anyUp = tabInfo.some(t => t.up);
-  if (!S.tab || (S.tab === "__up" && !anyUp) || (S.tab !== "__up" && S.tab !== "__plan" && !tabInfo.find(t => t.g === S.tab))) S.tab = (tabInfo.find(t => !t.done) || tabInfo[0] || {}).g;
+  if (!S.tab || (S.tab !== "__plan" && !tabInfo.find(t => t.g === S.tab))) S.tab = (tabInfo.find(t => !t.done) || tabInfo[0] || {}).g;
   // two even rows of tabs, no scrolling
   const SHORT = {};
-  const nTabs = tabInfo.length + (anyUp ? 1 : 0);
   const nPlan = plan(S.cur).b.length + plan(S.cur).l.length;
-  const tabBtns = (anyUp ? [`<button class="tab up${S.tab === "__up" ? " on" : ""}" data-tab="__up">Active<span>${tabInfo.reduce((s, t) => s + t.up, 0)}</span></button>`] : []).concat(
-    [`<button class="tab${S.tab === "__plan" ? " on" : ""}" data-tab="__plan">Plan<span>${nPlan || "&nbsp;"}</span></button>`]).concat(
+  const tabBtns = [`<button class="tab${S.tab === "__plan" ? " on" : ""}" data-tab="__plan">Plan<span>${nPlan || "&nbsp;"}</span></button>`].concat(
     tabInfo.map(t => `<button class="tab${t.done ? " done" : t.up ? " up" : ""}${S.tab === t.g ? " on" : ""}" data-tab="${t.g}">${SHORT[t.g] || t.g}<span>${t.done ? "✓" : t.up ? t.up : "&nbsp;"}</span></button>`));
   // split where both rows carry about the same amount of text, so long names get room
   const wts = tabBtns.map(b => b.replace(/<span>.*?<\/span>/, "").replace(/<[^>]+>/g, "").length + 3);
@@ -965,13 +964,7 @@ function render(){
   const sig = [S.cur, S.tab, (S.sf && S.sf[S.tab] && S.sf[S.tab].sort) || "", S.gp || 0, S.hideMax ? 1 : 0, EDIT ? 1 : 0].join("|");
   if (ORD.sig !== sig) ORD = { sig, m: {} };
   if (S.tab === "__plan") h += planTab(v, R);
-  else if (S.tab === "__up") {
-    // split by who's doing the work: builders, lab, pet house
-    const all = tabInfo.flatMap(t => t.rs.flatMap(r => lineObjs(r, true).map(x => ({ ...x, k: r.o.k }))));
-    const groups = [["Builders", x => x.k === "b" || x.k === "h", `${busy.b}/${R.builders || "?"} busy`], ["Lab", x => x.k === "l", ""], ["Pet House", x => x.k === "p", ""]];
-    const parts = groups.map(([label, fn, extra]) => { const ls = stable(all.filter(fn).sort((a, b) => a.time - b.time), "act:" + label); return ls.length ? `<div class="subh">${label}<span>${extra || ls.length}</span></div>` + ls.map(x => x.h).join("") : ""; }).join("");
-    h += `<div class="sec open"><div class="head"><span class="nm">Upgrading</span><span class="pc">${all.length}</span></div><div class="body">${parts}</div></div>`;
-  } else {
+  else {
     const T = tabInfo.find(t => t.g === S.tab);
     if (T) {
       const g = T.g, rs = T.rs, isW = g === "Walls", isE = g === "Equipment";
@@ -1066,6 +1059,8 @@ function moveWalls(L, delta){
 
 // events
 document.addEventListener("click", e => {
+  if (e.target.closest("#btnGpTag")) { openPanel(); return; }
+  if (e.target.closest("[data-bars]")) { S.showBars = !S.showBars; store.set(S); render(); return; }
   const bsn = e.target.closest("[data-bsnap]");
   if (bsn) { S.snapClosed = !S.snapClosed; store.set(S); render(); return; }
   const gob = e.target.closest("[data-go]");
@@ -1148,6 +1143,8 @@ function saveTimeSheet(){
 }
 document.addEventListener("click", e => {
   if (e.target.id === "tsSave") { e.preventDefault(); saveTimeSheet(); }
+  else if (e.target.id === "tsDone" && TS) { e.preventDefault(); const { key, lv, ix } = TS; closeTimeSheet(); changeCopy(key, lv, h => { h.l++; h.t = 0; }, (row, h) => `${row.o.n} done · level ${h.l}`, true, ix); }
+  else if (e.target.id === "tsDrop" && TS) { e.preventDefault(); const { key, lv, ix } = TS; closeTimeSheet(); changeCopy(key, lv, h => { h.t = 0; }, row => `${row.o.n} upgrade cancelled`, true, ix); }
   else if (e.target.id === "tsCancel" || e.target.id === "tsheet") { e.preventDefault(); closeTimeSheet(); }
 });
 document.addEventListener("input", e => { if (e.target.id === "pkQ" && PK) pickerList(); });
