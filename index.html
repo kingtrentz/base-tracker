@@ -47,7 +47,7 @@ button:active{transform:scale(.98)}
 .hero{display:flex;align-items:center;gap:14px}
 .ringw{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;padding:0;cursor:pointer}
 .ringw .pct{font:700 18px "Space Grotesk",system-ui,sans-serif;color:var(--acc);line-height:1}
-.ring{width:84px;height:84px;flex:none;position:relative}
+.ring{width:84px;height:84px;flex:none;position:relative;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--warn) 24%,transparent) 0%,color-mix(in srgb,var(--acc) 10%,transparent) 48%,transparent 72%)}
 .ring img{position:absolute;inset:12px;width:calc(100% - 24px);height:calc(100% - 24px);object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
 .ring svg{transform:rotate(-90deg)}
 .ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px}
@@ -132,11 +132,20 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .pill.on{background:var(--accs);color:var(--acc)}
 .sync{display:block;font-size:12px;color:var(--mut);margin-top:3px;text-align:left;background:none;border:0;padding:0;font-family:inherit}
 .sync.bad{color:var(--red);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
-.bars{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:14px}
-.cb{display:grid;grid-template-columns:72px 1fr 44px;align-items:center;gap:8px;font-size:12px}
-.cb .k{color:var(--mut)}
-.cb .bar{margin:0;height:6px}
-.cb .v{text-align:right;font-size:11px}
+.bars{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.cb{display:grid;grid-template-columns:76px 1fr 46px;align-items:center;gap:9px;width:100%;border:0;border-radius:8px;background:none;padding:2px 0;text-align:left;cursor:pointer;color:var(--tx)}
+.cb:active{opacity:.75;transform:none}
+.cb .k{font-size:12px;font-weight:600;color:var(--mut)}
+.cb .bar{margin:0;height:11px;border-radius:999px;background:var(--bar);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)}
+.cb .bar i{display:block;height:100%;border-radius:999px;transition:width .35s cubic-bezier(.22,1,.36,1);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 8px color-mix(in srgb,var(--acc) 25%,transparent)}
+.cb.c-build .bar i{background:linear-gradient(90deg,#d9a43b,#f0c259)}
+.cb.c-heroes .bar i{background:linear-gradient(90deg,#e06d3b,#f2994a)}
+.cb.c-lab .bar i{background:linear-gradient(90deg,#b359d4,#db84f0)}
+.cb.c-pets .bar i{background:linear-gradient(90deg,#4eb5d9,#7ce0f5)}
+.cb.c-walls .bar i{background:linear-gradient(90deg,#52b86d,#7be094)}
+.cb.c-equip .bar i{background:linear-gradient(90deg,#6a82f0,#9aaeff)}
+.cb .v{text-align:right;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--tx)}
+.cb.done .v{color:var(--acc)}
 .tabs{display:flex;flex-direction:column;gap:5px;margin:4px 0 12px}
 .tabs .tr{display:flex;gap:4px}
 .tabs .tr .tab{flex:1 1 auto}
@@ -280,21 +289,18 @@ button{border-color:var(--hair)}
 .more{padding:10px 12px}
 .toast{border:0;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
 .toast button{border:0;background:var(--accs)}
-/* builder snapshot (compact) */
-.bsnap{background:var(--card);border-radius:16px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.05)}
-:root:not([data-theme="light"]) .bsnap{box-shadow:0 0 0 1px var(--hair)}
-.bsnap-h{display:flex;align-items:center;gap:8px;width:100%;border:0;border-radius:0;background:none;padding:7px 11px;text-align:left;color:var(--tx);cursor:pointer}
-.bsnap-h:active{transform:none;background:var(--soft)}
-.bsnap-ico{width:28px;height:28px;flex:none;border-radius:9px;background:var(--accs);display:flex;align-items:center;justify-content:center;position:relative;overflow:visible}
-.bsnap-ico img{width:32px;height:32px;object-fit:contain;margin-top:-2px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
-.bsnap-top{flex:1;min-width:0;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden}
-.bsnap-t{font-size:13.5px;font-weight:700;letter-spacing:-.01em;flex:none}
-.bsnap-cnt{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--soft);color:var(--mut);flex:none}
-.bsnap-cnt.free{background:var(--accs);color:var(--acc)}
-.bsnap-cnt.busy{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
-.bsnap-sub{font-size:11.5px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;min-width:0}
-.bsnap-sub b{color:var(--tx);font-weight:600}
-.bsnap-car{color:var(--mut);font-size:11px;flex:none;padding-left:2px}
+/* tiny clash-style builder face pill + tap-to-open snapshot popover */
+.bpill{margin-left:auto;display:inline-flex;align-items:center;gap:5px;border:0;border-radius:999px;padding:3px 9px 3px 5px;background:var(--card);box-shadow:0 0 0 1px var(--hair);color:var(--tx);font-size:12.5px;font-weight:700;cursor:pointer;line-height:1}
+.bpill img{width:24px;height:24px;object-fit:contain;margin:-2px 0;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
+.bpill .bc{font-variant-numeric:tabular-nums}
+.bpill.free{background:var(--accs);color:var(--acc);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 45%,transparent)}
+.bpill.open{box-shadow:0 0 0 1.5px var(--acc)}
+.bpill .bcar{font-size:10px;color:var(--mut);margin-left:1px}
+.bpill.free .bcar{color:inherit}
+.bsnap{background:var(--card);border-radius:16px;margin-bottom:10px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.22),0 0 0 1px var(--hair)}
+.bsnap-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px 6px;font-size:12px;color:var(--mut)}
+.bsnap-bar b{color:var(--tx);font-weight:700}
+.bsnap-x{border:0;background:var(--soft);color:var(--mut);border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer}
 .bsnap-b{padding:0 8px 8px}
 .bsnap-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
 .bslot{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:5px;border:0;text-align:left;width:100%;background:var(--soft);border-radius:9px;padding:5px 7px 6px;color:var(--tx);cursor:pointer;min-width:0}
@@ -359,6 +365,37 @@ html.app:is(.settle,.glide) .ptr{transition:transform .45s cubic-bezier(.22,1,.3
 .pkmx{flex:none;border:0;border-radius:9px;padding:6px 9px;font-size:11.5px;font-weight:700;background:var(--accs);color:var(--acc);cursor:pointer}
 .pkmx:active{background:var(--acc);color:var(--on-acc)}
 .row.i .nx .cs{font-size:11px}
+/* Clash forge/ember atmosphere (fixed behind translucent cards, zero layout impact) */
+body{background:transparent}
+.wrap{position:relative;z-index:2}
+.bg-forge{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:
+  radial-gradient(90% 42% at 50% 106%,color-mix(in srgb,var(--warn) 26%,transparent) 0%,color-mix(in srgb,var(--acc) 10%,transparent) 42%,transparent 75%),
+  radial-gradient(70% 34% at 15% 0%,color-mix(in srgb,var(--acc) 16%,transparent) 0%,transparent 70%),
+  var(--bg)}
+:root[data-theme="light"] .bg-forge{background:
+  radial-gradient(90% 40% at 50% 106%,color-mix(in srgb,var(--warn) 16%,transparent) 0%,transparent 70%),
+  radial-gradient(70% 32% at 15% 0%,color-mix(in srgb,var(--acc) 14%,transparent) 0%,transparent 70%),
+  var(--bg)}
+.embers{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.embers i{position:absolute;bottom:-12px;left:var(--x);width:var(--sz);height:var(--sz);border-radius:50%;
+  background:radial-gradient(circle,#fff4c2 0%,var(--warn) 55%,transparent 100%);
+  box-shadow:0 0 8px var(--warn);opacity:0;
+  animation:emberRise var(--d) linear var(--dl) infinite}
+:root[data-theme="light"] .embers i{opacity:0;animation:emberRiseL var(--d) linear var(--dl) infinite}
+@keyframes emberRise{
+  0%{transform:translate3d(0,0,0) scale(.6);opacity:0}
+  15%{opacity:.7}
+  70%{opacity:.45}
+  100%{transform:translate3d(var(--dx),-78vh,0) scale(.2);opacity:0}
+}
+@keyframes emberRiseL{
+  0%{transform:translate3d(0,0,0) scale(.6);opacity:0}
+  15%{opacity:.42}
+  70%{opacity:.22}
+  100%{transform:translate3d(var(--dx),-78vh,0) scale(.2);opacity:0}
+}
+@media (prefers-reduced-motion: reduce){.embers{display:none}}
+.card,.sec,.bsnap,.alcard{background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 </style>
 <link id="lnkMan" rel="manifest" href="manifest.webmanifest">
 <link id="lnkApple" rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -370,6 +407,8 @@ html.app:is(.settle,.glide) .ptr{transition:transform .45s cubic-bezier(.22,1,.3
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
+<div class="bg-forge" aria-hidden="true"></div>
+<div class="embers" aria-hidden="true"><i style="--x:8%;--sz:4px;--d:7.5s;--dl:0s;--dx:18px"></i><i style="--x:19%;--sz:3px;--d:9.2s;--dl:-2.1s;--dx:-14px"></i><i style="--x:31%;--sz:5px;--d:8.4s;--dl:-4.8s;--dx:22px"></i><i style="--x:44%;--sz:3px;--d:6.8s;--dl:-1.3s;--dx:-16px"></i><i style="--x:56%;--sz:4px;--d:9.8s;--dl:-6.2s;--dx:12px"></i><i style="--x:67%;--sz:5px;--d:7.9s;--dl:-3.4s;--dx:-20px"></i><i style="--x:79%;--sz:3px;--d:8.8s;--dl:-5.5s;--dx:16px"></i><i style="--x:91%;--sz:4px;--d:7.2s;--dl:-0.8s;--dx:-18px"></i><i style="--x:25%;--sz:3px;--d:10.5s;--dl:-7.4s;--dx:14px"></i><i style="--x:73%;--sz:4px;--d:9.1s;--dl:-2.9s;--dx:-12px"></i></div>
 <div class="wrap">
   <header>
     <h1>base<span>.</span>tracker</h1>
@@ -881,92 +920,25 @@ function alertsTab(v, R, now){
     <div class="al-msg" id="alMsg">${esc(AL_MSG)}</div>
   </div></div>`;
 }
-function planTab(v, R){
-  const I = planInfo(v, R), now = Math.floor(Date.now() / 1000);
-  const when = s => s <= 0 ? "ready now" : "starts " + eta(now + Math.round(s));
-  const doneBy = s => s > 0 ? "done " + eta(now + Math.round(s)) : "";
+function upNextTab(v, R, now){
+  const I = planInfo(v, R);
   const costSpan = (o, co) => co ? `<span class="cs"><i class="dot" style="background:var(--${o.r})"></i>${num(co)}</span>` : "";
-  const pt = (S.ptab === "l" || S.ptab === "p") ? S.ptab : "b";
-  const freeB = I.slots.filter(s => !s.extra && !s.job).length, totB = R.builders || 0;
-  const busyLabN = I.labSlots.reduce((n, s) => n + s.jobs.length, 0);
-  const busyPetN = I.petSlot.jobs.length;
-  let h = `<div class="ptabs">
-    <button class="ptab${pt === "b" ? " on" : ""}" data-ptab="b">Builders<span>${totB ? freeB + "/" + totB + " free" : "no export"}</span></button>
-    <button class="ptab${pt === "l" ? " on" : ""}" data-ptab="l">Lab<span>${busyLabN ? busyLabN + " busy" : "free"}</span></button>
-    <button class="ptab${pt === "p" ? " on" : ""}" data-ptab="p">Pets<span>${busyPetN ? "busy" : "free"}</span></button>
-  </div>`;
-  const qRow = (e, w) => {
-    const n = esc(e.r.o.n), k = e.r.o.i, first = e.qi === 0;
-    const where = w === "b" && e.slot >= 0 ? ` · B${e.slot + 1}` : (w === "l" && e.slotName ? ` · ${e.slotName}` : "");
-    const btns = (e.start <= 0 ? `<button class="q" data-act="start" data-q="${k}" data-lv="${e.q.l}" data-ix="-1">↑</button>` : "") +
-      (first ? "" : `<button class="q s" data-pmv="${w}:${e.qi}" title="Move up">▲</button>`) + `<button class="q s" data-prm="${w}:${e.qi}" title="Remove">✕</button>`;
-    return `<div class="row i"><div class="l"><div class="n">${n}</div><div class="lvl mono">${e.q.l} → ${e.q.l + 1}${where} · ${when(e.start)}</div></div><div class="nx">${costSpan(e.r.o, e.co)}<span class="tm">${e.t ? dur(e.t) : "instant"}</span>${e.t ? `<span class="sm">${doneBy(e.end)}</span>` : ""}</div>${btns}</div>`;
-  };
-  const autoRow = (a, slotFree) => {
-    const wait = Math.max(slotFree, a.wait), ready = wait <= 0 && !a.x.up;
-    return `<div class="row i auto"><div class="l"><div class="n">next: ${esc(a.r.o.n)}</div><div class="lvl mono">${a.l} → ${a.l + 1} · ${when(wait)}</div></div><div class="nx">${costSpan(a.r.o, a.co)}<span class="tm">${dur(a.t)}</span><span class="sm">${doneBy(wait + a.t)}</span></div>${ready ? `<button class="q" data-act="start" data-q="${a.r.o.i}" data-lv="${a.l}" data-ix="${a.x.ix}">↑</button>` : ""}</div>`;
-  };
-  const opt = (val, label, sel) => `<option value="${val}"${val === sel ? " selected" : ""}>${esc(label)}</option>`;
-
-  if (pt === "b") {
-    if (I.N) {
-      const pinOpts = sel => {
-        const gs = PIN_GROUPS.filter(g => R.rows.some(r => r.o.g === g && r.rem > 0));
-        const its = R.rows.filter(r => isBld(r.o) && r.o.g !== "Heroes" && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
-        return opt("", "Any upgrade", sel) + `<optgroup label="Stays on a group">${gs.map(g => opt("g:" + g, g, sel)).join("")}</optgroup><optgroup label="Stays on one building">${its.map(x => opt("i:" + x.i, x.n, sel)).join("")}</optgroup>`;
-      };
-      const slotRows = I.slots.map(s => {
-        const j = s.job;
-        const now_ = j ? `<div class="nx up"><span>${esc(j.r.o.n)} → ${j.x.l + 1}</span><span data-end="${now + Math.round(j.x.left)}">${dur(j.x.left)}</span></div>` : `<div class="nx"><span class="tm" style="color:var(--acc)">free</span></div>`;
-        const selHtml = s.extra ? `<div class="lvl">Goblin Builder</div>` : `<select class="pin${s.pin ? " on" : ""}" data-pin="${s.i}">${pinOpts(s.pin)}</select>`;
-        let line = `<div class="row i${j ? " upg" : ""}"><div class="l"><div class="n">${s.extra ? "Extra Builder" : "Builder " + (s.i + 1)}</div>${selHtml}</div>${now_}</div>`;
-        if (s.auto) line += autoRow(s.auto, s.free);
-        return line;
-      }).join("");
-      const bdone = I.bq.length ? Math.max(...I.bq.map(e => e.end)) : 0;
-      h += `<div class="sec open"><div class="head"><span class="nm">Builder plan</span><span class="pc">${freeB}/${totB} free</span></div><div class="body">${slotRows}
-        <div class="subh">Up next<span>${I.bq.length ? doneBy(bdone) + " · " + dur(bdone) : ""}</span></div>${I.bq.map(e => qRow(e, "b")).join("") || `<div class="more">Nothing queued. Pin a builder above or tap + Add below.</div>`}
-        <button class="editbtn" data-padd="b">+ Add builder upgrade</button></div></div>`;
-    } else h += `<div class="card empty"><p>Paste the village export to plan builders.</p></div>`;
-  } else if (pt === "l") {
-    const labPinOpts = (kind, sel) => {
-      if (kind === "sq") {
-        const its = R.rows.filter(r => isLabSq(r.o) && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
-        return opt("", "Any squad", sel) + `<optgroup label="Stays on one squad">${its.map(x => opt("i:" + x.i, x.n, sel)).join("")}</optgroup>`;
-      }
-      const gs = LAB_GROUPS.filter(g => R.rows.some(r => r.o.g === g && r.rem > 0));
-      const its = R.rows.filter(r => isLabReg(r.o) && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
-      return opt("", "Any lab research", sel) + `<optgroup label="Stays on a group">${gs.map(g => opt("g:" + g, g, sel)).join("")}</optgroup><optgroup label="Stays on one research">${its.map(x => opt("i:" + x.i, x.n, sel)).join("")}</optgroup>`;
-    };
-    const slotRows = I.labSlots.map(s => {
-      const j0 = s.jobs[0];
-      const now_ = j0 ? `<div class="nx up"><span>${esc(j0.r.o.n)} → ${j0.x.l + 1}</span><span data-end="${now + Math.round(j0.x.left)}">${dur(j0.x.left)}</span></div>` : `<div class="nx"><span class="tm" style="color:var(--acc)">free</span></div>`;
-      let line = `<div class="row i${j0 ? " upg" : ""}"><div class="l"><div class="n">${s.label}</div><select class="pin${s.pin ? " on" : ""}" data-lpin="${s.i}">${labPinOpts(s.kind, s.pin)}</select></div>${now_}</div>`;
-      s.jobs.slice(1).forEach(jx => {
-        line += `<div class="row i upg"><div class="l"><div class="n">${esc(jx.r.o.n)}</div><div class="lvl mono">Goblin Researcher · ${jx.x.l} → ${jx.x.l + 1}</div></div><div class="nx up"><span data-end="${now + Math.round(jx.x.left)}">${dur(jx.x.left)}</span></div></div>`;
-      });
-      if (s.auto) line += autoRow(s.auto, s.free);
-      return line;
+  const listCard = (title, w, items, addLabel, freeNow) => {
+    const rows = items.map(e => {
+      const n = esc(e.r.o.n), k = e.r.o.i, first = e.qi === 0;
+      const btns = (freeNow ? `<button class="q" data-act="start" data-q="${k}" data-lv="${e.q.l}" data-ix="-1" title="Start upgrade">↑</button>` : "") +
+        (first ? "" : `<button class="q s" data-pmv="${w}:${e.qi}" title="Move up">▲</button>`) + `<button class="q s" data-prm="${w}:${e.qi}" title="Remove">✕</button>`;
+      return `<div class="row i"><div class="l"><div class="n">${n}</div><div class="lvl mono">${e.q.l} → ${e.q.l + 1}</div></div><div class="nx">${costSpan(e.r.o, e.co)}<span class="tm">${e.t ? dur(e.t) : "instant"}</span></div>${btns}</div>`;
     }).join("");
-    const ldone = I.lq.length ? Math.max(...I.lq.map(e => e.end)) : 0;
-    h += `<div class="sec open"><div class="head"><span class="nm">Lab plan</span><span class="pc">${busyLabN ? busyLabN + " active" : "free"}</span></div><div class="body">${slotRows}
-      <div class="subh">Up next<span>${I.lq.length ? doneBy(ldone) + " · " + dur(ldone) : ""}</span></div>${I.lq.map(e => qRow(e, "l")).join("") || `<div class="more">Nothing queued. Pin a slot above or tap + Add below.</div>`}
-      <button class="editbtn" data-padd="l">+ Add research</button></div></div>`;
-  } else {
-    const ps = I.petSlot, j0 = ps.jobs[0];
-    const petPinOpts = sel => {
-      const its = R.rows.filter(r => isPet(r.o) && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
-      return opt("", "Any pet", sel) + `<optgroup label="Stays on one pet">${its.map(x => opt("i:" + x.i, x.n, sel)).join("")}</optgroup>`;
-    };
-    const now_ = j0 ? `<div class="nx up"><span>${esc(j0.r.o.n)} → ${j0.x.l + 1}</span><span data-end="${now + Math.round(j0.x.left)}">${dur(j0.x.left)}</span></div>` : `<div class="nx"><span class="tm" style="color:var(--acc)">free</span></div>`;
-    let slotHtml = `<div class="row i${j0 ? " upg" : ""}"><div class="l"><div class="n">Pet House</div><select class="pin${ps.pin ? " on" : ""}" data-ppin="1">${petPinOpts(ps.pin)}</select></div>${now_}</div>`;
-    if (ps.auto) slotHtml += autoRow(ps.auto, ps.free);
-    const pdone = I.pq.length ? I.pq[I.pq.length - 1].end : 0;
-    h += `<div class="sec open"><div class="head"><span class="nm">Pet plan</span><span class="pc">${j0 ? "busy" : "free"}</span></div><div class="body">${slotHtml}
-      <div class="subh">Up next<span>${I.pq.length ? doneBy(pdone) + " · " + dur(pdone) : ""}</span></div>${I.pq.map(e => qRow(e, "p")).join("") || `<div class="more">Nothing queued. Pin a pet above or tap + Add below.</div>`}
-      <button class="editbtn" data-padd="p">+ Add pet</button></div></div>`;
-  }
-  return h;
+    return `<div class="sec open"><div class="head"><span class="nm">${title}</span><span class="pc">${items.length || ""}</span></div><div class="body">${rows || `<div class="more">Nothing picked yet.</div>`}<button class="editbtn" data-padd="${w}">${addLabel}</button></div></div>`;
+  };
+  const freeB = Math.max(0, (R.builders || 0) - I.slots.filter(s => s.job).length) > 0;
+  const freeL = I.labSlots.some(s => !s.jobs.length);
+  const freeP = !I.petSlot.jobs.length;
+  return listCard("Builders next", "b", I.bq, "+ Add building or hero", freeB) +
+    listCard("Lab next", "l", I.lq, "+ Add troop, spell, or squad", freeL) +
+    listCard("Pets next", "p", I.pq, "+ Add pet", freeP) +
+    alertsTab(v, R, now);
 }
 let PK = null;
 function pickerList(){
@@ -988,115 +960,104 @@ function pickerList(){
 }
 function openPicker(w){ PK = w; $("#pkT").innerHTML = w === "b" ? "Add to the <b>builder plan</b>" : w === "p" ? "Add to the <b>pet plan</b>" : "Add to the <b>lab plan</b>"; $("#pkQ").value = ""; pickerList(); $("#psheet").classList.add("show"); }
 function closePicker(){ PK = null; $("#psheet").classList.remove("show"); render(); }
-function builderSnap(v, R, now, c){
-  if (v.apiOnly) return "";
+let BOPEN = false;
+function builderData(v, R){
   const bld = [], lab = [], pet = [];
+  if (!v || v.apiOnly) return { bld, lab, pet, freeB: 0 };
   R.rows.forEach(r => r.inst.forEach(x => {
     if (!x.up) return;
     if (r.o.k === "b" || r.o.k === "h") bld.push({ r, x });
     else if (r.o.k === "l") lab.push({ r, x });
     else if (r.o.k === "p") pet.push({ r, x });
   }));
-  if (!R.builders && !bld.length && !lab.length && !pet.length) return "";
   bld.sort((a, b) => a.x.left - b.x.left);
   lab.sort((a, b) => a.x.left - b.x.left);
   pet.sort((a, b) => a.x.left - b.x.left);
-  const open = !S.snapClosed;
-  const freeB = Math.max(0, R.builders - bld.length), extraB = Math.max(0, bld.length - R.builders);
-  const badgeTxt = R.builders ? (freeB > 0 ? `${freeB}/${R.builders} free` : (extraB > 0 ? `0/${R.builders} (+${extraB})` : `0/${R.builders}`)) : `${bld.length}`;
-  const badgeCls = freeB > 0 ? "free" : "busy";
-  let sub = "all idle";
-  if (freeB > 0 && bld.length) {
-    const end0 = now + Math.round(bld[0].x.left);
-    sub = `next <b class="mono" data-end="${end0}">${dur(bld[0].x.left)}</b>`;
-  } else if (bld.length) {
-    const end0 = now + Math.round(bld[0].x.left);
-    sub = `next <b class="mono" data-end="${end0}">${dur(bld[0].x.left)}</b>`;
-  }
-  let body = "";
-  if (open) {
-    const tiles = [];
-    if (!bld.length && R.builders) {
-      tiles.push(`<button class="bslot free" data-tab="__plan" data-ptab="b"><span class="bslot-n">All ${R.builders} builders free</span><span class="bslot-tm">PLAN →</span></button>`);
-    } else {
-      for (let i = 0; i < freeB; i++) {
-        tiles.push(`<button class="bslot free" data-tab="__plan" data-ptab="b"><span class="bslot-n">Builder free</span><span class="bslot-tm">FREE →</span></button>`);
-      }
-      bld.forEach(({ r, x }, idx) => {
-        const key = r.o.i || "weapon", nm = esc(r.o.n), step = (r.o.t || [])[x.l] || 0;
-        const p = step ? Math.max(4, Math.min(100, Math.round(100 * (1 - x.left / step)))) : 50;
-        const endSec = now + Math.round(x.left);
-        tiles.push(`<button class="bslot${idx === 0 && freeB === 0 ? " next" : ""}" data-act="settime" data-q="${key}" data-lv="${x.l}" data-ix="${x.ix}" data-n="${nm}" data-left="${Math.round(x.left)}" title="Tap to edit time left"><span class="bslot-n">${nm}</span><span class="bslot-tm mono" data-end="${endSec}">${dur(x.left)}</span><span class="bslot-bar"><i style="width:${p}%"></i></span></button>`);
-      });
-    }
-    const ex = [];
-    const exRow = (k, e) => {
-      const key = e.r.o.i || "weapon", nm = esc(e.r.o.n), endSec = now + Math.round(e.x.left);
-      return `<button class="bex" data-act="settime" data-q="${key}" data-lv="${e.x.l}" data-ix="${e.x.ix}" data-n="${nm}" data-left="${Math.round(e.x.left)}" title="Tap to edit time left"><span class="bex-k">${k}</span><span class="bex-n">${nm}</span><span class="bex-tm mono" data-end="${endSec}">${dur(e.x.left)}</span></button>`;
-    };
-    if (lab.length) lab.forEach(e => ex.push(exRow(e.r.o.g === "Squads" ? "Sqd" : "Lab", e)));
-    else if (c.lab && c.lab.rem > 0) ex.push(`<button class="bex" data-tab="__plan" data-ptab="l"><span class="bex-k">Lab</span><span class="bex-n">idle</span><span class="bex-tm free">free</span></button>`);
-    if (pet.length) pet.forEach(e => ex.push(exRow("Pet", e)));
-    else if (c.pets && c.pets.rem > 0) ex.push(`<button class="bex" data-tab="__plan" data-ptab="p"><span class="bex-k">Pet</span><span class="bex-n">idle</span><span class="bex-tm free">free</span></button>`);
-    body = `<div class="bsnap-b"><div class="bsnap-g">${tiles.join("")}</div>${ex.length ? `<div class="bsnap-extra">${ex.join("")}</div>` : ""}</div>`;
-  }
-  return `<div class="bsnap"><button class="bsnap-h" type="button" data-bsnap="1" aria-expanded="${open}"><span class="bsnap-ico"><img src="assets/builder.webp" alt="Builder"></span><span class="bsnap-top"><span class="bsnap-t">Builders</span><span class="bsnap-cnt ${badgeCls}">${badgeTxt}</span><span class="bsnap-sub">${sub}</span></span><span class="bsnap-car">${open ? "▾" : "▸"}</span></button>${body}</div>`;
+  const freeB = Math.max(0, (R.builders || 0) - bld.length);
+  return { bld, lab, pet, freeB };
 }
+function builderPopover(v, R, now, c, BD){
+  if (!BOPEN || v.apiOnly) return "";
+  const { bld, lab, pet, freeB } = BD;
+  const end0 = bld.length ? now + Math.round(bld[0].x.left) : 0;
+  const hdr = freeB > 0 ? `<b>${freeB}/${R.builders} free</b>${bld.length ? ` · next <b class="mono" data-end="${end0}">${dur(bld[0].x.left)}</b>` : ""}` : (bld.length ? `<b>0/${R.builders} free</b> · next <b class="mono" data-end="${end0}">${dur(bld[0].x.left)}</b> (${eta(end0)})` : `all idle`);
+  const tiles = [];
+  if (!bld.length && R.builders) {
+    tiles.push(`<button class="bslot free" data-tab="__next"><span class="bslot-n">All ${R.builders} builders free</span><span class="bslot-tm">UP NEXT →</span></button>`);
+  } else {
+    for (let i = 0; i < freeB; i++) tiles.push(`<button class="bslot free" data-tab="__next"><span class="bslot-n">Builder free</span><span class="bslot-tm">FREE</span></button>`);
+    bld.forEach(({ r, x }, idx) => {
+      const key = r.o.i || "weapon", nm = esc(r.o.n), step = (r.o.t || [])[x.l] || 0;
+      const p = step ? Math.max(4, Math.min(100, Math.round(100 * (1 - x.left / step)))) : 50;
+      const endSec = now + Math.round(x.left);
+      tiles.push(`<button class="bslot${idx === 0 && freeB === 0 ? " next" : ""}" data-act="settime" data-q="${key}" data-lv="${x.l}" data-ix="${x.ix}" data-n="${nm}" data-left="${Math.round(x.left)}" title="Tap to edit or finish"><span class="bslot-n">${nm}</span><span class="bslot-tm mono" data-end="${endSec}">${dur(x.left)}</span><span class="bslot-bar"><i style="width:${p}%"></i></span></button>`);
+    });
+  }
+  const ex = [];
+  const exRow = (k, e) => {
+    const key = e.r.o.i || "weapon", nm = esc(e.r.o.n), endSec = now + Math.round(e.x.left);
+    return `<button class="bex" data-act="settime" data-q="${key}" data-lv="${e.x.l}" data-ix="${e.x.ix}" data-n="${nm}" data-left="${Math.round(e.x.left)}" title="Tap to edit or finish"><span class="bex-k">${k}</span><span class="bex-n">${nm}</span><span class="bex-tm mono" data-end="${endSec}">${dur(e.x.left)}</span></button>`;
+  };
+  if (lab.length) lab.forEach(e => ex.push(exRow(e.r.o.g === "Squads" ? "Sqd" : "Lab", e)));
+  else if (c.lab && c.lab.rem > 0) ex.push(`<button class="bex" data-tab="Troops"><span class="bex-k">Lab</span><span class="bex-n">idle</span><span class="bex-tm free">free</span></button>`);
+  if (pet.length) pet.forEach(e => ex.push(exRow("Pet", e)));
+  else if (c.pets && c.pets.rem > 0) ex.push(`<button class="bex" data-tab="Pets"><span class="bex-k">Pet</span><span class="bex-n">idle</span><span class="bex-tm free">free</span></button>`);
+  return `<div class="bsnap"><div class="bsnap-bar"><span>${hdr}</span><button class="bsnap-x" type="button" data-bsnap="1">Done</button></div><div class="bsnap-b"><div class="bsnap-g">${tiles.join("")}</div>${ex.length ? `<div class="bsnap-extra">${ex.join("")}</div>` : ""}</div></div>`;
+}
+const BAR_TARGET = { build: "Defenses", heroes: "Heroes", lab: "Troops", pets: "Pets", walls: "Walls", equip: "Equipment" };
 function render(){
   const app = $("#app"), chips = $("#chips");
   const gp = GP_STEPS.includes(S.gp) ? S.gp : 0;
   const gpEl = $("#gpOpts");
   if (gpEl) gpEl.innerHTML = GP_STEPS.map(x => `<button type="button" class="${x === gp ? "on" : ""}" data-gp="${x}">${x ? x + "%" : "off"}</button>`).join("");
-  chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("") +
-    (gp ? `<button class="gp-tag" id="btnGpTag" type="button" title="Gold Pass boost">GP ${gp}%</button>` : "");
   let v = null;
-  try { v = view(S.cur) } catch(e) { app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return; }
+  try { v = view(S.cur) } catch(e) {
+    chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("");
+    app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return;
+  }
   if (EDIT && EDIT.tag === S.cur) v = EDIT.v;
   if (v && v.th >= 16 && v.th <= 18) document.documentElement.setAttribute("data-th", v.th); else document.documentElement.removeAttribute("data-th");
   syncThemeColor();
-  if (!v) { app.innerHTML = `<div class="card empty"><p><b>No data yet for ${esc(NAME[S.cur])}.</b><br>Copy the village export in game, then tap Paste.</p></div>`; return; }
+  if (!v) {
+    chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("");
+    app.innerHTML = `<div class="card empty"><p><b>No data yet for ${esc(NAME[S.cur])}.</b><br>Copy the village export in game, then tap Paste.</p></div>`; return;
+  }
   const AO = !!v.apiOnly;
   const ago = s => s < 3600 ? Math.max(1, Math.round(s/60)) + "m" : dur(s);
   const now = Math.floor(Date.now() / 1000), R = compute(v, now), c = R.cats;
   const timed = (AO ? ["heroes","lab","pets"] : ["build","heroes","lab","pets"]).reduce((a, k) => ({ rem: a.rem + c[k].rem, tot: a.tot + c[k].tot }), { rem: 0, tot: 0 });
   const overall = pct(timed);
+  const BD = builderData(v, R);
+  const bPill = !AO && R.builders ? `<button class="bpill${BD.freeB > 0 ? " free" : ""}${BOPEN ? " open" : ""}" type="button" data-bsnap="1" title="Builder timers"><img src="assets/builder.webp" alt="Builders"><span class="bc">${BD.freeB}/${R.builders}</span><span class="bcar">${BOPEN ? "▴" : "▾"}</span></button>` : "";
+  chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("") +
+    (gp ? `<button class="gp-tag" id="btnGpTag" type="button" title="Gold Pass boost">GP ${gp}%</button>` : "") + bPill;
 
-  const barsHtml = S.showBars ? `<div class="bars">${BAR_CATS.map(([k, label]) => {
+  const barsHtml = `<div class="bars">${BAR_CATS.map(([k, label]) => {
     if (AO && (k === "build" || k === "walls")) return "";
     if (!c[k].tot) return "";
     const p = pct(c[k]);
-    return `<div class="cb"><span class="k">${label}</span><div class="bar"><i style="width:${p}%"></i></div><span class="v mono">${p}%</span></div>`;
-  }).join("")}</div>` : "";
+    return `<button type="button" class="cb c-${k}${p >= 100 ? " done" : ""}" data-tab="${BAR_TARGET[k] || "Defenses"}"><span class="k">${label}</span><span class="bar"><i style="width:${p}%"></i></span><span class="v mono">${p}%</span></button>`;
+  }).join("")}</div>`;
 
-  let h = `<div class="card top"><div class="hero"><button class="ringw" type="button" data-bars="1" title="Tap for category breakdown"><span class="pct">${Math.floor(overall)}%</span><span class="ring">${ringSVG(overall)}${TH_IMG[v.th] ? `<img src="${TH_IMG[v.th]}" alt="Town Hall ${v.th}">` : `<b>TH${v.th}</b>`}</span></button>
+  let h = builderPopover(v, R, now, c, BD);
+  h += `<div class="card top"><div class="hero"><div class="ringw"><span class="pct">${Math.floor(overall)}%</span><span class="ring">${ringSVG(overall)}${TH_IMG[v.th] ? `<img src="${TH_IMG[v.th]}" alt="Town Hall ${v.th}">` : `<b>TH${v.th}</b>`}</span></div>
     <div class="meta"><div class="th">Town Hall ${v.th}</div><div class="sub">${esc(NAME[S.cur])} · updated ${ago(now - Math.max(v.ts || 0, v.apiTs || 0))} ago</div>${syncLine()}</div></div>${barsHtml}</div>`;
 
-  h += builderSnap(v, R, now, c);
-
-  // Top-level 3-tab navigation: Plan (default) | Base | Alerts
+  // Category tabs front & center + simple Up Next tab
   const tabInfo = TABS.map(g => {
     if (AO && !API_GROUPS[g]) return null;
     const rs = R.rows.filter(r => r.o.g === g); if (!rs.length) return null;
     const rem = rs.reduce((s, r) => s + r.rem, 0), up = rs.reduce((s, r) => s + r.inst.filter(x => x.up).length, 0);
     return { g, rs, rem, up, done: rem <= 0 };
   }).filter(Boolean);
-  if (!S.tab || !tabInfo.find(t => t.g === S.tab)) S.tab = (tabInfo.find(t => !t.done) || tabInfo[0] || {}).g;
-  const mnav = (S.mnav === "base" || S.mnav === "alerts") ? S.mnav : "plan";
-  const nPlan = plan(S.cur).b.length + plan(S.cur).l.length + plan(S.cur).p.length;
-  const al = alGet();
-  h += `<div class="mnav">
-    <button class="mtab${mnav === "plan" ? " on" : ""}" data-mnav="plan">Plan${nPlan ? `<span>${nPlan}</span>` : ""}</button>
-    <button class="mtab${mnav === "base" ? " on" : ""}" data-mnav="base">Base<span>${Math.floor(overall)}%</span></button>
-    <button class="mtab${mnav === "alerts" ? " on" : ""}" data-mnav="alerts">Alerts<span>${al.on ? (al.lead >= 60 ? "1h" : (al.lead || 20) + "m") : "off"}</span></button>
-  </div>`;
-  if (mnav === "base") {
-    const SHORT = {};
-    const tabBtns = tabInfo.map(t => `<button class="tab${t.done ? " done" : t.up ? " up" : ""}${S.tab === t.g ? " on" : ""}" data-tab="${t.g}">${SHORT[t.g] || t.g}<span>${t.done ? "✓" : t.up ? t.up : "&nbsp;"}</span></button>`);
-    const wts = tabBtns.map(b => b.replace(/<span>.*?<\/span>/, "").replace(/<[^>]+>/g, "").length + 3);
-    let half = 1, bestD = Infinity, tot = wts.reduce((a, b) => a + b, 0);
-    for (let k = 1, acc = 0; k < wts.length; k++) { acc += wts[k - 1]; const d = Math.abs(tot - 2 * acc); if (d < bestD) { bestD = d; half = k; } }
-    h += `<div class="tabs"><div class="tr">${tabBtns.slice(0, half).join("")}</div><div class="tr">${tabBtns.slice(half).join("")}</div></div>`;
-  }
+  if (!S.tab || (S.tab !== "__next" && !tabInfo.find(t => t.g === S.tab))) S.tab = (tabInfo.find(t => !t.done) || tabInfo[0] || {}).g;
+  const nNext = plan(S.cur).b.length + plan(S.cur).l.length + plan(S.cur).p.length;
+  const tabBtns = tabInfo.map(t => `<button class="tab${t.done ? " done" : t.up ? " up" : ""}${S.tab === t.g ? " on" : ""}" data-tab="${t.g}">${t.g}<span>${t.done ? "✓" : t.up ? t.up : "&nbsp;"}</span></button>`)
+    .concat([`<button class="tab${S.tab === "__next" ? " on" : ""}" data-tab="__next">Up Next<span>${nNext || "&nbsp;"}</span></button>`]);
+  const wts = tabBtns.map(b => b.replace(/<span>.*?<\/span>/, "").replace(/<[^>]+>/g, "").length + 3);
+  let half = 1, bestD = Infinity, tot = wts.reduce((a, b) => a + b, 0);
+  for (let k = 1, acc = 0; k < wts.length; k++) { acc += wts[k - 1]; const d = Math.abs(tot - 2 * acc); if (d < bestD) { bestD = d; half = k; } }
+  h += `<div class="tabs"><div class="tr">${tabBtns.slice(0, half).join("")}</div><div class="tr">${tabBtns.slice(half).join("")}</div></div>`;
 
   // one line per copy
   const lineObjs = (r, onlyUp) => {
@@ -1126,10 +1087,9 @@ function render(){
   if (EDIT) {
 
   }
-  const sig = [S.cur, mnav, S.tab, (S.sf && S.sf[S.tab] && S.sf[S.tab].sort) || "", S.gp || 0, S.hideMax ? 1 : 0, EDIT ? 1 : 0].join("|");
+  const sig = [S.cur, S.tab, (S.sf && S.sf[S.tab] && S.sf[S.tab].sort) || "", S.gp || 0, S.hideMax ? 1 : 0, EDIT ? 1 : 0].join("|");
   if (ORD.sig !== sig) ORD = { sig, m: {} };
-  if (mnav === "plan") h += planTab(v, R);
-  else if (mnav === "alerts") h += alertsTab(v, R, now);
+  if (S.tab === "__next") h += upNextTab(v, R, now);
   else {
     const T = tabInfo.find(t => t.g === S.tab);
     if (T) {
@@ -1226,17 +1186,12 @@ function moveWalls(L, delta){
 // events
 document.addEventListener("click", e => {
   if (e.target.closest("#btnGpTag")) { openPanel(); return; }
-  if (e.target.closest("[data-bars]")) { S.showBars = !S.showBars; store.set(S); render(); return; }
   const bsn = e.target.closest("[data-bsnap]");
-  if (bsn) { S.snapClosed = !S.snapClosed; store.set(S); render(); return; }
+  if (bsn) { BOPEN = !BOPEN; render(); return; }
   const gob = e.target.closest("[data-go]");
   if (gob) { S.go = S.go || {}; S.go[gob.dataset.go] = !S.go[gob.dataset.go]; store.set(S); render(); return; }
-  const mn = e.target.closest("[data-mnav]");
-  if (mn) { if (EDIT) finishEdit(); S.mnav = mn.dataset.mnav; store.set(S); render(); return; }
   const tb = e.target.closest("[data-tab]");
-  if (tb) { if (EDIT) finishEdit(); if (tb.dataset.tab === "__plan") S.mnav = "plan"; else { S.mnav = "base"; S.tab = tb.dataset.tab; } if (tb.dataset.ptab) S.ptab = tb.dataset.ptab; store.set(S); render(); return; }
-  const ptb = e.target.closest("[data-ptab]");
-  if (ptb) { S.ptab = ptb.dataset.ptab; store.set(S); render(); return; }
+  if (tb) { if (EDIT) finishEdit(); BOPEN = false; S.tab = tb.dataset.tab; store.set(S); render(); return; }
   const alb = e.target.closest("[data-allead],[data-altype]");
   if (alb) { const al = alGet(); if (alb.dataset.allead) al.lead = +alb.dataset.allead; else { al.types = al.types || { b: true, l: true, p: true }; al.types[alb.dataset.altype] = !(al.types[alb.dataset.altype] !== false); } alSave(al); render(); return; }
   if (e.target.id === "btnAlSave") { saveAlerts(); return; }
