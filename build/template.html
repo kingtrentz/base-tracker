@@ -486,7 +486,6 @@ function fbar(g, rs){
   const tg = (hasT("a") && hasT("g")) ? c("data-ft", "a", "Air", f.ft === "a") + c("data-ft", "g", "Ground", f.ft === "g") : "";
   const rsrc = [["g", "Gold"], ["e", "Elixir"], ["d", "Dark"]].filter(([x]) => hasR(x));
   const rr = rsrc.length > 1 ? rsrc.map(([x, l]) => c("data-fr", x, l, f.fr === x)).join("") : "";
-  if (tg) parts.push(tg); if (rr) parts.push(rr);
   parts.push(c("data-st", "time", "Time" + arrow("time"), st.startsWith("time")) + c("data-st", "cost", "Price" + arrow("cost"), st.startsWith("cost")));
   return `<div class="flt">${parts.join("<i></i>")}</div>`;
 }
@@ -496,6 +495,8 @@ function parseDur(str){
   t.replace(/(\d+(?:\.\d+)?)\s*(d|h|m|s)?/g, (m, n, u) => { hit = true; s += parseFloat(n) * ({ d: 86400, h: 3600, m: 60, s: 1 }[u || "h"]); return m; });
   return hit && s > 0 ? Math.round(s) : null;
 }
+// price sort: 1 dark elixir counted like 100 gold/elixir so dark upgrades don't all look cheapest
+const DARK_W = 100;
 const DROPDOWN_TABS = { Defenses: 1, Collectors: 1, Storages: 1 };
 const TABS = [["Defenses"],["Traps"],["Army"],["Collectors"],["Storages"],["Guardians"],["Walls"],["Heroes"],["Pets"],["Troops"],["Spells"],["Sieges"],["Squads"],["Equipment"]].map(x => x[0]);
 const BAR_CATS = [["build","Buildings"],["heroes","Heroes"],["lab","Lab"],["pets","Pets"],["walls","Walls"],["equip","Equipment"]];
@@ -572,7 +573,7 @@ function render(){
         return { time: x.left, cost: 0, h: `<div class="row i upg"><div class="l"><div class="n">${name}</div>${lvl}<div class="pb"><i style="width:${p}%"></i></div></div>${timeCell}${act("cancel", x.l, "✕", "s") + act("done", x.l, "✓")}</div>` };
       }
       const canTime = !isE && r.o.k !== "e" && step > 0 && key !== "weapon";
-      return { time: step, cost: typeof cost === "number" ? cost : 0, h: `<div class="row i"><div class="l"><div class="n">${name}</div>${lvl}</div><div class="nx">${costHtml(cost)}${step ? `<span class="tm">${dur(step)}</span>` : ""}</div>${canTime ? act("start", x.l, "↑") : act("q", x.l, "+1")}</div>` };
+      return { time: step, cost: typeof cost === "number" ? cost * (r.o.r === "d" ? DARK_W : 1) : 0, h: `<div class="row i"><div class="l"><div class="n">${name}</div>${lvl}</div><div class="nx">${costHtml(cost)}${step ? `<span class="tm">${dur(step)}</span>` : ""}</div>${canTime ? act("start", x.l, "↑") : act("q", x.l, "+1")}</div>` };
     });
   };
 
@@ -587,8 +588,8 @@ function render(){
     if (T) {
       const g = T.g, rs = T.rs, isW = g === "Walls", isE = g === "Equipment";
       const tot = rs.reduce((s, r) => s + r.tot, 0), p = tot ? Math.floor(1000 * (1 - T.rem / tot)) / 10 : 100;
-      const F = fstate(g), FON = !EDIT && !!(F.ft || F.fr);
-      const shown = EDIT ? rs : rs.filter(r => (!F.ft || (r.o.tg || "").includes(F.ft)) && (!F.fr || r.o.r === F.fr));
+      const F = fstate(g), FON = false; F.ft = ""; F.fr = ""; // only Time / Price sorting now
+      const shown = rs;
       const left = shown.filter(r => r.rem > 0).sort((a, b) => b.rem - a.rem), maxed = shown.filter(r => r.rem <= 0);
       const cost = { g: 0, e: 0, d: 0 }, ore = [0,0,0];
       rs.forEach(r => { if (isE) r.ore.forEach((x, i) => ore[i] += x); else cost[r.o.r] = (cost[r.o.r] || 0) + (isW ? r.rem : r.cost); });
