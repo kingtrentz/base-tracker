@@ -471,6 +471,7 @@ function parseDur(str){
   t.replace(/(\d+(?:\.\d+)?)\s*(d|h|m|s)?/g, (m, n, u) => { hit = true; s += parseFloat(n) * ({ d: 86400, h: 3600, m: 60, s: 1 }[u || "h"]); return m; });
   return hit && s > 0 ? Math.round(s) : null;
 }
+const DROPDOWN_TABS = { Defenses: 1, Collectors: 1, Storages: 1 };
 const TABS = [["Defenses"],["Traps"],["Army"],["Collectors"],["Storages"],["Guardians"],["Walls"],["Heroes"],["Pets"],["Troops"],["Spells"],["Sieges"],["Squads"],["Equipment"]].map(x => x[0]);
 const BAR_CATS = [["build","Buildings"],["heroes","Heroes"],["lab","Lab"],["pets","Pets"],["walls","Walls"],["equip","Equipment"]];
 function render(){
@@ -576,7 +577,7 @@ function render(){
       if (EDIT) body = left.concat(maxed).map(r => editRow(r)).join("");
       else {
         let ls;
-        if (g === "Defenses") {
+        if (DROPDOWN_TABS[g]) {
           // one dropdown per defense: name, copies left, next upgrade; open it for each copy
           S.go = S.go || {};
           ls = left.map(r => {
