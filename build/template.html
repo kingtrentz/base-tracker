@@ -196,6 +196,19 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .sheet-a{display:flex;gap:10px;margin-top:16px}
 .sheet-a button{flex:1;padding:13px;border-radius:14px;font-size:15px;font-weight:600;border:0;background:var(--soft)}
 .sheet-a button.pri{background:var(--acc);color:var(--on-acc)}
+.pin{font:inherit;font-size:11px;color:var(--mut);background:var(--soft);border:0;border-radius:8px;padding:3px 6px;margin-top:3px;max-width:170px}
+.pin.on{color:var(--acc);background:var(--accs);font-weight:600}
+.row.i.auto{opacity:.85}
+.row.i .nx .sm{font-size:11px;color:var(--mut)}
+.pkq{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:0;background:var(--soft);color:var(--tx);font:inherit;font-size:15px}
+.pkl{max-height:52vh;overflow-y:auto;margin-top:10px;-webkit-overflow-scrolling:touch}
+.pkl .subh:first-child{margin-top:2px}
+.pki{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;padding:9px 10px;border-radius:10px;font:inherit;color:var(--tx);text-align:left;cursor:pointer}
+.pki:active{background:var(--accs)}
+.pki .n{flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pki .n small{color:var(--mut);font-size:12px;margin-left:4px}
+.pki .tm{font-size:12px;color:var(--mut)}
+.pki .pl{color:var(--acc);font-weight:700}
 .editbtn{display:block;width:calc(100% - 20px);margin:10px auto 4px;padding:10px;border:0;border-radius:12px;background:var(--soft);color:var(--mut);font-size:13px;font-weight:600}
 .editbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 10px 4px;padding:8px 8px 8px 12px;border-radius:14px;background:var(--accs);font-size:13px;color:var(--acc);position:sticky;bottom:10px}
 .editbar button{border:0;padding:10px 14px;border-radius:12px}
@@ -254,6 +267,13 @@ button{border-color:var(--hair)}
 .toast{border:0;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
 .toast button{border:0;background:var(--accs)}
 </style>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Base Tracker">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 <div class="wrap">
@@ -298,6 +318,12 @@ button{border-color:var(--hair)}
     <div class="err" id="tsErr"></div>
     <div class="sheet-a"><button id="tsCancel" type="button">Cancel</button><button id="tsSave" class="pri" type="button">Save</button></div>
   </div></div>
+  <div id="psheet" class="sheet"><div class="sheet-c" role="dialog" aria-label="Add to plan">
+    <div class="sheet-t" id="pkT"></div>
+    <input id="pkQ" class="pkq" type="search" placeholder="Search" autocomplete="off">
+    <div id="pkL" class="pkl"></div>
+    <div class="sheet-a"><button id="pkClose" class="pri" type="button">Done</button></div>
+  </div></div>
   <footer>Game data: ClashKing static data (Nov 23, 2026) · buildings from the latest export, the rest auto-updates<br>built by kingtrents⚡️ x claude<br>Unofficial fan tool, not endorsed by Supercell. Town Hall art © Supercell.</footer>
 </div>
 <script>
@@ -334,6 +360,15 @@ function addAccount(tag, name){
   syncAccounts(); S.cur = tag; store.set(S); return tag;
 }
 const REMOTE = {}, API = {}, CLAN = {};
+S.plan = S.plan || {};
+const plan = tag => { const P = S.plan[tag] = S.plan[tag] || {}; P.pins = P.pins || []; P.b = P.b || []; P.l = P.l || []; return P; };
+let pTimer = null;
+function savePlan(tag){
+  const P = plan(tag); P.ts = Date.now(); store.set(S);
+  if (!MINE[tag] || !tok()) return;
+  clearTimeout(pTimer);
+  pTimer = setTimeout(() => putFile("data/plan_" + tag.slice(1) + ".json", JSON.stringify(plan(tag)), "Plan " + NAME[tag]).catch(() => {}), 1500);
+}
 const norm = x => String(x).toLowerCase().replace(/[^a-z0-9]/g, "");
 const API_GROUPS = { Heroes: 1, Pets: 1, Troops: 1, Spells: 1, Sieges: 1, Squads: 1, Equipment: 1 };
 const BYNAME = {}; DATA.items.forEach(o => { if (API_GROUPS[o.g]) BYNAME[norm(o.n)] = o.i; });
@@ -392,7 +427,9 @@ function loadRemote(){
   return Promise.all([clan].concat(Object.keys(MINE).map(t => ({ tag: t })).map(a => getFile("data/" + a.tag.slice(1) + ".json")
     .then(t => { if (t && tsOf(t)) REMOTE[a.tag] = t.trim(); }).catch(() => {})
     .then(() => getFile("data/api_" + a.tag.slice(1) + ".json"))
-    .then(t => { if (t) { const j = JSON.parse(t); if (j && j.levels) API[a.tag] = j; } }).catch(() => {}))));
+    .then(t => { if (t) { const j = JSON.parse(t); if (j && j.levels) API[a.tag] = j; } }).catch(() => {})
+    .then(() => getFile("data/plan_" + a.tag.slice(1) + ".json"))
+    .then(t => { if (!t) return; const j = JSON.parse(t); if (j && (j.ts || 0) > (plan(a.tag).ts || 0)) { S.plan[a.tag] = j; store.set(S); } }).catch(() => {}))));
 }
 let EDIT = null;
 function toast(m){ const d = document.createElement("div"); d.className = "toast"; d.textContent = m; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); }
@@ -560,6 +597,130 @@ const HERO_ORDER = ["Barbarian King", "Archer Queen", "Minion Prince", "Grand Wa
 const DROPDOWN_TABS = { Defenses: 1, Collectors: 1, Storages: 1 };
 const TABS = [["Defenses"],["Traps"],["Army"],["Collectors"],["Storages"],["Guardians"],["Walls"],["Heroes"],["Pets"],["Troops"],["Spells"],["Sieges"],["Squads"],["Equipment"]].map(x => x[0]);
 const BAR_CATS = [["build","Buildings"],["heroes","Heroes"],["lab","Lab"],["pets","Pets"],["walls","Walls"],["equip","Equipment"]];
+// rows keep the order they had when you opened the tab; tapping ↑ or ✓ doesn't shuffle them.
+// The order resets when you switch tab, account, sort or Gold Pass.
+let ORD = { sig: "", m: {} };
+function stable(list, scope){
+  const m = ORD.m[scope];
+  let out = list.slice();
+  if (m) {
+    const pos = new Map(m.map((id, i) => [id, i]));
+    out = list.filter(x => pos.has(x.id)).sort((a, b) => pos.get(a.id) - pos.get(b.id));
+    list.forEach((x, i) => {
+      if (pos.has(x.id)) return;
+      let j = i - 1; while (j >= 0 && out.indexOf(list[j]) < 0) j--;
+      out.splice(j < 0 ? 0 : out.indexOf(list[j]) + 1, 0, x);
+    });
+  }
+  ORD.m[scope] = out.map(x => x.id);
+  return out;
+}
+
+// ---- planner: a queue for the builders and one for the lab, with pinned builders
+const isBld = o => (o.k === "b" && o.g !== "Walls" && o.i) || o.k === "h";
+const isLab = o => o.k === "l";
+const PIN_GROUPS = ["Heroes", "Defenses", "Traps", "Army", "Collectors", "Storages", "Guardians"];
+const pinMatch = (pin, o) => !!pin && (pin === "g:" + o.g || pin === "i:" + o.i);
+const pinName = pin => !pin ? "Any" : pin.startsWith("g:") ? pin.slice(2) : (BY[+pin.slice(2)] || {}).n || "?";
+function planInfo(v, R){
+  const P = plan(S.cur), rowBy = {}, virt = {};
+  R.rows.forEach(r => { if (!r.o.i) return; rowBy[r.o.i] = r; virt[r.o.i] = r.inst.map(x => x.up ? x.l + 1 : x.l); });
+  const apply = q => { const r = rowBy[q.i], a = virt[q.i]; if (!r || !a || q.l >= r.M) return false; const k = a.indexOf(q.l); if (k < 0) return false; a[k]++; return true; };
+  let changed = false;
+  ["b", "l"].forEach(w => { const keep = P[w].filter(apply); if (keep.length !== P[w].length) { P[w] = keep; changed = true; } });
+  if (changed) savePlan(S.cur);
+  const N = AOof(v) ? 0 : (R.builders || 0);
+  const slots = Array.from({ length: N }, (_, i) => ({ i, pin: P.pins[i] || "", job: null, free: 0, q: [] }));
+  const busy = [];
+  R.rows.forEach(r => { if (isBld(r.o)) r.inst.forEach(x => { if (x.up) busy.push({ r, x }); }); });
+  busy.sort((a, b) => a.x.left - b.x.left);
+  const lastEnd = {};
+  busy.forEach(bj => {
+    const s = slots.find(s => !s.job && pinMatch(s.pin, bj.r.o)) || slots.find(s => !s.job && !s.pin) || slots.find(s => !s.job);
+    if (s) { s.job = bj; s.free = bj.x.left; }
+    if (bj.r.n === 1) lastEnd[bj.r.o.i] = bj.x.left;
+  });
+  const bq = P.b.map((q, qi) => {
+    const r = rowBy[q.i], t = (r.o.t || [])[q.l] || 0;
+    let cand = slots.filter(s => pinMatch(s.pin, r.o)); if (!cand.length) cand = slots.filter(s => !s.pin); if (!cand.length) cand = slots;
+    const s = cand.length ? cand.reduce((a, b) => b.free < a.free ? b : a) : null;
+    const start = Math.max(s ? s.free : 0, r.n === 1 ? (lastEnd[q.i] || 0) : 0), end = start + t;
+    if (s) { s.free = end; s.q.push(qi); }
+    if (r.n === 1) lastEnd[q.i] = end;
+    return { q, qi, r, t, start, end, slot: s ? s.i : -1 };
+  });
+  // a pinned builder with nothing queued suggests the next thing in its group (lowest level first)
+  const queuedIds = new Set(P.b.map(q => q.i));
+  slots.forEach(s => {
+    if (!s.pin || s.q.length) return;
+    let best = null;
+    R.rows.forEach(r => { if (!isBld(r.o) || !pinMatch(s.pin, r.o) || queuedIds.has(r.o.i)) return;
+      r.inst.forEach(x => { const l = x.up ? x.l + 1 : x.l; if (l >= r.M) return; const t = (r.o.t || [])[l] || 0, k = l / r.M + (x.up ? 1 : 0);
+        if (!best || k < best.k || (k === best.k && t < best.t)) best = { r, x, l, t, k, wait: x.up ? x.left : 0 }; }); });
+    s.auto = best;
+  });
+  let labLeft = 0, labJob = null;
+  R.rows.forEach(r => { if (isLab(r.o)) r.inst.forEach(x => { if (x.up && x.left >= labLeft) { labLeft = x.left; labJob = { r, x }; } }); });
+  let lf = labLeft;
+  const lq = P.l.map((q, qi) => { const r = rowBy[q.i], t = (r.o.t || [])[q.l] || 0, start = lf; lf += t; return { q, qi, r, t, start, end: lf }; });
+  return { P, N, slots, bq, lq, labJob, virt, rowBy };
+}
+const AOof = v => !!(v && v.apiOnly);
+function planTab(v, R){
+  const I = planInfo(v, R), now = Math.floor(Date.now() / 1000);
+  const when = s => s <= 0 ? "ready now" : "in " + dur(s);
+  const qRow = (e, w) => {
+    const n = esc(e.r.o.n), k = e.r.o.i, first = e.qi === 0;
+    const where = w === "b" && e.slot >= 0 ? ` · Builder ${e.slot + 1}` : "";
+    const btns = (e.start <= 0 ? `<button class="q" data-act="start" data-q="${k}" data-lv="${e.q.l}" data-ix="-1">↑</button>` : "") +
+      (first ? "" : `<button class="q s" data-pmv="${w}:${e.qi}" title="Move up">▲</button>`) + `<button class="q s" data-prm="${w}:${e.qi}" title="Remove">✕</button>`;
+    return `<div class="row i"><div class="l"><div class="n">${n}</div><div class="lvl mono">${e.q.l} → ${e.q.l + 1}${where} · ${when(e.start)}</div></div><div class="nx"><span class="tm">${e.t ? dur(e.t) : "instant"}</span>${e.t ? `<span class="sm">done in ${dur(e.end)}</span>` : ""}</div>${btns}</div>`;
+  };
+  let h = "";
+  if (I.N) {
+    const pinOpts = sel => {
+      const gs = PIN_GROUPS.filter(g => R.rows.some(r => r.o.g === g && r.rem > 0));
+      const its = R.rows.filter(r => isBld(r.o) && r.o.g !== "Heroes" && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
+      const o = (val, label) => `<option value="${val}"${val === sel ? " selected" : ""}>${esc(label)}</option>`;
+      return o("", "Any upgrade") + `<optgroup label="Stays on a group">${gs.map(g => o("g:" + g, g)).join("")}</optgroup><optgroup label="Stays on one building">${its.map(x => o("i:" + x.i, x.n)).join("")}</optgroup>`;
+    };
+    const slotRows = I.slots.map(s => {
+      const j = s.job;
+      const now_ = j ? `<div class="nx up"><span>${esc(j.r.o.n)} → ${j.x.l + 1}</span><span data-end="${now + Math.round(j.x.left)}">${dur(j.x.left)}</span></div>` : `<div class="nx"><span class="tm" style="color:var(--acc)">free</span></div>`;
+      let line = `<div class="row i${j ? " upg" : ""}"><div class="l"><div class="n">Builder ${s.i + 1}</div><select class="pin${s.pin ? " on" : ""}" data-pin="${s.i}">${pinOpts(s.pin)}</select></div>${now_}</div>`;
+      if (s.auto) { const a = s.auto, wait = Math.max(s.free, a.wait), ready = wait <= 0 && !a.x.up;
+        line += `<div class="row i auto"><div class="l"><div class="n">next: ${esc(a.r.o.n)}</div><div class="lvl mono">${a.l} → ${a.l + 1} · ${when(wait)}</div></div><div class="nx"><span class="tm">${dur(a.t)}</span></div>${ready ? `<button class="q" data-act="start" data-q="${a.r.o.i}" data-lv="${a.l}" data-ix="${a.x.ix}">↑</button>` : ""}</div>`; }
+      return line;
+    }).join("");
+    const bdone = I.bq.length ? Math.max(...I.bq.map(e => e.end)) : 0;
+    h += `<div class="sec open"><div class="head"><span class="nm">Builder plan</span><span class="pc">${I.slots.filter(s => !s.job).length}/${I.N} free</span></div><div class="body">${slotRows}
+      <div class="subh">Up next<span>${I.bq.length ? "all done in " + dur(bdone) : ""}</span></div>${I.bq.map(e => qRow(e, "b")).join("") || `<div class="more">Nothing planned. Pin a builder above or add upgrades.</div>`}
+      <button class="editbtn" data-padd="b">+ Add upgrade</button></div></div>`;
+  } else h += `<div class="card empty"><p>Paste the village export to plan builders.</p></div>`;
+  const lj = I.labJob, ldone = I.lq.length ? I.lq[I.lq.length - 1].end : 0;
+  h += `<div class="sec open"><div class="head"><span class="nm">Lab plan</span><span class="pc">${lj ? "busy" : "free"}</span></div><div class="body">
+    ${lj ? `<div class="row i upg"><div class="l"><div class="n">${esc(lj.r.o.n)}</div><div class="lvl mono">researching ${lj.x.l} → ${lj.x.l + 1}</div></div><div class="nx up"><span data-end="${now + Math.round(lj.x.left)}">${dur(lj.x.left)}</span></div></div>` : `<div class="row i"><div class="l"><div class="n">Laboratory</div><div class="lvl">nothing researching</div></div><div class="nx"><span class="tm" style="color:var(--acc)">free</span></div></div>`}
+    <div class="subh">Up next<span>${I.lq.length ? "all done in " + dur(ldone) : ""}</span></div>${I.lq.map(e => qRow(e, "l")).join("") || `<div class="more">Nothing planned yet.</div>`}
+    <button class="editbtn" data-padd="l">+ Add research</button></div></div>`;
+  return h;
+}
+let PK = null;
+function pickerList(){
+  let v; try { v = view(S.cur) } catch(e) { return; } if (!v) return;
+  const R = compute(v, Math.floor(Date.now() / 1000)), I = planInfo(v, R), want = PK === "b" ? isBld : isLab;
+  const qs = norm($("#pkQ").value || ""), by = {};
+  R.rows.forEach(r => {
+    if (!r.o.i || !want(r.o) || (qs && !norm(r.o.n).includes(qs))) return;
+    const a = I.virt[r.o.i] || [], m = {}; a.forEach(l => { if (l < r.M) m[l] = (m[l] || 0) + 1; });
+    Object.keys(m).map(Number).sort((x, y) => x - y).forEach(l => (by[r.o.g] = by[r.o.g] || []).push({ r, l, c: m[l] }));
+  });
+  const order = GROUPS.filter(g => by[g]);
+  $("#pkL").innerHTML = order.map(g => `<div class="subh">${g}</div>` + by[g].sort((x, y) => x.r.o.n.localeCompare(y.r.o.n) || x.l - y.l).map(e =>
+    `<button class="pki" data-pi="${e.r.o.i}" data-pl="${e.l}"><span class="n">${esc(e.r.o.n)}<small class="mono">${e.l} → ${e.l + 1}${e.c > 1 ? " · ×" + e.c : ""}</small></span><span class="tm">${dur((e.r.o.t || [])[e.l] || 0)}</span><span class="pl">+</span></button>`).join("")).join("")
+    || `<div class="more">${qs ? "No match." : "Nothing left to plan here."}</div>`;
+}
+function openPicker(w){ PK = w; $("#pkT").innerHTML = w === "b" ? "Add to the <b>builder plan</b>" : "Add to the <b>lab plan</b>"; $("#pkQ").value = ""; pickerList(); $("#psheet").classList.add("show"); }
+function closePicker(){ PK = null; $("#psheet").classList.remove("show"); render(); }
 function render(){
   const app = $("#app"), chips = $("#chips");
   const gp = GP_STEPS.includes(S.gp) ? S.gp : 0;
@@ -602,11 +763,13 @@ function render(){
     return { g, rs, rem, up, done: rem <= 0 };
   }).filter(Boolean);
   const anyUp = tabInfo.some(t => t.up);
-  if (!S.tab || (S.tab === "__up" && !anyUp) || (S.tab !== "__up" && !tabInfo.find(t => t.g === S.tab))) S.tab = (tabInfo.find(t => !t.done) || tabInfo[0] || {}).g;
+  if (!S.tab || (S.tab === "__up" && !anyUp) || (S.tab !== "__up" && S.tab !== "__plan" && !tabInfo.find(t => t.g === S.tab))) S.tab = (tabInfo.find(t => !t.done) || tabInfo[0] || {}).g;
   // two even rows of tabs, no scrolling
   const SHORT = {};
   const nTabs = tabInfo.length + (anyUp ? 1 : 0);
+  const nPlan = plan(S.cur).b.length + plan(S.cur).l.length;
   const tabBtns = (anyUp ? [`<button class="tab up${S.tab === "__up" ? " on" : ""}" data-tab="__up">Active<span>↑${tabInfo.reduce((s, t) => s + t.up, 0)}</span></button>`] : []).concat(
+    [`<button class="tab${S.tab === "__plan" ? " on" : ""}" data-tab="__plan">Plan<span>${nPlan || "&nbsp;"}</span></button>`]).concat(
     tabInfo.map(t => `<button class="tab${t.done ? " done" : t.up ? " up" : ""}${S.tab === t.g ? " on" : ""}" data-tab="${t.g}">${SHORT[t.g] || t.g}<span>${t.done ? "✓" : t.up ? "↑" + t.up : "&nbsp;"}</span></button>`));
   // split where both rows carry about the same amount of text, so long names get room
   const wts = tabBtns.map(b => b.replace(/<span>.*?<\/span>/, "").replace(/<[^>]+>/g, "").length + 3);
@@ -623,7 +786,7 @@ function render(){
     if (isW) {
       if (onlyUp) return [];
       const m = {}; r.inst.forEach(x => { if (x.l < r.M) m[x.l] = (m[x.l] || 0) + 1; });
-      return Object.keys(m).map(Number).sort((a, b) => b - a).map(l => ({ time: 0, cost: r.o.co[l] || 0, h:
+      return Object.keys(m).map(Number).sort((a, b) => b - a).map(l => ({ id: "w:" + l, time: 0, cost: r.o.co[l] || 0, h:
         `<div class="row i"><div class="l"><div class="n">${name} <span class="x">×${m[l]}</span></div><div class="lvl mono">${l ? l + "/" + r.M : "not built"}</div></div><div class="nx">${costHtml(r.o.co[l])}</div>${act("q", l, "+10", "s")}${act("q", l, "+1")}</div>` }));
     }
     return r.inst.filter(x => x.l < r.M && (!onlyUp || x.up)).sort((a, b) => (b.up - a.up) || (b.l - a.l)).map(x => {
@@ -632,21 +795,24 @@ function render(){
       if (x.up) {
         const p = step ? Math.max(2, Math.min(100, Math.round(100 * (1 - x.left / step)))) : 50;
         const timeCell = `<button class="nx up tl" data-act="settime" data-q="${key}" data-lv="${x.l}" data-ix="${x.ix}" data-n="${name}" data-left="${Math.round(x.left)}" title="Tap to change the time left"><span data-end="${now + Math.round(x.left)}">${dur(x.left)}</span><small>edit</small></button>`;
-        return { time: x.left, cost: 0, h: `<div class="row i upg"><div class="l"><div class="n">${name}</div>${lvl}<div class="pb"><i style="width:${p}%"></i></div></div>${timeCell}${act("cancel", x.l, "✕", "s") + act("done", x.l, "✓")}</div>` };
+        return { id: key + ":" + x.ix, time: x.left, cost: 0, h: `<div class="row i upg"><div class="l"><div class="n">${name}</div>${lvl}<div class="pb"><i style="width:${p}%"></i></div></div>${timeCell}${act("cancel", x.l, "✕", "s") + act("done", x.l, "✓")}</div>` };
       }
       const canTime = !isE && r.o.k !== "e" && step > 0 && key !== "weapon";
-      return { time: step, cost: typeof cost === "number" ? cost * (r.o.r === "d" ? DARK_W : 1) : 0, h: `<div class="row i"><div class="l"><div class="n">${name}</div>${lvl}</div><div class="nx">${costHtml(cost)}${step ? `<span class="tm">${dur(step)}</span>` : ""}</div>${canTime ? act("start", x.l, "↑") : act("q", x.l, "+1")}</div>` };
+      return { id: key + ":" + x.ix, time: step, cost: typeof cost === "number" ? cost * (r.o.r === "d" ? DARK_W : 1) : 0, h: `<div class="row i"><div class="l"><div class="n">${name}</div>${lvl}</div><div class="nx">${costHtml(cost)}${step ? `<span class="tm">${dur(step)}</span>` : ""}</div>${canTime ? act("start", x.l, "↑") : act("q", x.l, "+1")}</div>` };
     });
   };
 
   if (EDIT) {
 
   }
-  if (S.tab === "__up") {
+  const sig = [S.cur, S.tab, (S.sf && S.sf[S.tab] && S.sf[S.tab].sort) || "", S.gp || 0, S.hideMax ? 1 : 0, EDIT ? 1 : 0].join("|");
+  if (ORD.sig !== sig) ORD = { sig, m: {} };
+  if (S.tab === "__plan") h += planTab(v, R);
+  else if (S.tab === "__up") {
     // split by who's doing the work: builders, lab, pet house
     const all = tabInfo.flatMap(t => t.rs.flatMap(r => lineObjs(r, true).map(x => ({ ...x, k: r.o.k }))));
     const groups = [["Builders", x => x.k === "b" || x.k === "h", `${busy.b}/${R.builders || "?"} busy`], ["Lab", x => x.k === "l", ""], ["Pet House", x => x.k === "p", ""]];
-    const parts = groups.map(([label, fn, extra]) => { const ls = all.filter(fn).sort((a, b) => a.time - b.time); return ls.length ? `<div class="subh">${label}<span>${extra || ls.length}</span></div>` + ls.map(x => x.h).join("") : ""; }).join("");
+    const parts = groups.map(([label, fn, extra]) => { const ls = stable(all.filter(fn).sort((a, b) => a.time - b.time), "act:" + label); return ls.length ? `<div class="subh">${label}<span>${extra || ls.length}</span></div>` + ls.map(x => x.h).join("") : ""; }).join("");
     h += `<div class="sec open"><div class="head"><span class="nm">Upgrading</span><span class="pc">${all.length}</span></div><div class="body">${parts}</div></div>`;
   } else {
     const T = tabInfo.find(t => t.g === S.tab);
@@ -669,22 +835,24 @@ function render(){
           // one dropdown per defense: name, copies left, next upgrade; open it for each copy
           S.go = S.go || {};
           ls = left.map(r => {
-            const rows = lineObjs(r), key = r.o.i || "weapon", left_ = r.inst.filter(x => x.l < r.M).length, ups = r.inst.filter(x => x.up).length;
+            const key = r.o.i || "weapon", rows = stable(lineObjs(r), "dg:" + key), left_ = r.inst.filter(x => x.l < r.M).length, ups = r.inst.filter(x => x.up).length;
             const mn = arr => arr.length ? Math.min(...arr) : 0;
             const nextT = mn(rows.map(x => x.time).filter(Boolean)), nextC = mn(rows.map(x => x.cost).filter(Boolean));
             const built = [...new Set(r.inst.filter(x => x.l > 0).map(x => x.l))].sort((a, b) => b - a), nNew = r.inst.filter(x => x.l === 0).length;
             const open = !!S.go[key];
             const head = `<button class="dg-h" data-go="${key}"><span class="l"><span class="n">${esc(r.o.n)}</span><span class="lvl mono">${built.length ? (built.length === 1 ? built[0] : built[built.length - 1] + "–" + built[0]) + "/" + r.M : "max " + r.M}${nNew ? ` · ${nNew} new` : ""} · ${left_} to go${ups ? ` · <b class="upc">${ups} upgrading</b>` : ""}</span></span><span class="nx">${nextT ? `<span class="tm">${dur(nextT)}</span>` : ""}</span><span class="car">${open ? "▾" : "▸"}</span></button>`;
-            return { time: nextT, cost: nextC, h: `<div class="dg${open ? " open" : ""}">${head}${open ? `<div class="dg-b">${rows.map(x => x.h).join("")}</div>` : ""}</div>` };
+            return { id: "g:" + key, time: nextT, cost: nextC, h: `<div class="dg${open ? " open" : ""}">${head}${open ? `<div class="dg-b">${rows.map(x => x.h).join("")}</div>` : ""}</div>` };
           });
         } else ls = left.flatMap(r => lineObjs(r).map(x => ({ ...x, hero: r.o.h, lvLeft: r.rem, nm: r.o.n })));
         if (F.sort) { const [k, dir] = F.sort.split(":"); ls.sort((a, b) => dir === "up" ? a[k] - b[k] : b[k] - a[k]); }
+        if (g !== "Equipment") ls = stable(ls, "top");
         if (g === "Equipment") {
           // grouped under each hero, in Hero Hall order
           const by = {}; ls.forEach(x => (by[x.hero || "Other"] = by[x.hero || "Other"] || []).push(x));
           const order = HERO_ORDER.filter(n => by[n]).concat(Object.keys(by).filter(n => !HERO_ORDER.includes(n)));
           // one dropdown per hero; pieces stay in a fixed A-Z order unless a sort is on, so rows don't jump when tapped
           if (!F.sort) Object.values(by).forEach(a => a.sort((x, y) => x.nm.localeCompare(y.nm)));
+          Object.keys(by).forEach(n => { by[n] = stable(by[n], "eq:" + n); });
           S.go = S.go || {};
           ls = order.map(n => {
             const k = "eq:" + n, open = !!S.go[k], lv = by[n].reduce((a, x) => a + (x.lvLeft || 0), 0);
@@ -749,12 +917,30 @@ document.addEventListener("click", e => {
   if (qb && !EDIT) {
     const a = qb.dataset.act, key = qb.dataset.q, lv = qb.dataset.lv, ix = qb.dataset.ix;
     if (a === "settime") { openTimeSheet(key, +lv, qb.dataset.n, +qb.dataset.left, ix); return; }
-    if (a === "start") changeCopy(key, lv, (h, row, o) => { const step = (o.t || [])[h.l] || 0; h.t = -1; h.start = step; }, (row, h) => `${row.o.n} started · ${dur(h.start || 0)} (tap the time to change it)`, false, ix);
+    if (a === "start") {
+      // starting something that was planned takes it off the plan (undo puts it back)
+      const P = plan(S.cur), snap = JSON.stringify({ b: P.b, l: P.l });
+      let hit = false; ["b", "l"].forEach(w => { const k = P[w].findIndex(q => String(q.i) === String(key) && q.l === +lv); if (k >= 0 && !hit) { P[w].splice(k, 1); hit = true; } });
+      if (hit) savePlan(S.cur);
+      changeCopy(key, lv, (h, row, o) => { const step = (o.t || [])[h.l] || 0; h.t = -1; h.start = step; }, (row, h) => `${row.o.n} started · ${dur(h.start || 0)} (tap the time to change it)`, false, ix,
+        hit ? () => { const j = JSON.parse(snap), Q = plan(S.cur); Q.b = j.b; Q.l = j.l; savePlan(S.cur); } : null);
+    }
     else if (a === "cancel") changeCopy(key, lv, h => { h.t = 0; }, row => `${row.o.n} upgrade cancelled`, true, ix);
     else if (a === "done") changeCopy(key, lv, h => { h.l++; h.t = 0; }, (row, h) => `${row.o.n} done · level ${h.l}`, true, ix);
     else quickUp(key, qb.textContent.trim() === "+10" ? 10 : 1, lv);
     return;
   }
+  const pa = e.target.closest("[data-padd]");
+  if (pa) { openPicker(pa.dataset.padd); return; }
+  const pm = e.target.closest("[data-pmv],[data-prm]");
+  if (pm) { const [w, i] = (pm.dataset.pmv || pm.dataset.prm).split(":"), P = plan(S.cur), k = +i;
+    if (pm.dataset.pmv) { if (k > 0) [P[w][k - 1], P[w][k]] = [P[w][k], P[w][k - 1]]; }
+    else P[w].splice(k, 1);
+    savePlan(S.cur); render(); return; }
+  const pi = e.target.closest("[data-pi]");
+  if (pi && PK) { const P = plan(S.cur); P[PK].push({ i: +pi.dataset.pi, l: +pi.dataset.pl }); savePlan(S.cur);
+    toast("Added " + ((BY[+pi.dataset.pi] || {}).n || "") + " " + pi.dataset.pl + " → " + (+pi.dataset.pl + 1)); pickerList(); return; }
+  if (e.target.id === "pkClose" || e.target.id === "psheet") { closePicker(); return; }
   if (e.target.closest("#btnDone")) { finishEdit(); return; }
   if (e.target.id === "btnEditLv") { startEdit(); return; }
   const wb = e.target.closest("button[data-wl]");
@@ -805,6 +991,7 @@ document.addEventListener("click", e => {
   if (e.target.id === "tsSave") { e.preventDefault(); saveTimeSheet(); }
   else if (e.target.id === "tsCancel" || e.target.id === "tsheet") { e.preventDefault(); closeTimeSheet(); }
 });
+document.addEventListener("input", e => { if (e.target.id === "pkQ" && PK) pickerList(); });
 document.addEventListener("keydown", e => { if (TS && e.key === "Enter") { e.preventDefault(); saveTimeSheet(); } if (TS && e.key === "Escape") closeTimeSheet(); });
 document.addEventListener("change", e => {
   if (e.target.matches && e.target.matches("input[data-wl]") && EDIT) {
@@ -812,7 +999,8 @@ document.addEventListener("change", e => {
     const arr = EDIT.v.inst[(DATA.items.find(o => o.g === "Walls") || {}).i] || [];
     const cur = arr.filter(h => h.l === L).length;
     moveWalls(L, want - cur); render(); return;
-  } if (e.target.id === "hideMax") { S.hideMax = e.target.checked; store.set(S); render(); } });
+  } if (e.target.matches && e.target.matches("select[data-pin]")) { const P = plan(S.cur); P.pins[+e.target.dataset.pin] = e.target.value; savePlan(S.cur); render(); return; }
+  if (e.target.id === "hideMax") { S.hideMax = e.target.checked; store.set(S); render(); } });
 function bump(key, d){
   const v = EDIT.v, R = compute(v, Math.floor(Date.now() / 1000));
   if (key === "weapon") { const M = (DATA.weapon[Math.min(v.th, DATA.top || 18)] || []).length; v.weapon = Math.max(0, Math.min(M, (v.weapon || 0) + Math.sign(d))); EDIT.dirty = true; return; }
@@ -832,7 +1020,7 @@ function bump(key, d){
   EDIT.dirty = true;
 }
 let qTimer = null, qPending = null;
-function changeCopy(key, lvAt, fn, msg, wantUp, ixAt){
+function changeCopy(key, lvAt, fn, msg, wantUp, ixAt, onUndo){
   let v; try { v = view(S.cur) } catch(e) { return; }
   if (!v || v.apiOnly) { toast("Paste the village export first."); return; }
   const tag = S.cur, before = best(tag), now = Math.floor(Date.now() / 1000), R0 = compute(v, now);
@@ -853,6 +1041,7 @@ function changeCopy(key, lvAt, fn, msg, wantUp, ixAt){
   render(); queueSave(tag, msg(row, pick));
   toastUndo(msg(row, pick), () => {
     if (before) { S.acc[tag] = { raw: before, saved: Date.now() }; REMOTE[tag] = before; } else { delete S.acc[tag]; delete REMOTE[tag]; }
+    if (onUndo) onUndo();
     store.set(S); render(); queueSave(tag, "Undo " + row.o.n);
   });
 }
@@ -930,8 +1119,8 @@ $("#btnTheme").onclick = () => {
 };
 themeIcon();
 function autoRefresh(){
-  if (EDIT || TS || document.hidden || !tok()) return;
-  loadRemote().then(() => { if (!EDIT && !TS) render(); });
+  if (EDIT || TS || PK || document.hidden || !tok()) return;
+  loadRemote().then(() => { if (!EDIT && !TS && !PK) render(); });
 }
 setInterval(autoRefresh, 120000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) autoRefresh(); });
@@ -965,7 +1154,7 @@ setInterval(() => {
   const now = Math.floor(Date.now() / 1000);
   let finished = false;
   document.querySelectorAll("[data-end]").forEach(el => { const left = +el.dataset.end - now; if (left <= 0) finished = true; el.textContent = left <= 0 ? "Done" : dur(left); });
-  if (finished && !TS) render();
+  if (finished && !TS && !PK) render();
 }, 30000);
 // ---- passphrase lock: the GitHub token is stored in data/lock.json encrypted with the passphrase
 // (PBKDF2-SHA256 600k rounds -> AES-GCM). The right passphrase unlocks the token for this browser.
@@ -1020,5 +1209,6 @@ window.__bt = { parse, compute };
 })();
 </script>
 <script data-goatcounter="https://kingtrentz.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+<script>(function(){if("serviceWorker"in navigator){navigator.serviceWorker.register("sw.js").catch(function(){});}var hiddenAt=0;document.addEventListener("visibilitychange",function(){if(document.hidden){hiddenAt=Date.now();}else if(hiddenAt&&Date.now()-hiddenAt>60000){location.reload();}});})();</script>
 </body>
 </html>
