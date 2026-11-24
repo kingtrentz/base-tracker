@@ -190,6 +190,8 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .subh span{font-weight:500;letter-spacing:0}
 .dg.eq .dg-b .row.i .n{display:block}
 .dg.eq .dg-b .row.i .lvl{font-size:11px;color:var(--mut);margin-top:1px}
+.wallhint{font-size:12px;color:var(--mut);padding:6px 12px 8px}
+.ed .wn{width:64px;text-align:center;font-size:14px;font-weight:700;padding:7px 4px;border-radius:10px;border:0;background:var(--soft);color:var(--tx)}
 /* softer look */
 :root{--soft:color-mix(in srgb,var(--tx) 6%,transparent);--hair:color-mix(in srgb,var(--line) 55%,transparent);--accs:color-mix(in srgb,var(--acc) 14%,transparent)}
 @media (prefers-color-scheme:light){:root{--card:#fff;--bg:#f2f3f5}}
@@ -568,7 +570,7 @@ function render(){
       if (onlyUp) return [];
       const m = {}; r.inst.forEach(x => { if (x.l < r.M) m[x.l] = (m[x.l] || 0) + 1; });
       return Object.keys(m).map(Number).sort((a, b) => b - a).map(l => ({ time: 0, cost: r.o.co[l] || 0, h:
-        `<div class="row i"><div class="l"><div class="n">${name} <span class="x">×${m[l]}</span></div><div class="lvl mono">${l}/${r.M}</div></div><div class="nx">${costHtml(r.o.co[l])}</div>${act("q", l, "+10", "s")}${act("q", l, "+1")}</div>` }));
+        `<div class="row i"><div class="l"><div class="n">${name} <span class="x">×${m[l]}</span></div><div class="lvl mono">${l ? l + "/" + r.M : "not built"}</div></div><div class="nx">${costHtml(r.o.co[l])}</div>${act("q", l, "+10", "s")}${act("q", l, "+1")}</div>` }));
     }
     return r.inst.filter(x => x.l < r.M && (!onlyUp || x.up)).sort((a, b) => (b.up - a.up) || (b.l - a.l)).map(x => {
       const step = (r.o.t || [])[x.l] || 0, cost = isE ? 0 : ((r.o.co || [])[x.l] || 0);
@@ -584,7 +586,7 @@ function render(){
   };
 
   if (EDIT) {
-    h += `<div class="note fixbar"><span>Editing levels for this tab. Save at the bottom.</span></div>`;
+
   }
   if (S.tab === "__up") {
     const ls = tabInfo.flatMap(t => t.rs.flatMap(r => lineObjs(r, true))).sort((a, b) => a.time - b.time);
@@ -644,19 +646,40 @@ function render(){
   app.innerHTML = h;
 }
 function editRow(r){
-  const isW = r.o.g === "Walls", key = r.o.i || "weapon";
-  if (isW || key === "weapon") {
-    const done = r.rem <= 0;
-    const ed = `<div class="ed">${r.lv.some(l => l > 0) ? `<button data-ed="${key}" data-d="-1">−</button>` : ""}${!done ? `<button data-ed="${key}" data-d="1">+</button>${isW ? `<button data-ed="${key}" data-d="10">+10</button>` : ""}` : ""}</div>`;
-    return `<div class="row i"><div class="l"><div class="n">${esc(r.o.n)}</div><div class="lvl">${lvSummary(r)}</div></div>${ed}</div>`;
+  const key = r.o.i || "weapon", name = esc(r.o.n);
+  const stepper = (attrs, val, min, max) => `<div class="ed"><button ${attrs} data-d="-1"${val <= min ? " disabled" : ""}>−</button><b class="mono">${val}</b><button ${attrs} data-d="1"${val >= max ? " disabled" : ""}>+</button></div>`;
+  if (key === "weapon") {
+    const l = r.lv[0] || 0;
+    return `<div class="row i"><div class="l"><div class="n">${name}</div><div class="lvl">max ${r.M}</div></div>${stepper(`data-ed="weapon"`, l, 0, r.M)}</div>`;
   }
-  // one row per copy, each with its own − / +
   const arr = EDIT.v.inst[r.o.i] = EDIT.v.inst[r.o.i] || [];
   while (arr.length < r.n) arr.push({ l: 0, t: 0 });
-  const order = arr.map((h, i) => i).sort((a, b) => arr[b].l - arr[a].l);
-  return order.map((i, k) => { const h = arr[i], l = Math.min(h.l, r.M);
-    return `<div class="row i"><div class="l"><div class="n">${esc(r.o.n)}${r.n > 1 ? ` <span class="x">#${k + 1}</span>` : ""}</div><div class="lvl mono">${l ? l + "/" + r.M : "not built · 0/" + r.M}</div></div><div class="ed"><button data-edc="${r.o.i}" data-i="${i}" data-d="-1"${l <= 0 ? " disabled" : ""}>−</button><b class="mono">${l}</b><button data-edc="${r.o.i}" data-i="${i}" data-d="1"${l >= r.M ? " disabled" : ""}>+</button></div></div>`;
+  if (r.o.g === "Walls") {
+    // how many wall pieces sit at each level; + pulls pieces up from the level below, − drops them a level
+    const cnt = {}; arr.forEach(h => { const l = Math.min(h.l, r.M); cnt[l] = (cnt[l] || 0) + 1; });
+    const levels = [...new Set([r.M, ...Object.keys(cnt).map(Number)])].sort((a, b) => b - a);
+    return `<div class="wallhint">Tap + to move a wall up to that level, − to move one down. Tap a number to type it.</div>` +
+      levels.map(L => { const c = cnt[L] || 0, below = arr.filter(h => Math.min(h.l, r.M) < L).length;
+        return `<div class="row i"><div class="l"><div class="n">${L ? "Level " + L : "Not built"}</div><div class="lvl">${L === r.M ? "max" : ""}</div></div><div class="ed"><button data-wl="${L}" data-d="-1"${c <= 0 || L === 0 ? " disabled" : ""}>−</button><input class="wn mono" data-wl="${L}" inputmode="numeric" value="${c}"><button data-wl="${L}" data-d="1"${below <= 0 ? " disabled" : ""}>+</button></div></div>`;
+      }).join("") + `<div class="lvl" style="padding:6px 12px">${arr.length} pieces total</div>`;
+  }
+  // one row per building, in a fixed order, each with − level +
+  return arr.map((h, i) => { const l = Math.min(h.l, r.M);
+    return `<div class="row i"><div class="l"><div class="n">${name}${r.n > 1 ? ` <span class="x">${i + 1}</span>` : ""}</div><div class="lvl">${l ? "max " + r.M : "not built · max " + r.M}</div></div>${stepper(`data-edc="${r.o.i}" data-i="${i}"`, l, 0, r.M)}</div>`;
   }).join("");
+}
+function moveWalls(L, delta){
+  const T = EDIT && EDIT.v; if (!T) return;
+  const row = compute(T, Math.floor(Date.now() / 1000)).rows.find(r => r.o.g === "Walls"); if (!row) return;
+  const arr = T.inst[row.o.i] = T.inst[row.o.i] || [];
+  while (arr.length < row.n) arr.push({ l: 0, t: 0 });
+  if (delta > 0) { // pull the highest pieces from below up to L
+    const pool = arr.filter(h => Math.min(h.l, row.M) < L).sort((a, b) => b.l - a.l);
+    pool.slice(0, delta).forEach(h => { h.l = L; h.t = 0; });
+  } else if (delta < 0 && L > 0) { // drop pieces from L to L-1
+    arr.filter(h => Math.min(h.l, row.M) === L).slice(0, -delta).forEach(h => { h.l = L - 1; h.t = 0; });
+  }
+  EDIT.dirty = true;
 }
 
 // events
@@ -677,6 +700,8 @@ document.addEventListener("click", e => {
   }
   if (e.target.closest("#btnDone")) { finishEdit(); return; }
   if (e.target.id === "btnEditLv") { startEdit(); return; }
+  const wb = e.target.closest("button[data-wl]");
+  if (wb && EDIT) { moveWalls(+wb.dataset.wl, +wb.dataset.d); render(); return; }
   const ec = e.target.closest("[data-edc]");
   if (ec && EDIT) { const arr = EDIT.v.inst[+ec.dataset.edc] || [], h = arr[+ec.dataset.i]; if (h) { h.l = Math.max(0, h.l + +ec.dataset.d); h.t = 0; EDIT.dirty = true; } render(); return; }
   const eb = e.target.closest("[data-ed]");
@@ -724,7 +749,13 @@ document.addEventListener("click", e => {
   else if (e.target.id === "tsCancel" || e.target.id === "tsheet") { e.preventDefault(); closeTimeSheet(); }
 });
 document.addEventListener("keydown", e => { if (TS && e.key === "Enter") { e.preventDefault(); saveTimeSheet(); } if (TS && e.key === "Escape") closeTimeSheet(); });
-document.addEventListener("change", e => { if (e.target.id === "hideMax") { S.hideMax = e.target.checked; store.set(S); render(); } });
+document.addEventListener("change", e => {
+  if (e.target.matches && e.target.matches("input[data-wl]") && EDIT) {
+    const L = +e.target.dataset.wl, want = Math.max(0, parseInt(e.target.value, 10) || 0);
+    const arr = EDIT.v.inst[(DATA.items.find(o => o.g === "Walls") || {}).i] || [];
+    const cur = arr.filter(h => h.l === L).length;
+    moveWalls(L, want - cur); render(); return;
+  } if (e.target.id === "hideMax") { S.hideMax = e.target.checked; store.set(S); render(); } });
 function bump(key, d){
   const v = EDIT.v, R = compute(v, Math.floor(Date.now() / 1000));
   if (key === "weapon") { const M = (DATA.weapon[Math.min(v.th, DATA.top || 18)] || []).length; v.weapon = Math.max(0, Math.min(M, (v.weapon || 0) + Math.sign(d))); EDIT.dirty = true; return; }
@@ -819,6 +850,7 @@ function startEdit(){
   let v = null;
   try { v = view(S.cur) } catch(e) {}
   if (!v || v.apiOnly) { toast("Paste an export first, then you can edit buildings."); return; }
+  Object.values(v.inst).forEach(a => a.sort((x, y) => y.l - x.l));
   EDIT = { tag: S.cur, v, dirty: false }; render();
 }
 function finishEdit(){
