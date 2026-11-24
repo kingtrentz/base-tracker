@@ -151,9 +151,6 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .sec .head .pc{margin-left:auto}
 .row.i .nx.tl{border:0;background:none;padding:2px 4px;border-radius:8px;cursor:pointer;font:inherit;color:var(--warn);font-weight:700;font-size:13px}
 .row.i .nx.tl small{font-size:10px;font-weight:500;color:var(--mut);text-decoration:underline dotted}
-.tset{display:flex;gap:6px;align-items:center;flex:none}
-.tset input{width:86px;padding:7px 8px;border-radius:10px;border:1px solid var(--warn);background:var(--bg);color:var(--tx);font:13px "Space Mono",monospace}
-.tset .q{min-width:44px;padding:7px 0}
 .dg + .dg{box-shadow:inset 0 1px 0 var(--hair)}
 .dg-h{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;padding:10px 8px 10px 10px;text-align:left;font:inherit;color:var(--tx);cursor:pointer;border-radius:12px}
 .dg-h .l{flex:1;min-width:0;display:block}
@@ -169,6 +166,18 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .dg-b .row.i{min-height:42px}
 .dg-b .row.i .n{display:none}
 .dg-b .row.i .lvl{font-size:13px;color:var(--tx);margin:0}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.sheet.show{display:flex}
+.sheet-c{width:100%;max-width:520px;background:var(--card);border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.25)}
+.sheet-t{font-size:15px;margin-bottom:14px;color:var(--mut)}
+.sheet-t b{color:var(--tx)}
+.tsf{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tsf label{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:var(--mut)}
+.tsf input{width:100%;text-align:center;font:700 26px "Space Mono",monospace;padding:12px 4px;border-radius:14px;border:0;background:var(--soft);color:var(--tx)}
+.tsf input:focus{outline:2px solid var(--warn)}
+.sheet-a{display:flex;gap:10px;margin-top:16px}
+.sheet-a button{flex:1;padding:13px;border-radius:14px;font-size:15px;font-weight:600;border:0;background:var(--soft)}
+.sheet-a button.pri{background:var(--acc);color:#0b130c}
 /* softer look */
 :root{--soft:color-mix(in srgb,var(--tx) 6%,transparent);--hair:color-mix(in srgb,var(--line) 55%,transparent);--accs:color-mix(in srgb,var(--acc) 14%,transparent)}
 @media (prefers-color-scheme:light){:root{--card:#fff;--bg:#f2f3f5}}
@@ -231,6 +240,16 @@ button{border-color:var(--hair)}
 
   <div id="chips" class="chips"></div>
   <div id="app"></div>
+  <div id="tsheet" class="sheet"><div class="sheet-c" role="dialog" aria-label="Time left">
+    <div class="sheet-t">Time left on <b id="tsName"></b></div>
+    <div class="tsf">
+      <label><input id="tsD" type="number" inputmode="numeric" min="0" placeholder="0"><span>days</span></label>
+      <label><input id="tsH" type="number" inputmode="numeric" min="0" max="23" placeholder="0"><span>hours</span></label>
+      <label><input id="tsM" type="number" inputmode="numeric" min="0" max="59" placeholder="0"><span>min</span></label>
+    </div>
+    <div class="err" id="tsErr"></div>
+    <div class="sheet-a"><button id="tsCancel" type="button">Cancel</button><button id="tsSave" class="pri" type="button">Save</button></div>
+  </div></div>
   <footer>Game data: ClashKing static data (Nov 23, 2026) · buildings from the latest export, the rest auto-updates<br>built by kingtrents⚡️ x claude</footer>
 </div>
 <script>
@@ -464,7 +483,6 @@ function fbar(g, rs){
   parts.push(c("data-st", "time", "Time" + arrow("time"), st.startsWith("time")) + c("data-st", "cost", "Price" + arrow("cost"), st.startsWith("cost")));
   return `<div class="flt">${parts.join("<i></i>")}</div>`;
 }
-let TEDIT = null; // {key, lv}: the upgrade whose time left is being typed
 function parseDur(str){
   const t = String(str).toLowerCase().replace(/,/g, " ").trim(); if (!t) return null;
   let s = 0, hit = false;
@@ -543,11 +561,8 @@ function render(){
       const lvl = `<div class="lvl mono">${x.l ? x.l + "/" + r.M : "new · 0/" + r.M}</div>`;
       if (x.up) {
         const p = step ? Math.max(2, Math.min(100, Math.round(100 * (1 - x.left / step)))) : 50;
-        const editing = TEDIT && String(TEDIT.key) === String(key) && TEDIT.lv === x.l;
-        const timeCell = editing
-          ? `<form class="tset" data-tset="${key}" data-lv="${x.l}"><input name="t" inputmode="text" autocomplete="off" placeholder="3d 4h" value="${esc(dur(x.left))}"><button class="q">Set</button></form>`
-          : `<button class="nx up tl" data-act="settime" data-q="${key}" data-lv="${x.l}" title="Tap to change the time left"><span data-end="${now + Math.round(x.left)}">${dur(x.left)}</span><small>edit</small></button>`;
-        return { time: x.left, cost: 0, h: `<div class="row i upg"><div class="l"><div class="n">${name}</div>${lvl}<div class="pb"><i style="width:${p}%"></i></div></div>${timeCell}${editing ? "" : act("cancel", x.l, "✕", "s") + act("done", x.l, "✓")}</div>` };
+        const timeCell = `<button class="nx up tl" data-act="settime" data-q="${key}" data-lv="${x.l}" data-n="${name}" data-left="${Math.round(x.left)}" title="Tap to change the time left"><span data-end="${now + Math.round(x.left)}">${dur(x.left)}</span><small>edit</small></button>`;
+        return { time: x.left, cost: 0, h: `<div class="row i upg"><div class="l"><div class="n">${name}</div>${lvl}<div class="pb"><i style="width:${p}%"></i></div></div>${timeCell}${act("cancel", x.l, "✕", "s") + act("done", x.l, "✓")}</div>` };
       }
       const canTime = !isE && r.o.k !== "e" && step > 0 && key !== "weapon";
       return { time: step, cost: typeof cost === "number" ? cost : 0, h: `<div class="row i"><div class="l"><div class="n">${name}</div>${lvl}</div><div class="nx">${costHtml(cost)}${step ? `<span class="tm">${dur(step)}</span>` : ""}</div>${canTime ? act("start", x.l, "↑") : act("q", x.l, "+1")}</div>` };
@@ -615,7 +630,7 @@ document.addEventListener("click", e => {
   const qb = e.target.closest("[data-act]");
   if (qb && !EDIT) {
     const a = qb.dataset.act, key = qb.dataset.q, lv = qb.dataset.lv;
-    if (a === "settime") { TEDIT = { key, lv: +lv }; render(); const inp = document.querySelector(".tset input"); if (inp) { inp.focus(); inp.select(); } return; }
+    if (a === "settime") { openTimeSheet(key, +lv, qb.dataset.n, +qb.dataset.left); return; }
     if (a === "start") changeCopy(key, lv, (h, row, o) => { const step = (o.t || [])[h.l] || 0; h.t = -1; h.start = step; }, (row, h) => `${row.o.n} started · ${dur(h.start || 0)} (tap the time to change it)`);
     else if (a === "cancel") changeCopy(key, lv, h => { h.t = 0; }, row => `${row.o.n} upgrade cancelled`, true);
     else if (a === "done") changeCopy(key, lv, h => { h.l++; h.t = 0; }, (row, h) => `${row.o.n} done · level ${h.l}`, true);
@@ -644,18 +659,30 @@ document.addEventListener("click", e => {
   const head = e.target.closest(".sec .head");
   if (head) { const sec = head.parentElement, k = sec.dataset.sec; sec.classList.toggle("open"); S.open[k] = sec.classList.contains("open"); store.set(S); }
 });
-document.addEventListener("submit", e => {
-  const f = e.target.closest("[data-tset]"); if (!f) return;
-  e.preventDefault();
-  const secs = parseDur(f.querySelector("input").value), key = f.dataset.tset, lv = f.dataset.lv;
-  TEDIT = null;
-  if (!secs) { toast("Type it like 3d 4h, 5h 30m or 45m"); render(); return; }
-  changeCopy(key, lv, (h, row, o) => { const age = Math.floor(Date.now() / 1000) - view(S.cur).ts; h.t = age + secs; }, (row) => `${row.o.n} · ${dur(secs)} left`, true);
+// time-left sheet: separate days / hours / minutes boxes with number keypads
+let TS = null;
+function openTimeSheet(key, lv, name, left){
+  TS = { key, lv };
+  const d = Math.floor(left / 86400), h = Math.floor(left % 86400 / 3600), m = Math.floor(left % 3600 / 60);
+  $("#tsName").textContent = name;
+  $("#tsD").value = d || ""; $("#tsH").value = h || ""; $("#tsM").value = m || "";
+  $("#tsErr").textContent = "";
+  $("#tsheet").classList.add("show");
+}
+function closeTimeSheet(){ TS = null; $("#tsheet").classList.remove("show"); document.activeElement && document.activeElement.blur && document.activeElement.blur(); }
+function saveTimeSheet(){
+  if (!TS) return;
+  const n = id => Math.max(0, parseInt($(id).value, 10) || 0);
+  const secs = n("#tsD") * 86400 + n("#tsH") * 3600 + n("#tsM") * 60;
+  if (!secs) { $("#tsErr").textContent = "Put in at least a minute."; return; }
+  const { key, lv } = TS; closeTimeSheet();
+  changeCopy(key, lv, h => { const age = Math.floor(Date.now() / 1000) - view(S.cur).ts; h.t = age + secs; }, row => `${row.o.n} · ${dur(secs)} left`, true);
+}
+document.addEventListener("click", e => {
+  if (e.target.id === "tsSave") { e.preventDefault(); saveTimeSheet(); }
+  else if (e.target.id === "tsCancel" || e.target.id === "tsheet") { e.preventDefault(); closeTimeSheet(); }
 });
-document.addEventListener("focusout", e => {
-  const f = e.target.closest && e.target.closest("[data-tset]");
-  if (f && !f.contains(e.relatedTarget)) setTimeout(() => { if (TEDIT && !document.activeElement.closest("[data-tset]")) { TEDIT = null; render(); } }, 150);
-});
+document.addEventListener("keydown", e => { if (TS && e.key === "Enter") { e.preventDefault(); saveTimeSheet(); } if (TS && e.key === "Escape") closeTimeSheet(); });
 document.addEventListener("change", e => { if (e.target.id === "hideMax") { S.hideMax = e.target.checked; store.set(S); render(); } });
 function bump(key, d){
   const v = EDIT.v, R = compute(v, Math.floor(Date.now() / 1000));
@@ -803,7 +830,7 @@ setInterval(() => {
   const now = Math.floor(Date.now() / 1000);
   let finished = false;
   document.querySelectorAll("[data-end]").forEach(el => { const left = +el.dataset.end - now; if (left <= 0) finished = true; el.textContent = left <= 0 ? "Done" : dur(left); });
-  if (finished) render();
+  if (finished && !TS) render();
 }, 30000);
 render();
 loadRemote().then(render);
