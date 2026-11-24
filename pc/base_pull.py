@@ -10,8 +10,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 P = lambda *f: os.path.join(HERE, *f)
 KEY_CONFIG = os.path.join(HERE, "..", "Touch Grass Inc Tracker", "config.json")
 ACCOUNTS = ["#R0RRV0VQ", "#QUV9Q8Q2"]   # KingTrents, Khnum-Atum~ra
-CLAN_CONFIG = os.path.join(HERE, "..", "Den of Thieves Tracker", "config.json")   # only clanTag is read from it
-CLAN_FILE = "data/clan_levels.json"   # everyone else in Den of Thieves, one file, kept apart from Trent's own files
 USER, REPO = "kingtrentz", "base-tracker"
 
 def log(msg):
@@ -63,36 +61,6 @@ def main():
         open(P(path), "wb").write(content)
         changed[path] = content
         log(f"{p.get('name', tag)}: levels changed, queued for upload")
-    # clan members: separate step, separate file. Anything going wrong here is logged and skipped,
-    # so it can never stop Trent's own two accounts from updating.
-    try:
-        ctag = json.load(open(CLAN_CONFIG, encoding="utf-8")).get("clanTag", "")
-        if ctag:
-            req = urllib.request.Request("https://api.clashofclans.com/v1/clans/" + urllib.parse.quote(ctag) + "/members",
-                                         headers={"Authorization": "Bearer " + key, "Accept": "application/json"})
-            with urllib.request.urlopen(req, timeout=30) as r: members = json.loads(r.read()).get("items", [])
-            try: prev = json.load(open(P(CLAN_FILE), encoding="utf-8"))
-            except Exception: prev = {}
-            out = {}
-            for m in members:
-                t = m.get("tag")
-                if not t or t in ACCOUNTS: continue
-                try: p = clash(key, t)
-                except Exception as e:
-                    if t in prev: out[t] = prev[t]
-                    continue
-                lv = levels(p)
-                old = prev.get(t) or {}
-                same = old.get("levels") == lv and old.get("th") == p.get("townHallLevel")
-                out[t] = {"tag": t, "name": p.get("name", ""), "th": p.get("townHallLevel", 0), "ts": old.get("ts") if same and old.get("ts") else int(time.time()), "levels": lv}
-            h = hashlib.sha256(json.dumps(out, sort_keys=True).encode()).hexdigest()
-            if out and st.get(CLAN_FILE) != h:
-                content = json.dumps(out, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-                open(P(CLAN_FILE), "wb").write(content)
-                changed[CLAN_FILE] = content; hashes[CLAN_FILE] = h
-                log(f"Clan: {len(out)} members, levels changed, queued for upload")
-    except Exception as e:
-        log(f"Clan pull skipped ({type(e).__name__}: {e})")
     if not changed:
         log("OK no level changes"); return 0
     if "--no-upload" in sys.argv:

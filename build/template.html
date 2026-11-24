@@ -211,6 +211,15 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .wallhint{font-size:12px;color:var(--mut);padding:6px 12px 8px}
 .ed .wn{width:64px;text-align:center;font-size:14px;font-weight:700;padding:7px 4px;border-radius:10px;border:0;background:var(--soft);color:var(--tx)}
 .chip.add{color:var(--mut);background:transparent;box-shadow:0 0 0 1px var(--hair) inset}
+.lock{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:200;padding:24px}
+.lock.show{display:flex}
+body.locked .wrap > *:not(#lock){visibility:hidden}
+.lock-c{width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px;text-align:center}
+.lock-c h1{font-size:26px}
+.lock-c form{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.lock-c input{width:100%;padding:13px 14px;border-radius:14px;border:0;background:var(--card);color:var(--tx);font:15px inherit;box-shadow:0 0 0 1px var(--hair)}
+.lock-c input[hidden]{display:none}
+.lock-c button{padding:13px;border-radius:14px;font-size:15px;font-weight:700;border:0}
 /* softer look */
 :root{--soft:color-mix(in srgb,var(--tx) 6%,transparent);--hair:color-mix(in srgb,var(--line) 55%,transparent);--accs:color-mix(in srgb,var(--acc) 14%,transparent)}
 
@@ -254,8 +263,8 @@ button{border-color:var(--hair)}
   </header>
 
   <div id="panel" class="card panel">
-    <div class="sub" style="margin-bottom:8px"><b>Add your account</b>: copy your village export in game (Settings → More Settings → Data Export → Copy) and paste it here. It's saved on this phone only.</div>
-    <textarea id="raw" placeholder="Paste your village export"></textarea>
+    <div class="sub" style="margin-bottom:8px">In Clash: Settings → More Settings → Data Export → Copy, then paste it here (or pick the saved file).</div>
+    <textarea id="raw" placeholder="Paste the KingTrents or Khnum-Atum~ra export"></textarea>
     <div class="actions">
       <button class="pri" id="btnSave">Save</button>
       <label><button type="button" id="btnFile">Pick file</button><input type="file" id="file" accept=".json,.txt,application/json,text/plain" hidden></label>
@@ -263,16 +272,22 @@ button{border-color:var(--hair)}
       <button id="btnCancel">Cancel</button>
     </div>
     <div class="err" id="err"></div>
-    <div class="sub" style="margin-top:14px">No export handy? Add your player tag for now (heroes, lab and pets fill in if you're in Den of Thieves).</div>
-    <div class="actions" style="margin-top:6px"><input type="text" id="addTag" autocomplete="off" placeholder="#ABC123" style="flex:1;min-width:0"><button id="btnAddTag">Add tag</button></div>
-    <div class="actions" id="rmWrap" style="margin-top:10px"><button id="btnRemove" type="button">Remove this account from this phone</button></div>
-    <div class="sub" style="margin-top:18px;opacity:.7">Site owner only: GitHub token</div>
-    <div class="actions" style="margin-top:6px"><input type="text" id="tok" autocomplete="off" placeholder="github_pat_…" style="flex:1;min-width:0"><button id="btnTok">Save token</button></div>
-    <div class="sub" id="tokState" style="margin-top:6px"></div>
+    <div class="actions" style="margin-top:14px"><button id="btnLock" type="button">Lock this browser</button></div>
   </div>
 
   <div id="chips" class="chips"></div>
   <div id="app"></div>
+  <div id="lock" class="lock"><div class="lock-c">
+    <h1>base<span>.</span>tracker</h1>
+    <div class="sub" id="lockMsg">Enter the passphrase.</div>
+    <form id="lockForm" autocomplete="off">
+      <input id="lkTok" type="password" placeholder="GitHub token (github_pat_…)" autocomplete="off" hidden>
+      <input id="lkPass" type="password" placeholder="Passphrase" autocomplete="current-password">
+      <input id="lkPass2" type="password" placeholder="Passphrase again" autocomplete="new-password" hidden>
+      <button class="pri" id="lkGo" type="submit">Unlock</button>
+    </form>
+    <div class="err" id="lkErr"></div>
+  </div></div>
   <div id="tsheet" class="sheet"><div class="sheet-c" role="dialog" aria-label="Time left">
     <div class="sheet-t">Time left on <b id="tsName"></b></div>
     <div class="tsf">
@@ -301,7 +316,7 @@ const store = {
 let S = store.get(); S.acc = S.acc || {}; S.open = S.open || {}; if (S.hideMax === undefined) S.hideMax = true;
 // Trent's two accounts are the only ones ever saved to the repo. Anyone else's account lives on their own phone only.
 const MINE = { "#R0RRV0VQ": "KingTrents", "#QUV9Q8Q2": "Khnum-Atum~ra" };
-S.extra = Array.isArray(S.extra) ? S.extra.filter(a => a && a.tag && !MINE[a.tag]) : [];
+S.extra = []; // site is locked to Trent's own accounts
 let ACCOUNTS = [], NAME = {};
 function syncAccounts(){
   // on someone else's phone their own accounts come first; Trent's stay available after them
@@ -373,11 +388,7 @@ function putFile(path, text, msg){
   }).then(r => { if (!r.ok) throw new Error("GitHub said " + r.status); return r.json(); }).then(j => { SHA[path] = j.content.sha; });
 }
 function loadRemote(){
-  // everyone else in the clan: one read-only file of hero/lab/pet levels from Trent's PC
-  const clan = fetch("data/clan_levels.json?t=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.json() : {}).then(j => {
-    Object.assign(CLAN, j || {});
-    S.extra.forEach(a => { const c = CLAN[a.tag]; if (c) { API[a.tag] = c; if (c.name && a.name !== c.name) { a.name = c.name; syncAccounts(); store.set(S); } } });
-  }).catch(() => {});
+  const clan = Promise.resolve();
   return Promise.all([clan].concat(Object.keys(MINE).map(t => ({ tag: t })).map(a => getFile("data/" + a.tag.slice(1) + ".json")
     .then(t => { if (t && tsOf(t)) REMOTE[a.tag] = t.trim(); }).catch(() => {})
     .then(() => getFile("data/api_" + a.tag.slice(1) + ".json"))
@@ -552,7 +563,7 @@ const BAR_CATS = [["build","Buildings"],["heroes","Heroes"],["lab","Lab"],["pets
 function render(){
   const app = $("#app"), chips = $("#chips");
   const gp = GP_STEPS.includes(S.gp) ? S.gp : 0;
-  chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("") + `<button class="chip add" id="btnAdd">+ Add</button>` +
+  chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("") + 
     `<div class="gp" title="Gold Pass builder and research boost"><span>Gold Pass</span>${GP_STEPS.map(x => `<button class="${x === gp ? "on" : ""}" data-gp="${x}">${x ? x + "%" : "off"}</button>`).join("")}</div>`;
   let v = null;
   try { v = view(S.cur) } catch(e) { app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return; }
@@ -752,7 +763,6 @@ document.addEventListener("click", e => {
   if (ec && EDIT) { const arr = EDIT.v.inst[+ec.dataset.edc] || [], h = arr[+ec.dataset.i]; if (h) { h.l = Math.max(0, h.l + +ec.dataset.d); h.t = 0; EDIT.dirty = true; } render(); return; }
   const eb = e.target.closest("[data-ed]");
   if (eb && EDIT) { bump(eb.dataset.ed, +eb.dataset.d); render(); return; }
-  if (e.target.id === "btnAdd") { if (EDIT) finishEdit(); openPanel(); return; }
   const chip = e.target.closest(".chip");
   if (chip) { if (EDIT) finishEdit(); S.cur = chip.dataset.tag; store.set(S); render(); return; }
   const fb = e.target.closest("[data-ft],[data-fr],[data-st],[data-fclear]");
@@ -920,39 +930,20 @@ $("#btnTheme").onclick = () => {
 };
 themeIcon();
 function autoRefresh(){
-  if (EDIT || TS || document.hidden) return;
+  if (EDIT || TS || document.hidden || !tok()) return;
   loadRemote().then(() => { if (!EDIT && !TS) render(); });
 }
 setInterval(autoRefresh, 120000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) autoRefresh(); });
-$("#btnTok").onclick = () => {
-  const t = $("#tok").value.trim(); if (!t) return;
-  fetch("https://api.github.com/repos/kingtrentz/base-tracker", { headers: { Authorization: "Bearer " + t } }).then(r => r.json()).then(j => {
-    if (j && j.permissions && j.permissions.push) { try { localStorage.setItem(TOKKEY, t) } catch(e) {} $("#tok").value = ""; tokState(); toast("Token saved on this device"); }
-    else $("#tokState").textContent = "That token can't write to base-tracker.";
-  }).catch(() => { $("#tokState").textContent = "Couldn't check the token. Try again."; });
-};
-function tokState(){ $("#tokState").textContent = tok() ? "Token saved on this device." : "No token on this device yet."; }
 const panel = $("#panel");
-function openPanel(){ $("#rmWrap").style.display = MINE[S.cur] ? "none" : ""; panel.classList.add("show"); $("#err").textContent = ""; $("#raw").value = ""; tokState(); }
+function openPanel(){ panel.classList.add("show"); $("#err").textContent = ""; $("#raw").value = ""; }
 $("#btnImport").onclick = () => panel.classList.contains("show") ? panel.classList.remove("show") : openPanel();
 $("#btnCancel").onclick = () => panel.classList.remove("show");
-$("#btnAddTag").onclick = () => {
-  const t = addAccount($("#addTag").value); if (!t) { $("#err").textContent = "That doesn't look like a player tag."; return; }
-  $("#addTag").value = ""; panel.classList.remove("show");
-  if (CLAN[t]) API[t] = CLAN[t];
-  render(); toast(CLAN[t] ? "Added " + CLAN[t].name : "Added. Paste your export to fill in buildings.");
-};
-$("#btnRemove").onclick = () => {
-  const t = S.cur; if (MINE[t]) return;
-  S.extra = S.extra.filter(a => a.tag !== t); delete S.acc[t]; delete REMOTE[t]; delete API[t];
-  syncAccounts(); S.cur = ACCOUNTS[0].tag; store.set(S); panel.classList.remove("show"); render(); toast("Removed from this phone");
-};
 $("#btnFile").onclick = () => $("#file").click();
 $("#file").onchange = e => { const f = e.target.files[0]; if (!f) return; f.text().then(t => { $("#raw").value = t; }); };
 function importRaw(raw){
   const v = parse(raw);
-  if (!NAME[v.tag]) addAccount(v.tag);
+  if (!NAME[v.tag]) throw new Error("That export is for " + v.tag + ". This tracker only takes KingTrents and Khnum-Atum~ra.");
   S.cur = v.tag; panel.classList.remove("show");
   saveExport(v.tag, raw.trim(), "Import " + NAME[v.tag] + " export"); render();
 }
@@ -976,8 +967,55 @@ setInterval(() => {
   document.querySelectorAll("[data-end]").forEach(el => { const left = +el.dataset.end - now; if (left <= 0) finished = true; el.textContent = left <= 0 ? "Done" : dur(left); });
   if (finished && !TS) render();
 }, 30000);
-render();
-loadRemote().then(render);
+// ---- passphrase lock: the GitHub token is stored in data/lock.json encrypted with the passphrase
+// (PBKDF2-SHA256 600k rounds -> AES-GCM). The right passphrase unlocks the token for this browser.
+const LOCKFILE = "data/lock.json", b64u = u => btoa(String.fromCharCode.apply(null, new Uint8Array(u))), unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function passKey(pass, salt){
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 600000, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+let LOCK = null, STARTED = false;
+function startApp(){ $("#lock").classList.remove("show"); document.body.classList.remove("locked"); if (STARTED) { loadRemote().then(render); return; } STARTED = true; render(); loadRemote().then(render); }
+function showLock(setup){
+  document.body.classList.add("locked"); $("#lock").classList.add("show");
+  $("#lkTok").hidden = !setup; $("#lkPass2").hidden = !setup; $("#lkErr").textContent = "";
+  $("#lockMsg").textContent = setup ? "First time: paste your GitHub token and pick a passphrase (4+ random words is best). You'll only need the passphrase on other browsers." : "Enter the passphrase.";
+  $("#lkGo").textContent = setup ? "Lock it" : "Unlock";
+  setTimeout(() => (setup ? $("#lkTok") : $("#lkPass")).focus(), 50);
+}
+$("#lockForm").onsubmit = async e => {
+  e.preventDefault(); const err = $("#lkErr"); err.textContent = ""; $("#lkGo").disabled = true;
+  try {
+    const pass = $("#lkPass").value;
+    if (!LOCK) { // setup
+      const t = $("#lkTok").value.trim();
+      if (!t) throw new Error("Paste the token.");
+      if (pass.length < 12) throw new Error("Use a longer passphrase (12+ characters, a few words).");
+      if (pass !== $("#lkPass2").value) throw new Error("The two passphrases don't match.");
+      const j = await fetch("https://api.github.com/repos/kingtrentz/base-tracker", { headers: { Authorization: "Bearer " + t } }).then(r => r.json());
+      if (!(j && j.permissions && j.permissions.push)) throw new Error("That token can't write to base-tracker.");
+      const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await passKey(pass, salt), new TextEncoder().encode(t));
+      try { localStorage.setItem(TOKKEY, t) } catch(_) {}
+      await putFile(LOCKFILE, JSON.stringify({ v: 1, kdf: "PBKDF2-SHA256", iter: 600000, salt: b64u(salt), iv: b64u(iv), ct: b64u(ct) }), "Set passphrase lock");
+      toast("Locked. Use the passphrase on your other browsers.");
+    } else {
+      let t;
+      try { t = new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(LOCK.iv) }, await passKey(pass, unb64(LOCK.salt)), unb64(LOCK.ct))); }
+      catch(_) { throw new Error("Wrong passphrase."); }
+      try { localStorage.setItem(TOKKEY, t) } catch(_) {}
+    }
+    $("#lkTok").value = $("#lkPass").value = $("#lkPass2").value = "";
+    startApp();
+  } catch(x) { err.textContent = x.message; }
+  $("#lkGo").disabled = false;
+};
+$("#btnLock").onclick = () => { try { localStorage.removeItem(TOKKEY) } catch(_) {} panel.classList.remove("show"); boot(); };
+function boot(){
+  if (tok()) { startApp(); return; }
+  fetch(LOCKFILE + "?t=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.json() : null).catch(() => null).then(j => { LOCK = j && j.ct ? j : null; showLock(!LOCK); });
+}
+boot();
 window.__bt = { parse, compute };
 })();
 </script>
