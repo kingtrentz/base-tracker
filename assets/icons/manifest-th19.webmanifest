@@ -1,0 +1,25 @@
+{
+  "name": "Clash Base Tracker",
+  "short_name": "Base Tracker",
+  "description": "Clash of Clans base upgrade tracker.",
+  "id": "../../",
+  "start_url": "../../index.html",
+  "scope": "../../",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "icons": [
+    {
+      "src": "th19-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "th19-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

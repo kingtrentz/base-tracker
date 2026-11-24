@@ -211,6 +211,11 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .pki .n small{color:var(--mut);font-size:12px;margin-left:4px}
 .pki .tm{font-size:12px;color:var(--mut)}
 .pki .pl{color:var(--acc);font-weight:700}
+.iconpick{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;font-size:13px;color:var(--mut)}
+#iconOpts{display:flex;gap:6px}
+#iconOpts button{padding:0;border:2px solid transparent;border-radius:12px;background:none;width:44px;height:44px;overflow:hidden}
+#iconOpts button.on{border-color:var(--acc)}
+#iconOpts img{width:100%;height:100%;display:block;border-radius:9px}
 .editbtn{display:block;width:calc(100% - 20px);margin:10px auto 4px;padding:10px;border:0;border-radius:12px;background:var(--soft);color:var(--mut);font-size:13px;font-weight:600}
 .editbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 10px 4px;padding:8px 8px 8px 12px;border-radius:14px;background:var(--accs);font-size:13px;color:var(--acc);position:sticky;bottom:10px}
 .editbar button{border:0;padding:10px 14px;border-radius:12px}
@@ -269,8 +274,9 @@ button{border-color:var(--hair)}
 .toast{border:0;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
 .toast button{border:0;background:var(--accs)}
 </style>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link id="lnkMan" rel="manifest" href="manifest.webmanifest">
+<link id="lnkApple" rel="apple-touch-icon" href="apple-touch-icon.png">
+<link id="lnkIcon" rel="icon" type="image/png" href="icon-192.png">
 <meta name="theme-color" content="#0d1117">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -294,6 +300,8 @@ button{border-color:var(--hair)}
       <button id="btnCancel">Cancel</button>
     </div>
     <div class="err" id="err"></div>
+    <div class="iconpick"><span>App icon</span><div id="iconOpts"></div></div>
+    <div class="note" style="margin:6px 0 0">On iPhone, remove the app and Add to Home Screen again to see a new icon.</div>
     <div class="actions" style="margin-top:14px"><button id="btnLock" type="button">Lock this browser</button></div>
   </div>
 
@@ -1139,6 +1147,16 @@ function finishEdit(){
   if (E && E.dirty) saveExport(E.tag, serialize(E.v), "Edit " + NAME[E.tag] + " levels");
   render();
 }
+// app icon: one per Town Hall, picked in ⋯ (saved per browser); swaps the home-screen icon, manifest and tab icon
+const ICONKEY = "basetracker.icon", ICON_THS = [16, 17, 18, 19];
+const iconTh = () => { const n = +(localStorage.getItem(ICONKEY) || 19); return ICON_THS.includes(n) ? n : 19; };
+function applyIcon(){
+  const n = iconTh(), b = "assets/icons/th" + n;
+  $("#lnkApple").href = b + "-180.png"; $("#lnkIcon").href = b + "-192.png"; $("#lnkMan").href = "assets/icons/manifest-th" + n + ".webmanifest";
+  $("#iconOpts").innerHTML = ICON_THS.map(t => `<button type="button" data-icon="${t}" class="${t === n ? "on" : ""}" title="Town Hall ${t}"><img src="assets/icons/th${t}-180.png" alt="Town Hall ${t}"></button>`).join("");
+}
+document.addEventListener("click", e => { const ib = e.target.closest("[data-icon]"); if (!ib) return; try { localStorage.setItem(ICONKEY, ib.dataset.icon) } catch(_) {} applyIcon(); toast("App icon set to Town Hall " + ib.dataset.icon); });
+applyIcon();
 $("#btnEdit").onclick = () => { panel.classList.remove("show"); if (!EDIT) startEdit(); };
 // keeps itself fresh: re-reads the saved data every 2 minutes and whenever the page comes back on screen
 function themeIcon(){ const b = $("#btnTheme"); if (b) b.textContent = document.documentElement.getAttribute("data-theme") === "light" ? "☾" : "☀"; }
