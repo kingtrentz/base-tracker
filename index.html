@@ -72,6 +72,8 @@ input[type=text]{width:100%;background:var(--bg);color:var(--tx);border:1px soli
 .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .err{color:#ff6b6b;font-size:13px;margin-top:8px}
 .steps{margin:0 0 10px;padding-left:18px;font-size:13px;color:var(--mut);line-height:1.6}
+.stale{color:var(--warn);font-weight:600}
+.maxline{padding:12px 14px;margin:0 0 10px;font-size:13px;color:var(--mut);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut);margin:4px 2px 12px}
 .toggle input{accent-color:var(--acc)}
 .empty{text-align:center;padding:30px 10px}
@@ -91,7 +93,7 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 <div class="wrap">
   <header>
     <h1>base<span>.</span>tracker</h1>
-    <div class="hdr-btns"><button id="btnSync">Sync</button><button id="btnEdit">Edit</button><button id="btnImport" class="pri">Import</button></div>
+    <div class="hdr-btns"><button id="btnSync">Sync</button><button id="btnEdit">Edit</button><button id="btnImport" title="Paste by hand, pick a file, or add a token" aria-label="More">⋯</button><button id="btnPaste" class="pri" title="Read the export you copied in game">Paste</button></div>
   </header>
 
   <div id="panel" class="card panel">
@@ -137,6 +139,17 @@ const REMOTE = {}, API = {};
 const norm = x => String(x).toLowerCase().replace(/[^a-z0-9]/g, "");
 const API_GROUPS = { Heroes: 1, Pets: 1, Troops: 1, Spells: 1, Sieges: 1, Equipment: 1 };
 const BYNAME = {}; DATA.items.forEach(o => { if (API_GROUPS[o.g]) BYNAME[norm(o.n)] = o.i; });
+function settle(v, now){
+  if (!v || v.apiOnly) return v;
+  const age = now - v.ts; let n = 0;
+  for (const arr of Object.values(v.inst)) for (const h of arr) if (h.t > 0 && h.t <= age) { h.l++; h.t = 0; n++; }
+  v.autoDone = n; return v;
+}
+function view(tag){
+  const raw = best(tag); let v = null;
+  if (raw) v = parse(raw);
+  return applyApi(settle(v, Math.floor(Date.now() / 1000)), API[tag]);
+}
 function applyApi(v, a){
   if (!a || !a.levels) return v;
   if (!v) v = { tag: a.tag, ts: a.ts, th: a.th, weapon: 0, inst: {}, apiOnly: true };
@@ -307,10 +320,8 @@ function lvSummary(row){
 function render(){
   const app = $("#app"), chips = $("#chips");
   chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("");
-  const raw = best(S.cur);
   let v = null;
-  if (raw) { try { v = parse(raw) } catch(e) { app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return; } }
-  v = applyApi(v, API[S.cur]);
+  try { v = view(S.cur) } catch(e) { app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return; }
   if (EDIT && EDIT.tag === S.cur) v = EDIT.v;
   $("#btnEdit").textContent = EDIT ? "Done" : "Edit"; $("#btnEdit").classList.toggle("on", !!EDIT);
   if (!v) {
@@ -331,7 +342,7 @@ function render(){
   const box = (k, label, s) => AO && (k === "build" || k === "walls") ? `<div class="box"><div class="k">${label}</div><div class="v">–</div><div class="s">needs export</div><div class="bar"></div></div>` : !c[k].tot ? `<div class="box"><div class="k">${label}</div><div class="v">–</div><div class="s">not at TH${v.th}</div><div class="bar"></div></div>` : `<div class="box"><div class="k">${label}</div><div class="v">${pct(c[k])}%</div><div class="s">${s}</div><div class="bar"><i style="width:${pct(c[k])}%"></i></div></div>`;
   let h = `<div class="card"><div class="hero"><div class="ring">${ringSVG(overall)}<b>${Math.floor(overall)}%</b></div>
     <div class="meta"><div class="th">Town Hall ${v.th}</div>
-    <div class="sub">${esc(NAME[S.cur])} · ${esc(v.tag)}<br>${AO ? "No export yet, so buildings and walls are blank" : "Exported " + ago(R.age) + " ago"}${v.apiTs ? "<br>Heroes, lab, pets, gear auto-updated " + ago(now - v.apiTs) + " ago" : ""}${overall >= 100 ? " · maxed for TH" + v.th : ""}</div></div></div>
+    <div class="sub">${esc(NAME[S.cur])} · ${esc(v.tag)}<br>${AO ? "No export yet, so buildings and walls are blank" : `<span class="${R.age > 3*86400 ? "stale" : ""}">Buildings from ${ago(R.age)} ago</span>`}${v.autoDone ? "<br>" + v.autoDone + " finished upgrade" + (v.autoDone === 1 ? "" : "s") + " counted automatically" : ""}${v.apiTs ? "<br>Heroes, lab, pets, gear auto-updated " + ago(now - v.apiTs) + " ago" : ""}${overall >= 100 ? " · maxed for TH" + v.th : ""}</div></div></div>
     <div class="grid">
       ${box("build","Buildings", upTxt(c.build.upn))}
       ${box("heroes","Heroes", upTxt(c.heroes.upn))}
@@ -342,16 +353,20 @@ function render(){
     </div>
     ${AO ? "" : `<div class="sub" style="margin-top:10px">Builder work left: <b class="mono">${dur(bTime)}</b>${R.builders ? ` · about <b class="mono">${dur(bTime / R.builders)}</b> with ${R.builders} builders` : ""}</div>`}</div>`;
 
-  if (R.ups.length) {
-    const ups = R.ups.sort((a, b) => a.end - b.end);
-    h += `<div class="sec${S.open.__ups !== false ? " open" : ""}" data-sec="__ups"><div class="head"><span class="nm">Upgrading now</span><span class="pc">${ups.length}</span><span class="car">▶</span></div><div class="body">` +
-      ups.map(u => { const left = u.end - now; return `<div class="row up-row"><div class="l"><div class="n">${esc(u.name)}</div><div class="lv">to level ${u.to}</div></div><div class="r"><div class="t ${left <= 0 ? "done" : "when"}" data-end="${u.end}">${left <= 0 ? "Done" : dur(left)}</div></div></div>`; }).join("") + `</div></div>`;
+  const live = R.ups.filter(u => u.end > now), gm = {};
+  live.forEach(u => { const k = u.name + "|" + u.to + "|" + u.end; (gm[k] = gm[k] || { ...u, x: 0 }).x++; });
+  if (live.length) {
+    const ups = Object.values(gm).sort((a, b) => a.end - b.end);
+    h += `<div class="sec${S.open.__ups !== false ? " open" : ""}" data-sec="__ups"><div class="head"><span class="nm">Upgrading now</span><span class="pc">${live.length}</span><span class="car">▶</span></div><div class="body">` +
+      ups.map(u => { const left = u.end - now; return `<div class="row up-row"><div class="l"><div class="n">${esc(u.name)}${u.x > 1 ? ` <span class="lv">×${u.x}</span>` : ""}</div><div class="lv">to level ${u.to}</div></div><div class="r"><div class="t ${left <= 0 ? "done" : "when"}" data-end="${u.end}">${left <= 0 ? "Done" : dur(left)}</div></div></div>`; }).join("") + `</div></div>`;
   }
 
+  const maxedGroups = [];
   for (const g of GROUPS) {
     if (AO && !API_GROUPS[g]) continue;
     const rs = R.rows.filter(r => r.o.g === g); if (!rs.length) continue;
     const rem = rs.reduce((s, r) => s + r.rem, 0), tot = rs.reduce((s, r) => s + r.tot, 0);
+    if (rem <= 0 && S.hideMax && !EDIT) { maxedGroups.push(g); continue; }
     const p = tot ? Math.floor(1000 * (1 - rem / tot)) / 10 : 100;
     const isW = g === "Walls", isE = g === "Equipment";
     const left = rs.filter(r => r.rem > 0).sort((a, b) => b.rem - a.rem), maxed = rs.filter(r => r.rem <= 0);
@@ -372,6 +387,7 @@ function render(){
       (maxed.length ? (S.hideMax ? `<div class="more" data-showmax="1">${maxed.length} maxed · show</div>` : maxed.map(rowHtml).join("")) : "") +
       `</div></div>`;
   }
+  if (maxedGroups.length) h += `<div class="maxline"><b>Maxed:</b> ${maxedGroups.join(", ")}</div>`;
   h += `<label class="toggle"><input type="checkbox" id="hideMax"${S.hideMax ? " checked" : ""}> Hide maxed items</label>`;
   app.innerHTML = editNote + h;
 }
@@ -407,9 +423,8 @@ function bump(key, d){
   EDIT.dirty = true;
 }
 function startEdit(){
-  const raw = best(S.cur); let v = null;
-  if (raw) { try { v = parse(raw) } catch(e) {} }
-  v = applyApi(v, API[S.cur]);
+  let v = null;
+  try { v = view(S.cur) } catch(e) {}
   if (!v || v.apiOnly) { toast("Paste an export first, then you can edit buildings."); return; }
   EDIT = { tag: S.cur, v, dirty: false }; render();
 }
@@ -439,13 +454,24 @@ $("#btnImport").onclick = () => panel.classList.contains("show") ? panel.classLi
 $("#btnCancel").onclick = () => panel.classList.remove("show");
 $("#btnFile").onclick = () => $("#file").click();
 $("#file").onchange = e => { const f = e.target.files[0]; if (!f) return; f.text().then(t => { $("#raw").value = t; }); };
+function importRaw(raw){
+  const v = parse(raw);
+  if (!NAME[v.tag]) throw new Error("That export is for " + v.tag + ". This tracker only takes KingTrents and Khnum-Atum~ra.");
+  S.cur = v.tag; panel.classList.remove("show");
+  saveExport(v.tag, raw.trim(), "Import " + NAME[v.tag] + " export"); render();
+}
+$("#btnPaste").onclick = () => {
+  if (EDIT) { toast("Tap Done first"); return; }
+  if (!navigator.clipboard || !navigator.clipboard.readText) { openPanel(); return; }
+  navigator.clipboard.readText().then(t => {
+    if (!t || !t.trim()) { toast("Clipboard is empty. Copy the export in game first."); return; }
+    try { importRaw(t); } catch(err) { openPanel(); $("#raw").value = t; $("#err").textContent = err.message; }
+  }).catch(() => openPanel());
+};
 $("#btnSave").onclick = () => {
   const raw = $("#raw").value;
   try {
-    const v = parse(raw);
-    if (!NAME[v.tag]) throw new Error("That export is for " + v.tag + ". This tracker only takes KingTrents and Khnum-Atum~ra.");
-    S.cur = v.tag; panel.classList.remove("show");
-    saveExport(v.tag, raw.trim(), "Import " + NAME[v.tag] + " export"); render();
+    importRaw(raw);
   } catch(err) { $("#err").textContent = err.message; }
 };
 setInterval(() => {
