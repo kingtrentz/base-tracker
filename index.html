@@ -82,6 +82,14 @@ input[type=text]{width:100%;background:var(--bg);color:var(--tx);border:1px soli
 .hdr-btns button{padding:8px 10px}
 button.on{border-color:var(--acc);color:var(--acc)}
 .ed{display:flex;gap:6px;flex:none}
+.row.i{padding:7px 10px 7px 14px;gap:8px;min-height:44px}
+.row.i .l{display:flex;align-items:baseline;gap:8px;min-width:0}
+.row.i .n{font-size:14px;flex:0 1 auto}
+.row.i .x{color:var(--mut);font-weight:400;font-size:12px}
+.row.i .to{flex:none;font-size:12px;color:var(--mut);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.row.i .t{flex:none;font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums}
+.row.i .t.up{color:var(--warn);font-weight:600}
+.row.i .q{padding:5px 0;min-width:40px}
 .q{flex:none;padding:7px 10px;min-width:42px;font-weight:700;border-radius:9px;color:var(--acc);border-color:var(--acc)}
 .q:active{background:var(--acc);color:var(--bg)}
 .toast{display:flex;align-items:center;gap:12px;white-space:nowrap;max-width:92vw}
@@ -253,7 +261,7 @@ function compute(v, now){
     const have = (v.inst[o.i] || []).slice().sort((a, b) => b.l - a.l);
     const n = Math.max(need, have.length); if (!n) continue;
     const cat = CAT[o.g], C = cats[cat];
-    const row = { o, n, lv: [], rem: 0, tot: 0, upn: 0, cost: 0, ore: [0,0,0], up: [], M };
+    const row = { o, n, lv: [], inst: [], rem: 0, tot: 0, upn: 0, cost: 0, ore: [0,0,0], up: [], M };
     for (let i = 0; i < n; i++) {
       const h = have[i], l = h ? Math.min(h.l, M) : 0;
       row.lv.push(l); row.upn += M - l;
@@ -268,6 +276,7 @@ function compute(v, now){
         row.up.push(l + 1);
         ups.push({ id: o.i, name: o.n, to: l + 1, end: v.ts + h.t, cat });
       }
+      row.inst.push({ l, r, up: !!(h && h.t && l < M), left: h && h.t ? Math.max(0, h.t - age) : 0 });
       row.rem += r; row.tot += tot;
     }
     C.rem += row.rem; C.tot += row.tot; C.upn += row.upn;
@@ -365,7 +374,7 @@ function render(){
   if (live.length) {
     const ups = Object.values(gm).sort((a, b) => a.end - b.end);
     h += `<div class="sec${S.open.__ups !== false ? " open" : ""}" data-sec="__ups"><div class="head"><span class="nm">Upgrading now</span><span class="pc">${live.length}</span><span class="car">▶</span></div><div class="body">` +
-      ups.map(u => { const left = u.end - now; return `<div class="row up-row"><div class="l"><div class="n">${esc(u.name)}${u.x > 1 ? ` <span class="lv">×${u.x}</span>` : ""}</div><div class="lv">to level ${u.to}</div></div><div class="r"><div class="t ${left <= 0 ? "done" : "when"}" data-end="${u.end}">${left <= 0 ? "Done" : dur(left)}</div></div>${EDIT ? "" : `<button class="q" data-q="${u.id}" data-d="1" title="Mark done now">✓</button>`}</div>`; }).join("") + `</div></div>`;
+      ups.map(u => { const left = u.end - now; return `<div class="row up-row"><div class="l"><div class="n">${esc(u.name)}${u.x > 1 ? ` <span class="lv">×${u.x}</span>` : ""}</div><div class="lv">to level ${u.to}</div></div><div class="r"><div class="t ${left <= 0 ? "done" : "when"}" data-end="${u.end}">${left <= 0 ? "Done" : dur(left)}</div></div>${EDIT ? "" : `<button class="q" data-q="${u.id}" data-lv="${u.to - 1}" data-d="1" title="Mark done now">✓</button>`}</div>`; }).join("") + `</div></div>`;
   }
 
   const maxedGroups = [];
@@ -380,7 +389,25 @@ function render(){
     const cost = { g: 0, e: 0, d: 0 }, ore = [0,0,0];
     rs.forEach(r => { if (isE) r.ore.forEach((x, i) => ore[i] += x); else cost[r.o.r] = (cost[r.o.r] || 0) + (isW ? r.rem : r.cost); });
     const resHtml = isE ? oreLine(ore) : costLine(cost, isW);
+    // one line per upgrade: every copy of a building gets its own line (walls grouped by level)
+    const lineHtml = r => {
+      const key = r.o.i || "weapon", name = esc(r.o.n);
+      if (r.rem <= 0) return `<div class="row i"><div class="l"><span class="n">${name}</span><span class="to">max ${r.M}</span></div></div>`;
+      const btn = (lv, d, label) => `<button class="q" data-q="${key}" data-lv="${lv}" data-d="${d}">${label}</button>`;
+      if (isW) {
+        const m = {}; r.inst.forEach(x => { if (x.l < r.M) m[x.l] = (m[x.l] || 0) + 1; });
+        return Object.keys(m).map(Number).sort((a, b) => b - a).map(l =>
+          `<div class="row i"><div class="l"><span class="n">${name} <span class="x">×${m[l]}</span></span><span class="to">${l ? l : "new"} → ${r.M}</span></div>${btn(l, 10, "+10")}${btn(l, 1, "+1")}</div>`).join("");
+      }
+      const list = r.inst.map(x => x).filter(x => x.l < r.M).sort((a, b) => (b.up - a.up) || (b.l - a.l));
+      return list.map(x => {
+        const to = x.l ? `${x.l} → ${r.M}` : `new → ${r.M}`;
+        const t = x.up ? `<span class="t up" data-end="${Math.floor(Date.now()/1000) + Math.round(x.left)}">${dur(x.left)}</span>` : `<span class="t">${isE ? (r.M - x.l) + " lv" : dur(x.r)}</span>`;
+        return `<div class="row i"><div class="l"><span class="n">${name}</span><span class="to">${to}</span></div>${t}${btn(x.l, 1, x.up ? "✓" : "+1")}</div>`;
+      }).join("");
+    };
     const rowHtml = r => {
+      if (!EDIT) return lineHtml(r);
       const done = r.rem <= 0;
       const rt = isW ? num(r.rem) : isE ? (r.rem + " lv") : dur(r.rem);
       const key = r.o.i || "weapon";
@@ -403,7 +430,7 @@ function render(){
 // events
 document.addEventListener("click", e => {
   const qb = e.target.closest("[data-q]");
-  if (qb && !EDIT) { quickUp(qb.dataset.q, +qb.dataset.d); return; }
+  if (qb && !EDIT) { quickUp(qb.dataset.q, +qb.dataset.d, qb.dataset.lv); return; }
   if (e.target.closest("#btnDone")) { finishEdit(); return; }
   const eb = e.target.closest("[data-ed]");
   if (eb && EDIT) { bump(eb.dataset.ed, +eb.dataset.d); render(); return; }
@@ -434,7 +461,7 @@ function bump(key, d){
   EDIT.dirty = true;
 }
 let qTimer = null, qPending = null;
-function quickUp(key, d){
+function quickUp(key, d, lvAt){
   let v; try { v = view(S.cur) } catch(e) { return; }
   if (!v || v.apiOnly) { toast("Paste an export first, then you can mark upgrades."); return; }
   const before = best(S.cur), tag = S.cur, R0 = compute(v, Math.floor(Date.now() / 1000));
@@ -446,8 +473,15 @@ function quickUp(key, d){
     const arr = v.inst[row.o.i] = v.inst[row.o.i] || [];
     while (arr.length < row.n) arr.push({ l: 0, t: 0 });
     for (let k = 0; k < d; k++) {
-      const up = arr.filter(h => h.t > 0 && h.l < row.M);
-      const pick = up.length ? up[0] : arr.filter(h => h.l < row.M).sort((x, y) => y.l - x.l)[0];
+      let pick;
+      if (lvAt !== undefined && lvAt !== "") {
+        // the exact copy that was tapped (same level; one already upgrading wins)
+        const same = arr.filter(h => h.l === +lvAt && h.l < row.M).sort((x, y) => (y.t > 0) - (x.t > 0));
+        pick = same[0];
+      } else {
+        const up = arr.filter(h => h.t > 0 && h.l < row.M);
+        pick = up.length ? up[0] : arr.filter(h => h.l < row.M).sort((x, y) => y.l - x.l)[0];
+      }
       if (!pick) break; pick.l++; pick.t = 0; lastLv = pick.l;
     }
   }
@@ -531,7 +565,7 @@ $("#btnSave").onclick = () => {
 };
 setInterval(() => {
   const now = Math.floor(Date.now() / 1000);
-  document.querySelectorAll("[data-end]").forEach(el => { const left = +el.dataset.end - now; el.textContent = left <= 0 ? "Done" : dur(left); el.className = "t " + (left <= 0 ? "done" : "when"); });
+  document.querySelectorAll("[data-end]").forEach(el => { const left = +el.dataset.end - now; el.textContent = left <= 0 ? "Done" : dur(left); el.className = "t " + (el.classList.contains("up") ? "up " : "") + (left <= 0 ? "done" : "when"); });
 }, 30000);
 render();
 loadRemote().then(render);
