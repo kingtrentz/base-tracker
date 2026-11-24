@@ -130,6 +130,8 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .pill{font-size:12px;color:var(--mut);background:var(--soft);border-radius:999px;padding:3px 9px}
 .pill b{font-weight:600;color:var(--tx)}
 .pill.on{background:var(--accs);color:var(--acc)}
+.sync{display:block;font-size:12px;color:var(--mut);margin-top:3px;text-align:left;background:none;border:0;padding:0;font-family:inherit}
+.sync.bad{color:var(--red);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .bars{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:14px}
 .cb{display:grid;grid-template-columns:72px 1fr 44px;align-items:center;gap:8px;font-size:12px}
 .cb .k{color:var(--mut)}
@@ -409,10 +411,15 @@ const b64d = b => new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\s/g,
 const b64e = t => { const u = new TextEncoder().encode(t); let s = ""; for (let i = 0; i < u.length; i += 8192) s += String.fromCharCode.apply(null, u.subarray(i, i + 8192)); return btoa(s); };
 function getFile(path){
   const t = tok();
+  const pub = () => fetch(path + "?t=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.text() : null);
   if (t) return fetch(GH + path + "?ref=main&t=" + Date.now(), { headers: { Authorization: "Bearer " + t, Accept: "application/vnd.github+json" }, cache: "no-store" })
-    .then(r => r.ok ? r.json() : null).then(j => { if (!j) return null; SHA[path] = j.sha; return b64d(j.content); });
-  return fetch(path + "?t=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.text() : null);
+    .then(r => { if (r.status === 401) SYNC.auth = true; return r.ok ? r.json() : null; })
+    .then(j => { if (!j) return r404(path) ? null : pub(); SYNC.auth = false; SHA[path] = j.sha; return b64d(j.content); }, () => pub());
+  return pub();
 }
+// Sync status shown under the account name, so a device that isn't saving says so instead of failing quietly.
+const SYNC = { auth: false, err: "", at: 0 };
+const r404 = path => /plan_/.test(path); // plan files may not exist yet; nothing to fall back to
 function putFile(path, text, msg){
   const t = tok(); if (!t) return Promise.reject(new Error("no token"));
   const send = () => fetch(GH + path, { method: "PUT", headers: { Authorization: "Bearer " + t, Accept: "application/vnd.github+json" },
@@ -420,7 +427,7 @@ function putFile(path, text, msg){
   return send().then(r => {
     if (r.status === 409 || r.status === 422) return getFile(path).then(send);
     return r;
-  }).then(r => { if (!r.ok) throw new Error("GitHub said " + r.status); return r.json(); }).then(j => { SHA[path] = j.content.sha; });
+  }).then(r => { if (r.status === 401) SYNC.auth = true; if (!r.ok) throw new Error("GitHub said " + r.status); return r.json(); }).then(j => { SHA[path] = j.content.sha; SYNC.auth = false; });
 }
 function loadRemote(){
   const clan = Promise.resolve();
@@ -443,8 +450,32 @@ function serialize(v){
 function saveExport(tag, raw, msg){
   S.acc[tag] = { raw, saved: Date.now() }; store.set(S); REMOTE[tag] = raw;
   if (!MINE[tag]) { toast("Saved on this phone"); return; }
-  if (!tok()) { toast("Saved on this device. Add a token in Import to save to every device."); return; }
-  putFile("data/" + tag.slice(1) + ".json", raw, msg).then(() => toast("Saved to every device")).catch(e => toast("Saved here only (" + e.message + ")"));
+  sendExport(tag, raw, msg, true);
+}
+function sendExport(tag, raw, msg, loud){
+  S.unsent = S.unsent || {}; S.unsent[tag] = true; store.set(S);
+  if (!tok()) { SYNC.err = "not unlocked"; if (loud) toast("Saved on this device only"); render(); return Promise.resolve(); }
+  return putFile("data/" + tag.slice(1) + ".json", raw, msg).then(() => {
+    if (S.acc[tag] && S.acc[tag].raw === raw) { delete S.unsent[tag]; store.set(S); }
+    SYNC.err = ""; SYNC.at = Date.now(); if (loud) toast("Saved to every device");
+  }).catch(e => { SYNC.err = e.message; if (loud) toast("Saved on this device only (" + e.message + ")"); }).then(() => { if (!EDIT && !TS && !PK) render(); });
+}
+// After every refresh: if this device holds newer changes than GitHub (a save that failed earlier), send them now.
+function catchUp(){
+  if (!tok() || SYNC.auth) return Promise.resolve();
+  return Promise.all(Object.keys(MINE).map(tag => {
+    const l = S.acc[tag]; if (!l) return null;
+    const r = REMOTE[tag];
+    if (r && tsOf(l.raw) <= tsOf(r)) { if (S.unsent && S.unsent[tag]) { delete S.unsent[tag]; store.set(S); } return null; }
+    if (!r && !(S.unsent && S.unsent[tag])) return null;
+    return sendExport(tag, l.raw, "Send " + NAME[tag] + " changes saved earlier on this device", false).then(() => { if (!SYNC.err) REMOTE[tag] = l.raw; });
+  }));
+}
+function syncLine(){
+  const unsent = S.unsent && Object.keys(S.unsent).some(t => MINE[t]);
+  if (SYNC.auth) return `<button class="sync bad" id="syncFix">⚠ Not saving: GitHub rejected this device's key. Tap to unlock again</button>`;
+  if (unsent) return `<button class="sync bad" id="syncSend">⚠ Changes on this device aren't saved yet${SYNC.err ? " (" + esc(SYNC.err) + ")" : ""}. Tap to send</button>`;
+  return `<div class="sync">✓ Saved to every device${SYNC.at ? " · " + new Date(SYNC.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : ""}</div>`;
 }
 
 function parse(raw){
@@ -746,7 +777,7 @@ function render(){
   const pill = (label, val, on) => `<span class="pill${on ? " on" : ""}"><b>${label}</b> ${val}</span>`;
 
   let h = `<div class="card top"><div class="hero"><div class="ringw"><div class="pct">${Math.floor(overall)}%</div><div class="ring">${ringSVG(overall)}${TH_IMG[v.th] ? `<img src="${TH_IMG[v.th]}" alt="Town Hall ${v.th}">` : `<b>TH${v.th}</b>`}</div></div>
-    <div class="meta"><div class="th">Town Hall ${v.th}</div><div class="sub">${esc(NAME[S.cur])} · updated ${ago(now - Math.max(v.ts || 0, v.apiTs || 0))} ago</div>
+    <div class="meta"><div class="th">Town Hall ${v.th}</div><div class="sub">${esc(NAME[S.cur])} · updated ${ago(now - Math.max(v.ts || 0, v.apiTs || 0))} ago</div>${syncLine()}
     <div class="pills">${R.builders ? pill("Builders", Math.max(0, R.builders - busy.b) + "/" + R.builders + " free", busy.b > 0) : ""}${pill("Lab", busy.l != null ? dur(busy.l) : "free", busy.l != null)}${pill("Pets", busy.p != null ? dur(busy.p) : "free", busy.p != null)}</div></div></div>
     <div class="bars">${BAR_CATS.map(([k, label]) => {
       if (AO && (k === "build" || k === "walls")) return "";
@@ -1084,10 +1115,10 @@ function quickUp(key, d, lvAt){
 }
 function queueSave(tag, msg){
   if (!MINE[tag]) return; // other people's accounts never leave their phone
-  if (!tok()) { if (!S.warnedTok) { S.warnedTok = 1; store.set(S); toast("Saved on this device. Add your token in ⋯ to sync every device."); } return; }
+  S.unsent = S.unsent || {}; S.unsent[tag] = true; store.set(S);
   qPending = { tag, msg }; clearTimeout(qTimer);
   qTimer = setTimeout(() => { const p = qPending; qPending = null; const raw = S.acc[p.tag] && S.acc[p.tag].raw; if (!raw) return;
-    putFile("data/" + p.tag.slice(1) + ".json", raw, p.msg).catch(e => toast("Couldn't save to GitHub (" + e.message + "). Kept on this device.")); }, 1500);
+    sendExport(p.tag, raw, p.msg, false).then(() => { if (SYNC.err) toast("Couldn't save to GitHub (" + SYNC.err + "). Kept on this device."); }); }, 1500);
 }
 function toastUndo(m, undo){
   document.querySelectorAll(".toast").forEach(t => t.remove());
@@ -1120,7 +1151,7 @@ $("#btnTheme").onclick = () => {
 themeIcon();
 function autoRefresh(){
   if (EDIT || TS || PK || document.hidden || !tok()) return;
-  loadRemote().then(() => { if (!EDIT && !TS && !PK) render(); });
+  loadRemote().then(catchUp).then(() => { if (!EDIT && !TS && !PK) render(); });
 }
 setInterval(autoRefresh, 120000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) autoRefresh(); });
@@ -1164,7 +1195,11 @@ async function passKey(pass, salt){
   return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 600000, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
 }
 let LOCK = null, STARTED = false;
-function startApp(){ $("#lock").classList.remove("show"); document.body.classList.remove("locked"); if (STARTED) { loadRemote().then(render); return; } STARTED = true; render(); loadRemote().then(render); }
+function startApp(){ $("#lock").classList.remove("show"); document.body.classList.remove("locked"); if (STARTED) { loadRemote().then(catchUp).then(render); return; } STARTED = true; render(); loadRemote().then(catchUp).then(render); }
+document.addEventListener("click", e => {
+  if (e.target.closest("#syncFix")) { try { localStorage.removeItem(TOKKEY) } catch(_) {} SYNC.auth = false; boot(); }
+  else if (e.target.closest("#syncSend")) { SYNC.err = ""; loadRemote().then(catchUp).then(() => render()); }
+});
 function showLock(setup){
   document.body.classList.add("locked"); $("#lock").classList.add("show");
   $("#lkTok").hidden = !setup; $("#lkPass2").hidden = !setup; $("#lkErr").textContent = "";
