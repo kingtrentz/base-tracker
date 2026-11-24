@@ -21,7 +21,7 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$a=New-ScheduledTaskAction -Execute '%PYW%' -Argument '\"%~dp0base_pull.py\"' -WorkingDirectory '%~dp0'; $n=Get-Date; $start=$n.Date.AddHours($n.Hour).AddMinutes(7); while($start -le $n){$start=$start.AddMinutes(10)}; $t=New-ScheduledTaskTrigger -Once -At $start -RepetitionInterval (New-TimeSpan -Minutes 10); $s=New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 5); Register-ScheduledTask -TaskName 'Base Tracker - auto-update' -Action $a -Trigger $t -Settings $s -Description 'Every-10-min Clash level pull for kingtrentz/base-tracker' -Force | Out-Null; if($?){'Task created (every 10 min). First run: ' + $start.ToString('h:mm tt')}"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$a=New-ScheduledTaskAction -Execute '%PYW%' -Argument '\"%~dp0base_pull.py\"' -WorkingDirectory '%~dp0'; $n=Get-Date; $start=$n.Date.AddHours($n.Hour).AddMinutes(2); while($start -le $n){$start=$start.AddMinutes(5)}; $t=New-ScheduledTaskTrigger -Once -At $start -RepetitionInterval (New-TimeSpan -Minutes 5); $s=New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 4); Register-ScheduledTask -TaskName 'Base Tracker - auto-update' -Action $a -Trigger $t -Settings $s -Description 'Every-5-min Clash level pull & push alerts for kingtrentz/base-tracker' -Force | Out-Null; if($?){'Task created (every 5 min). First run: ' + $start.ToString('h:mm tt')}"
 echo.
 echo All set: https://kingtrentz.github.io/base-tracker/
 pause

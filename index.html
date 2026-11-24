@@ -330,6 +330,43 @@ html.app.glide .wrap > :is(header,#panel,#chips,#app,footer){transition:transfor
 html.app:is(.settle,.glide) .ptr{transition:transform .45s cubic-bezier(.22,1,.36,1),opacity .28s ease}
 @keyframes ptrSpin{0%{transform:rotateY(0)}100%{transform:rotateY(360deg)}}
 .ptr.spin img{animation:ptrSpin .75s linear infinite}
+/* Main 3-tab nav (Plan / Base / Alerts) + Plan sub-tabs + Alerts card */
+.mnav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:2px 0 12px}
+.mtab{border:0;border-radius:14px;padding:9px 8px;background:var(--card);box-shadow:0 0 0 1px var(--hair);color:var(--tx);display:flex;align-items:center;justify-content:center;gap:6px;font-size:13.5px;font-weight:700}
+.mtab span{font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--soft);color:var(--mut)}
+.mtab.on{background:var(--acc);color:var(--on-acc);box-shadow:none}
+.mtab.on span{background:color-mix(in srgb,var(--on-acc) 16%,transparent);color:inherit}
+.ptabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:10px}
+.ptab{border:0;border-radius:13px;padding:7px 6px;background:var(--soft);color:var(--tx);display:flex;flex-direction:column;align-items:center;gap:1px;font-size:12.5px;font-weight:700}
+.ptab span{font-size:10.5px;font-weight:600;color:var(--mut)}
+.ptab.on{background:var(--accs);color:var(--acc);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 45%,transparent)}
+.ptab.on span{color:inherit;opacity:.9}
+.alcard{background:var(--card);border-radius:20px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 6px 20px rgba(0,0,0,.05);overflow:hidden}
+:root:not([data-theme="light"]) .alcard{box-shadow:0 0 0 1px var(--hair)}
+.al-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px 8px}
+.al-hd b{font-size:16px}
+.alst{font-size:11.5px;padding:2px 9px;border-radius:999px;background:var(--soft);color:var(--mut);font-weight:700}
+.alst.on{background:var(--accs);color:var(--acc)}
+.al-body{padding:4px 14px 15px;display:flex;flex-direction:column;gap:11px}
+.al-lbl{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:5px}
+.al-chips{display:flex;flex-wrap:wrap;gap:6px}
+.al-chips button{border:0;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;background:var(--soft);color:var(--mut)}
+.al-chips button.on{background:var(--accs);color:var(--acc);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 45%,transparent)}
+.al-acts{display:flex;gap:8px;margin-top:2px}
+.al-acts button{flex:1;border:0;border-radius:12px;padding:11px;font-size:13.5px;font-weight:700;background:var(--soft)}
+.al-acts button.pri{background:var(--acc);color:var(--on-acc)}
+.al-acts button.bad{flex:0 0 auto;color:var(--red);background:color-mix(in srgb,var(--red) 12%,transparent);padding:11px 14px}
+.al-msg{font-size:12px;color:var(--mut);line-height:1.45}
+.al-prev{background:var(--soft);border-radius:14px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px}
+.al-prev img{width:34px;height:34px;border-radius:9px;flex:none;object-fit:contain;background:var(--accs)}
+.al-prev-b{min-width:0;flex:1}
+.al-prev-t{font-size:12.5px;font-weight:700;color:var(--tx);line-height:1.3}
+.al-prev-s{font-size:12px;color:var(--mut);margin-top:2px;line-height:1.35}
+.pkrow{display:flex;align-items:center;gap:4px}
+.pkrow .pki{flex:1;min-width:0}
+.pkmx{flex:none;border:0;border-radius:9px;padding:6px 9px;font-size:11.5px;font-weight:700;background:var(--accs);color:var(--acc);cursor:pointer}
+.pkmx:active{background:var(--acc);color:var(--on-acc)}
+.row.i .nx .cs{font-size:11px}
 </style>
 <link id="lnkMan" rel="manifest" href="manifest.webmanifest">
 <link id="lnkApple" rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -430,7 +467,7 @@ function addAccount(tag, name){
 }
 const REMOTE = {}, API = {}, CLAN = {};
 S.plan = S.plan || {};
-const plan = tag => { const P = S.plan[tag] = S.plan[tag] || {}; P.pins = P.pins || []; P.b = P.b || []; P.l = P.l || []; return P; };
+const plan = tag => { const P = S.plan[tag] = S.plan[tag] || {}; P.pins = P.pins || []; P.lpins = P.lpins || []; P.ppin = P.ppin || ""; P.b = P.b || []; P.l = P.l || []; P.p = P.p || []; return P; };
 let pTimer = null;
 function savePlan(tag){
   const P = plan(tag); P.ts = Date.now(); store.set(S);
@@ -486,7 +523,7 @@ function getFile(path){
 }
 // Sync status shown under the account name, so a device that isn't saving says so instead of failing quietly.
 const SYNC = { auth: false, err: "", at: 0 };
-const r404 = path => /plan_/.test(path); // plan files may not exist yet; nothing to fall back to
+const r404 = path => /plan_|push_subs/.test(path); // plan and alert files may not exist yet; nothing to fall back to
 function putFile(path, text, msg){
   const t = tok(); if (!t) return Promise.reject(new Error("no token"));
   const send = () => fetch(GH + path, { method: "PUT", headers: { Authorization: "Bearer " + t, Accept: "application/vnd.github+json" },
@@ -724,10 +761,14 @@ function stable(list, scope){
   return out;
 }
 
-// ---- planner: a queue for the builders and one for the lab, with pinned builders
+// ---- planner: queues & assignable slots for Builders, Lab/Squads, and Pets
 const isBld = o => (o.k === "b" && o.g !== "Walls" && o.i) || o.k === "h";
 const isLab = o => o.k === "l";
+const isLabReg = o => o.k === "l" && o.g !== "Squads";
+const isLabSq = o => o.k === "l" && o.g === "Squads";
+const isPet = o => o.k === "p";
 const PIN_GROUPS = ["Heroes", "Defenses", "Traps", "Army", "Collectors", "Storages", "Guardians"];
+const LAB_GROUPS = ["Troops", "Spells", "Sieges"];
 const pinMatch = (pin, o) => !!pin && (pin === "g:" + o.g || pin === "i:" + o.i);
 const pinName = pin => !pin ? "Any" : pin.startsWith("g:") ? pin.slice(2) : (BY[+pin.slice(2)] || {}).n || "?";
 function planInfo(v, R){
@@ -735,87 +776,210 @@ function planInfo(v, R){
   R.rows.forEach(r => { if (!r.o.i) return; rowBy[r.o.i] = r; virt[r.o.i] = r.inst.map(x => x.up ? x.l + 1 : x.l); });
   const apply = q => { const r = rowBy[q.i], a = virt[q.i]; if (!r || !a || q.l >= r.M) return false; const k = a.indexOf(q.l); if (k < 0) return false; a[k]++; return true; };
   let changed = false;
-  ["b", "l"].forEach(w => { const keep = P[w].filter(apply); if (keep.length !== P[w].length) { P[w] = keep; changed = true; } });
+  ["b", "l", "p"].forEach(w => { const keep = P[w].filter(apply); if (keep.length !== P[w].length) { P[w] = keep; changed = true; } });
   if (changed) savePlan(S.cur);
-  const N = AOof(v) ? 0 : (R.builders || 0);
-  const slots = Array.from({ length: N }, (_, i) => ({ i, pin: P.pins[i] || "", job: null, free: 0, q: [] }));
-  const busy = [];
-  R.rows.forEach(r => { if (isBld(r.o)) r.inst.forEach(x => { if (x.up) busy.push({ r, x }); }); });
-  busy.sort((a, b) => a.x.left - b.x.left);
+  // Builder slots (handles extra goblin builder if more active than R.builders)
+  const busyB = [];
+  R.rows.forEach(r => { if (isBld(r.o)) r.inst.forEach(x => { if (x.up) busyB.push({ r, x }); }); });
+  busyB.sort((a, b) => a.x.left - b.x.left);
+  const N = AOof(v) ? 0 : Math.max(R.builders || 0, busyB.length);
+  const slots = Array.from({ length: N }, (_, i) => ({ i, extra: i >= (R.builders || 0), pin: P.pins[i] || "", job: null, free: 0, q: [] }));
   const lastEnd = {};
-  busy.forEach(bj => {
+  busyB.forEach(bj => {
     const s = slots.find(s => !s.job && pinMatch(s.pin, bj.r.o)) || slots.find(s => !s.job && !s.pin) || slots.find(s => !s.job);
     if (s) { s.job = bj; s.free = bj.x.left; }
     if (bj.r.n === 1) lastEnd[bj.r.o.i] = bj.x.left;
   });
   const bq = P.b.map((q, qi) => {
-    const r = rowBy[q.i], t = (r.o.t || [])[q.l] || 0;
-    let cand = slots.filter(s => pinMatch(s.pin, r.o)); if (!cand.length) cand = slots.filter(s => !s.pin); if (!cand.length) cand = slots;
+    const r = rowBy[q.i], t = (r.o.t || [])[q.l] || 0, co = (r.o.co || [])[q.l] || 0;
+    let cand = slots.filter(s => !s.extra && pinMatch(s.pin, r.o));
+    if (!cand.length) cand = slots.filter(s => !s.extra && !s.pin);
+    if (!cand.length) cand = slots.filter(s => !s.extra);
+    if (!cand.length) cand = slots;
     const s = cand.length ? cand.reduce((a, b) => b.free < a.free ? b : a) : null;
     const start = Math.max(s ? s.free : 0, r.n === 1 ? (lastEnd[q.i] || 0) : 0), end = start + t;
     if (s) { s.free = end; s.q.push(qi); }
     if (r.n === 1) lastEnd[q.i] = end;
-    return { q, qi, r, t, start, end, slot: s ? s.i : -1 };
+    return { q, qi, r, t, co, start, end, slot: s ? s.i : -1 };
   });
-  // a pinned builder with nothing queued suggests the next thing in its group (lowest level first)
-  const queuedIds = new Set(P.b.map(q => q.i));
-  slots.forEach(s => {
-    if (!s.pin || s.q.length) return;
+  const bestAuto = (pin, pred, queuedIds) => {
+    if (!pin) return null;
     let best = null;
-    R.rows.forEach(r => { if (!isBld(r.o) || !pinMatch(s.pin, r.o) || queuedIds.has(r.o.i)) return;
-      r.inst.forEach(x => { const l = x.up ? x.l + 1 : x.l; if (l >= r.M) return; const t = (r.o.t || [])[l] || 0, k = l / r.M + (x.up ? 1 : 0);
-        if (!best || k < best.k || (k === best.k && t < best.t)) best = { r, x, l, t, k, wait: x.up ? x.left : 0 }; }); });
-    s.auto = best;
+    R.rows.forEach(r => { if (!pred(r.o) || !pinMatch(pin, r.o) || queuedIds.has(r.o.i)) return;
+      r.inst.forEach(x => { const l = x.up ? x.l + 1 : x.l; if (l >= r.M) return;
+        const t = (r.o.t || [])[l] || 0, co = (r.o.co || [])[l] || 0, k = l / r.M + (x.up ? 1 : 0);
+        if (!best || k < best.k || (k === best.k && t < best.t)) best = { r, x, l, t, co, k, wait: x.up ? x.left : 0 }; }); });
+    return best;
+  };
+  const qB = new Set(P.b.map(q => q.i));
+  slots.forEach(s => { if (s.pin && !s.q.length) s.auto = bestAuto(s.pin, isBld, qB); });
+
+  // Lab slots: Laboratory (Troops/Spells/Sieges) + Squads (TH19 Squad Barracks)
+  const hasSquads = R.rows.some(r => isLabSq(r.o));
+  const busyReg = [], busySq = [];
+  R.rows.forEach(r => {
+    if (isLabReg(r.o)) r.inst.forEach(x => { if (x.up) busyReg.push({ r, x }); });
+    else if (isLabSq(r.o)) r.inst.forEach(x => { if (x.up) busySq.push({ r, x }); });
   });
-  let labLeft = 0, labJob = null;
-  R.rows.forEach(r => { if (isLab(r.o)) r.inst.forEach(x => { if (x.up && x.left >= labLeft) { labLeft = x.left; labJob = { r, x }; } }); });
-  let lf = labLeft;
-  const lq = P.l.map((q, qi) => { const r = rowBy[q.i], t = (r.o.t || [])[q.l] || 0, start = lf; lf += t; return { q, qi, r, t, start, end: lf }; });
-  return { P, N, slots, bq, lq, labJob, virt, rowBy };
+  busyReg.sort((a, b) => a.x.left - b.x.left);
+  busySq.sort((a, b) => a.x.left - b.x.left);
+  const labSlots = [{ i: 0, kind: "reg", label: "Laboratory", pin: P.lpins[0] || "", jobs: busyReg, free: busyReg.length ? busyReg[0].x.left : 0, q: [] }];
+  if (hasSquads) labSlots.push({ i: 1, kind: "sq", label: "Squads", pin: P.lpins[1] || "", jobs: busySq, free: busySq.length ? busySq[0].x.left : 0, q: [] });
+  const lq = P.l.map((q, qi) => {
+    const r = rowBy[q.i], t = (r.o.t || [])[q.l] || 0, co = (r.o.co || [])[q.l] || 0;
+    const s = (isLabSq(r.o) && labSlots[1]) ? labSlots[1] : labSlots[0];
+    const start = s.free, end = start + t;
+    s.free = end; s.q.push(qi);
+    return { q, qi, r, t, co, start, end, slotName: s.kind === "sq" ? "Squads" : "Lab" };
+  });
+  const qL = new Set(P.l.map(q => q.i));
+  labSlots.forEach(s => { if (s.pin && !s.q.length) s.auto = bestAuto(s.pin, s.kind === "sq" ? isLabSq : isLabReg, qL); });
+
+  // Pet House slot
+  const busyPet = [];
+  R.rows.forEach(r => { if (isPet(r.o)) r.inst.forEach(x => { if (x.up) busyPet.push({ r, x }); }); });
+  busyPet.sort((a, b) => a.x.left - b.x.left);
+  const petSlot = { label: "Pet House", pin: P.ppin || "", jobs: busyPet, free: busyPet.length ? busyPet[0].x.left : 0, q: [] };
+  const pq = P.p.map((q, qi) => {
+    const r = rowBy[q.i], t = (r.o.t || [])[q.l] || 0, co = (r.o.co || [])[q.l] || 0;
+    const start = petSlot.free, end = start + t;
+    petSlot.free = end; petSlot.q.push(qi);
+    return { q, qi, r, t, co, start, end };
+  });
+  const qP = new Set(P.p.map(q => q.i));
+  if (petSlot.pin && !petSlot.q.length) petSlot.auto = bestAuto(petSlot.pin, isPet, qP);
+
+  return { P, N, slots, bq, labSlots, lq, petSlot, pq, virt, rowBy };
 }
 const AOof = v => !!(v && v.apiOnly);
+function alertsTab(v, R, now){
+  const al = alGet(), I = planInfo(v, R);
+  const lead = al.lead || 20, types = al.types || { b: true, l: true, p: true };
+  const st = al.on ? `On · ${lead >= 60 ? "1h" : lead + "m"} before` : "Off";
+  const leadBtn = (m, lbl) => `<button type="button" data-allead="${m}" class="${lead === m ? "on" : ""}">${lbl}</button>`;
+  const typeBtn = (k, lbl) => `<button type="button" data-altype="${k}" class="${types[k] !== false ? "on" : ""}">${lbl}</button>`;
+  // Build a live example of the next alert using this account's soonest active upgrade
+  const active = [];
+  R.rows.forEach(r => r.inst.forEach(x => {
+    if (!x.up) return;
+    const k = isBld(r.o) ? "b" : isLab(r.o) ? "l" : isPet(r.o) ? "p" : "";
+    if (k) active.push({ r, x, k });
+  }));
+  active.sort((a, b) => a.x.left - b.x.left);
+  const first = active[0];
+  let prevTitle = `${NAME[S.cur]}: next upgrade done in ${lead >= 60 ? "1h" : lead + "m"}`;
+  let prevBody = "Next up from your Plan + exact Gold, Elixir, or Dark needed to start it.";
+  if (first) {
+    prevTitle = `${NAME[S.cur]}: ${first.r.o.n} →${first.x.l + 1} done in ${lead >= 60 ? "1h" : lead + "m"}`;
+    let nxt = null, slotLbl = first.k === "b" ? "Builder" : first.k === "p" ? "Pet House" : (first.r.o.g === "Squads" ? "Squads" : "Lab");
+    if (first.k === "b") { const s = I.slots.find(s => s.job && s.job.r.o.i === first.r.o.i); nxt = (I.bq[0] && { r: I.bq[0].r, l: I.bq[0].q.l, co: I.bq[0].co }) || (s && s.auto); }
+    else if (first.k === "l") { const sq = first.r.o.g === "Squads", s = I.labSlots.find(s => (s.kind === "sq") === sq); const q0 = I.lq.find(e => (e.r.o.g === "Squads") === sq); nxt = (q0 && { r: q0.r, l: q0.q.l, co: q0.co }) || (s && s.auto); }
+    else if (first.k === "p") { nxt = (I.pq[0] && { r: I.pq[0].r, l: I.pq[0].q.l, co: I.pq[0].co }) || I.petSlot.auto; }
+    if (nxt) {
+      const rn = RESN[nxt.r.o.r] || "Loot";
+      prevBody = nxt.co ? `Next (${slotLbl}): ${nxt.r.o.n} →${nxt.l + 1} (${num(nxt.co)} ${rn}). Raid if you need ${rn}!` : `Next (${slotLbl}): ${nxt.r.o.n} →${nxt.l + 1}`;
+    } else prevBody = `${slotLbl} free in ${lead >= 60 ? "1h" : lead + "m"}. Open Plan to assign what's next.`;
+  }
+  return `<div class="alcard"><div class="al-hd"><b>Upgrade alerts</b><span class="alst${al.on ? " on" : ""}">${st}</span></div><div class="al-body">
+    <div class="al-msg">Pings your iPhone &amp; Apple Watch before an upgrade finishes with your next planned upgrade and how much loot you need.</div>
+    <div><div class="al-lbl">Sample notification (your next finish)</div><div class="al-prev"><img src="assets/builder.webp" alt=""><div class="al-prev-b"><div class="al-prev-t">${esc(prevTitle)}</div><div class="al-prev-s">${esc(prevBody)}</div></div></div></div>
+    <div><div class="al-lbl">Remind me before finish</div><div class="al-chips">${leadBtn(10,"10m")}${leadBtn(20,"20m")}${leadBtn(30,"30m")}${leadBtn(60,"1h")}</div></div>
+    <div><div class="al-lbl">Alert for</div><div class="al-chips">${typeBtn("b","Builders")}${typeBtn("l","Lab & Squads")}${typeBtn("p","Pet House")}</div></div>
+    <div class="al-acts"><button type="button" class="pri" id="btnAlSave">${al.on ? "Save alerts" : "Turn on alerts"}</button>${al.on ? `<button type="button" class="bad" id="btnAlOff">Turn off</button>` : ""}</div>
+    <div class="al-msg" id="alMsg">${esc(AL_MSG)}</div>
+  </div></div>`;
+}
 function planTab(v, R){
   const I = planInfo(v, R), now = Math.floor(Date.now() / 1000);
-  const when = s => s <= 0 ? "ready now" : "in " + dur(s);
+  const when = s => s <= 0 ? "ready now" : "starts " + eta(now + Math.round(s));
+  const doneBy = s => s > 0 ? "done " + eta(now + Math.round(s)) : "";
+  const costSpan = (o, co) => co ? `<span class="cs"><i class="dot" style="background:var(--${o.r})"></i>${num(co)}</span>` : "";
+  const pt = (S.ptab === "l" || S.ptab === "p") ? S.ptab : "b";
+  const freeB = I.slots.filter(s => !s.extra && !s.job).length, totB = R.builders || 0;
+  const busyLabN = I.labSlots.reduce((n, s) => n + s.jobs.length, 0);
+  const busyPetN = I.petSlot.jobs.length;
+  let h = `<div class="ptabs">
+    <button class="ptab${pt === "b" ? " on" : ""}" data-ptab="b">Builders<span>${totB ? freeB + "/" + totB + " free" : "no export"}</span></button>
+    <button class="ptab${pt === "l" ? " on" : ""}" data-ptab="l">Lab<span>${busyLabN ? busyLabN + " busy" : "free"}</span></button>
+    <button class="ptab${pt === "p" ? " on" : ""}" data-ptab="p">Pets<span>${busyPetN ? "busy" : "free"}</span></button>
+  </div>`;
   const qRow = (e, w) => {
     const n = esc(e.r.o.n), k = e.r.o.i, first = e.qi === 0;
-    const where = w === "b" && e.slot >= 0 ? ` · Builder ${e.slot + 1}` : "";
+    const where = w === "b" && e.slot >= 0 ? ` · B${e.slot + 1}` : (w === "l" && e.slotName ? ` · ${e.slotName}` : "");
     const btns = (e.start <= 0 ? `<button class="q" data-act="start" data-q="${k}" data-lv="${e.q.l}" data-ix="-1">↑</button>` : "") +
       (first ? "" : `<button class="q s" data-pmv="${w}:${e.qi}" title="Move up">▲</button>`) + `<button class="q s" data-prm="${w}:${e.qi}" title="Remove">✕</button>`;
-    return `<div class="row i"><div class="l"><div class="n">${n}</div><div class="lvl mono">${e.q.l} → ${e.q.l + 1}${where} · ${when(e.start)}</div></div><div class="nx"><span class="tm">${e.t ? dur(e.t) : "instant"}</span>${e.t ? `<span class="sm">done in ${dur(e.end)}</span>` : ""}</div>${btns}</div>`;
+    return `<div class="row i"><div class="l"><div class="n">${n}</div><div class="lvl mono">${e.q.l} → ${e.q.l + 1}${where} · ${when(e.start)}</div></div><div class="nx">${costSpan(e.r.o, e.co)}<span class="tm">${e.t ? dur(e.t) : "instant"}</span>${e.t ? `<span class="sm">${doneBy(e.end)}</span>` : ""}</div>${btns}</div>`;
   };
-  let h = "";
-  if (I.N) {
-    const pinOpts = sel => {
-      const gs = PIN_GROUPS.filter(g => R.rows.some(r => r.o.g === g && r.rem > 0));
-      const its = R.rows.filter(r => isBld(r.o) && r.o.g !== "Heroes" && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
-      const o = (val, label) => `<option value="${val}"${val === sel ? " selected" : ""}>${esc(label)}</option>`;
-      return o("", "Any upgrade") + `<optgroup label="Stays on a group">${gs.map(g => o("g:" + g, g)).join("")}</optgroup><optgroup label="Stays on one building">${its.map(x => o("i:" + x.i, x.n)).join("")}</optgroup>`;
+  const autoRow = (a, slotFree) => {
+    const wait = Math.max(slotFree, a.wait), ready = wait <= 0 && !a.x.up;
+    return `<div class="row i auto"><div class="l"><div class="n">next: ${esc(a.r.o.n)}</div><div class="lvl mono">${a.l} → ${a.l + 1} · ${when(wait)}</div></div><div class="nx">${costSpan(a.r.o, a.co)}<span class="tm">${dur(a.t)}</span><span class="sm">${doneBy(wait + a.t)}</span></div>${ready ? `<button class="q" data-act="start" data-q="${a.r.o.i}" data-lv="${a.l}" data-ix="${a.x.ix}">↑</button>` : ""}</div>`;
+  };
+  const opt = (val, label, sel) => `<option value="${val}"${val === sel ? " selected" : ""}>${esc(label)}</option>`;
+
+  if (pt === "b") {
+    if (I.N) {
+      const pinOpts = sel => {
+        const gs = PIN_GROUPS.filter(g => R.rows.some(r => r.o.g === g && r.rem > 0));
+        const its = R.rows.filter(r => isBld(r.o) && r.o.g !== "Heroes" && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
+        return opt("", "Any upgrade", sel) + `<optgroup label="Stays on a group">${gs.map(g => opt("g:" + g, g, sel)).join("")}</optgroup><optgroup label="Stays on one building">${its.map(x => opt("i:" + x.i, x.n, sel)).join("")}</optgroup>`;
+      };
+      const slotRows = I.slots.map(s => {
+        const j = s.job;
+        const now_ = j ? `<div class="nx up"><span>${esc(j.r.o.n)} → ${j.x.l + 1}</span><span data-end="${now + Math.round(j.x.left)}">${dur(j.x.left)}</span></div>` : `<div class="nx"><span class="tm" style="color:var(--acc)">free</span></div>`;
+        const selHtml = s.extra ? `<div class="lvl">Goblin Builder</div>` : `<select class="pin${s.pin ? " on" : ""}" data-pin="${s.i}">${pinOpts(s.pin)}</select>`;
+        let line = `<div class="row i${j ? " upg" : ""}"><div class="l"><div class="n">${s.extra ? "Extra Builder" : "Builder " + (s.i + 1)}</div>${selHtml}</div>${now_}</div>`;
+        if (s.auto) line += autoRow(s.auto, s.free);
+        return line;
+      }).join("");
+      const bdone = I.bq.length ? Math.max(...I.bq.map(e => e.end)) : 0;
+      h += `<div class="sec open"><div class="head"><span class="nm">Builder plan</span><span class="pc">${freeB}/${totB} free</span></div><div class="body">${slotRows}
+        <div class="subh">Up next<span>${I.bq.length ? doneBy(bdone) + " · " + dur(bdone) : ""}</span></div>${I.bq.map(e => qRow(e, "b")).join("") || `<div class="more">Nothing queued. Pin a builder above or tap + Add below.</div>`}
+        <button class="editbtn" data-padd="b">+ Add builder upgrade</button></div></div>`;
+    } else h += `<div class="card empty"><p>Paste the village export to plan builders.</p></div>`;
+  } else if (pt === "l") {
+    const labPinOpts = (kind, sel) => {
+      if (kind === "sq") {
+        const its = R.rows.filter(r => isLabSq(r.o) && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
+        return opt("", "Any squad", sel) + `<optgroup label="Stays on one squad">${its.map(x => opt("i:" + x.i, x.n, sel)).join("")}</optgroup>`;
+      }
+      const gs = LAB_GROUPS.filter(g => R.rows.some(r => r.o.g === g && r.rem > 0));
+      const its = R.rows.filter(r => isLabReg(r.o) && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
+      return opt("", "Any lab research", sel) + `<optgroup label="Stays on a group">${gs.map(g => opt("g:" + g, g, sel)).join("")}</optgroup><optgroup label="Stays on one research">${its.map(x => opt("i:" + x.i, x.n, sel)).join("")}</optgroup>`;
     };
-    const slotRows = I.slots.map(s => {
-      const j = s.job;
-      const now_ = j ? `<div class="nx up"><span>${esc(j.r.o.n)} → ${j.x.l + 1}</span><span data-end="${now + Math.round(j.x.left)}">${dur(j.x.left)}</span></div>` : `<div class="nx"><span class="tm" style="color:var(--acc)">free</span></div>`;
-      let line = `<div class="row i${j ? " upg" : ""}"><div class="l"><div class="n">Builder ${s.i + 1}</div><select class="pin${s.pin ? " on" : ""}" data-pin="${s.i}">${pinOpts(s.pin)}</select></div>${now_}</div>`;
-      if (s.auto) { const a = s.auto, wait = Math.max(s.free, a.wait), ready = wait <= 0 && !a.x.up;
-        line += `<div class="row i auto"><div class="l"><div class="n">next: ${esc(a.r.o.n)}</div><div class="lvl mono">${a.l} → ${a.l + 1} · ${when(wait)}</div></div><div class="nx"><span class="tm">${dur(a.t)}</span></div>${ready ? `<button class="q" data-act="start" data-q="${a.r.o.i}" data-lv="${a.l}" data-ix="${a.x.ix}">↑</button>` : ""}</div>`; }
+    const slotRows = I.labSlots.map(s => {
+      const j0 = s.jobs[0];
+      const now_ = j0 ? `<div class="nx up"><span>${esc(j0.r.o.n)} → ${j0.x.l + 1}</span><span data-end="${now + Math.round(j0.x.left)}">${dur(j0.x.left)}</span></div>` : `<div class="nx"><span class="tm" style="color:var(--acc)">free</span></div>`;
+      let line = `<div class="row i${j0 ? " upg" : ""}"><div class="l"><div class="n">${s.label}</div><select class="pin${s.pin ? " on" : ""}" data-lpin="${s.i}">${labPinOpts(s.kind, s.pin)}</select></div>${now_}</div>`;
+      s.jobs.slice(1).forEach(jx => {
+        line += `<div class="row i upg"><div class="l"><div class="n">${esc(jx.r.o.n)}</div><div class="lvl mono">Goblin Researcher · ${jx.x.l} → ${jx.x.l + 1}</div></div><div class="nx up"><span data-end="${now + Math.round(jx.x.left)}">${dur(jx.x.left)}</span></div></div>`;
+      });
+      if (s.auto) line += autoRow(s.auto, s.free);
       return line;
     }).join("");
-    const bdone = I.bq.length ? Math.max(...I.bq.map(e => e.end)) : 0;
-    h += `<div class="sec open"><div class="head"><span class="nm">Builder plan</span><span class="pc">${I.slots.filter(s => !s.job).length}/${I.N} free</span></div><div class="body">${slotRows}
-      <div class="subh">Up next<span>${I.bq.length ? "all done in " + dur(bdone) : ""}</span></div>${I.bq.map(e => qRow(e, "b")).join("") || `<div class="more">Nothing planned. Pin a builder above or add upgrades.</div>`}
-      <button class="editbtn" data-padd="b">+ Add upgrade</button></div></div>`;
-  } else h += `<div class="card empty"><p>Paste the village export to plan builders.</p></div>`;
-  const lj = I.labJob, ldone = I.lq.length ? I.lq[I.lq.length - 1].end : 0;
-  h += `<div class="sec open"><div class="head"><span class="nm">Lab plan</span><span class="pc">${lj ? "busy" : "free"}</span></div><div class="body">
-    ${lj ? `<div class="row i upg"><div class="l"><div class="n">${esc(lj.r.o.n)}</div><div class="lvl mono">researching ${lj.x.l} → ${lj.x.l + 1}</div></div><div class="nx up"><span data-end="${now + Math.round(lj.x.left)}">${dur(lj.x.left)}</span></div></div>` : `<div class="row i"><div class="l"><div class="n">Laboratory</div><div class="lvl">nothing researching</div></div><div class="nx"><span class="tm" style="color:var(--acc)">free</span></div></div>`}
-    <div class="subh">Up next<span>${I.lq.length ? "all done in " + dur(ldone) : ""}</span></div>${I.lq.map(e => qRow(e, "l")).join("") || `<div class="more">Nothing planned yet.</div>`}
-    <button class="editbtn" data-padd="l">+ Add research</button></div></div>`;
+    const ldone = I.lq.length ? Math.max(...I.lq.map(e => e.end)) : 0;
+    h += `<div class="sec open"><div class="head"><span class="nm">Lab plan</span><span class="pc">${busyLabN ? busyLabN + " active" : "free"}</span></div><div class="body">${slotRows}
+      <div class="subh">Up next<span>${I.lq.length ? doneBy(ldone) + " · " + dur(ldone) : ""}</span></div>${I.lq.map(e => qRow(e, "l")).join("") || `<div class="more">Nothing queued. Pin a slot above or tap + Add below.</div>`}
+      <button class="editbtn" data-padd="l">+ Add research</button></div></div>`;
+  } else {
+    const ps = I.petSlot, j0 = ps.jobs[0];
+    const petPinOpts = sel => {
+      const its = R.rows.filter(r => isPet(r.o) && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
+      return opt("", "Any pet", sel) + `<optgroup label="Stays on one pet">${its.map(x => opt("i:" + x.i, x.n, sel)).join("")}</optgroup>`;
+    };
+    const now_ = j0 ? `<div class="nx up"><span>${esc(j0.r.o.n)} → ${j0.x.l + 1}</span><span data-end="${now + Math.round(j0.x.left)}">${dur(j0.x.left)}</span></div>` : `<div class="nx"><span class="tm" style="color:var(--acc)">free</span></div>`;
+    let slotHtml = `<div class="row i${j0 ? " upg" : ""}"><div class="l"><div class="n">Pet House</div><select class="pin${ps.pin ? " on" : ""}" data-ppin="1">${petPinOpts(ps.pin)}</select></div>${now_}</div>`;
+    if (ps.auto) slotHtml += autoRow(ps.auto, ps.free);
+    const pdone = I.pq.length ? I.pq[I.pq.length - 1].end : 0;
+    h += `<div class="sec open"><div class="head"><span class="nm">Pet plan</span><span class="pc">${j0 ? "busy" : "free"}</span></div><div class="body">${slotHtml}
+      <div class="subh">Up next<span>${I.pq.length ? doneBy(pdone) + " · " + dur(pdone) : ""}</span></div>${I.pq.map(e => qRow(e, "p")).join("") || `<div class="more">Nothing queued. Pin a pet above or tap + Add below.</div>`}
+      <button class="editbtn" data-padd="p">+ Add pet</button></div></div>`;
+  }
   return h;
 }
 let PK = null;
 function pickerList(){
   let v; try { v = view(S.cur) } catch(e) { return; } if (!v) return;
-  const R = compute(v, Math.floor(Date.now() / 1000)), I = planInfo(v, R), want = PK === "b" ? isBld : isLab;
+  const R = compute(v, Math.floor(Date.now() / 1000)), I = planInfo(v, R), want = PK === "b" ? isBld : PK === "p" ? isPet : isLab;
   const qs = norm($("#pkQ").value || ""), by = {};
   R.rows.forEach(r => {
     if (!r.o.i || !want(r.o) || (qs && !norm(r.o.n).includes(qs))) return;
@@ -823,11 +987,14 @@ function pickerList(){
     Object.keys(m).map(Number).sort((x, y) => x - y).forEach(l => (by[r.o.g] = by[r.o.g] || []).push({ r, l, c: m[l] }));
   });
   const order = GROUPS.filter(g => by[g]);
-  $("#pkL").innerHTML = order.map(g => `<div class="subh">${g}</div>` + by[g].sort((x, y) => x.r.o.n.localeCompare(y.r.o.n) || x.l - y.l).map(e =>
-    `<button class="pki" data-pi="${e.r.o.i}" data-pl="${e.l}"><span class="n">${esc(e.r.o.n)}<small class="mono">${e.l} → ${e.l + 1}${e.c > 1 ? " · ×" + e.c : ""}</small></span><span class="tm">${dur((e.r.o.t || [])[e.l] || 0)}</span><span class="pl">+</span></button>`).join("")).join("")
+  $("#pkL").innerHTML = order.map(g => `<div class="subh">${g}</div>` + by[g].sort((x, y) => x.r.o.n.localeCompare(y.r.o.n) || x.l - y.l).map(e => {
+    const remLv = e.r.M - e.l;
+    const maxBtn = (remLv > 1 || e.c > 1) ? `<button class="pkmx" data-pmax="${e.r.o.i}" title="Queue all remaining levels to max">Max</button>` : "";
+    return `<div class="pkrow"><button class="pki" data-pi="${e.r.o.i}" data-pl="${e.l}"><span class="n">${esc(e.r.o.n)}<small class="mono">${e.l} → ${e.l + 1}${e.c > 1 ? " · ×" + e.c : ""}</small></span><span class="tm">${dur((e.r.o.t || [])[e.l] || 0)}</span><span class="pl">+</span></button>${maxBtn}</div>`;
+  }).join("")).join("")
     || `<div class="more">${qs ? "No match." : "Nothing left to plan here."}</div>`;
 }
-function openPicker(w){ PK = w; $("#pkT").innerHTML = w === "b" ? "Add to the <b>builder plan</b>" : "Add to the <b>lab plan</b>"; $("#pkQ").value = ""; pickerList(); $("#psheet").classList.add("show"); }
+function openPicker(w){ PK = w; $("#pkT").innerHTML = w === "b" ? "Add to the <b>builder plan</b>" : w === "p" ? "Add to the <b>pet plan</b>" : "Add to the <b>lab plan</b>"; $("#pkQ").value = ""; pickerList(); $("#psheet").classList.add("show"); }
 function closePicker(){ PK = null; $("#psheet").classList.remove("show"); render(); }
 function builderSnap(v, R, now, c){
   if (v.apiOnly) return "";
@@ -876,9 +1043,9 @@ function builderSnap(v, R, now, c){
       return `<button class="bex" data-act="settime" data-q="${key}" data-lv="${e.x.l}" data-ix="${e.x.ix}" data-n="${nm}" data-left="${Math.round(e.x.left)}" title="Tap to edit time left"><span class="bex-k">${k}</span><span class="bex-n">${nm}<small class="mono">→${e.x.l + 1}</small></span><span class="bex-r"><span class="bex-tm mono" data-end="${endSec}">${dur(e.x.left)}</span><span class="bex-eta">${eta(endSec)}</span></span></button>`;
     };
     if (lab.length) lab.forEach(e => ex.push(exRow("Lab", e)));
-    else if (c.lab && c.lab.rem > 0) ex.push(`<button class="bex" data-tab="__plan"><span class="bex-k">Lab</span><span class="bex-n">nothing researching</span><span class="bex-r"><span class="bex-tm free">free</span></span></button>`);
+    else if (c.lab && c.lab.rem > 0) ex.push(`<button class="bex" data-tab="__plan" data-ptab="l"><span class="bex-k">Lab</span><span class="bex-n">nothing researching</span><span class="bex-r"><span class="bex-tm free">free</span></span></button>`);
     if (pet.length) pet.forEach(e => ex.push(exRow("Pet", e)));
-    else if (c.pets && c.pets.rem > 0) ex.push(`<button class="bex" data-tab="Pets"><span class="bex-k">Pet</span><span class="bex-n">nothing upgrading</span><span class="bex-r"><span class="bex-tm free">free</span></span></button>`);
+    else if (c.pets && c.pets.rem > 0) ex.push(`<button class="bex" data-tab="__plan" data-ptab="p"><span class="bex-k">Pet</span><span class="bex-n">nothing upgrading</span><span class="bex-r"><span class="bex-tm free">free</span></span></button>`);
     body = `<div class="bsnap-b"><div class="bsnap-g">${tiles.join("")}</div>${ex.length ? `<div class="bsnap-extra">${ex.join("")}</div>` : ""}</div>`;
   }
   return `<div class="bsnap"><button class="bsnap-h" type="button" data-bsnap="1" aria-expanded="${open}"><span class="bsnap-ico"><img src="assets/builder.webp" alt="Builder"></span><span class="bsnap-meta"><span class="bsnap-top"><span class="bsnap-t">Builders</span><span class="bsnap-cnt ${badgeCls}">${badgeTxt}</span></span><span class="bsnap-sub">${sub}</span></span><span class="bsnap-car">${open ? "▾" : "▸"}</span></button>${body}</div>`;
@@ -914,24 +1081,30 @@ function render(){
 
   h += builderSnap(v, R, now, c);
 
-  // tabs: one category at a time, coloured by status
+  // Top-level 3-tab navigation: Plan (default) | Base | Alerts
   const tabInfo = TABS.map(g => {
     if (AO && !API_GROUPS[g]) return null;
     const rs = R.rows.filter(r => r.o.g === g); if (!rs.length) return null;
     const rem = rs.reduce((s, r) => s + r.rem, 0), up = rs.reduce((s, r) => s + r.inst.filter(x => x.up).length, 0);
     return { g, rs, rem, up, done: rem <= 0 };
   }).filter(Boolean);
-  if (!S.tab || (S.tab !== "__plan" && !tabInfo.find(t => t.g === S.tab))) S.tab = (tabInfo.find(t => !t.done) || tabInfo[0] || {}).g;
-  // two even rows of tabs, no scrolling
-  const SHORT = {};
-  const nPlan = plan(S.cur).b.length + plan(S.cur).l.length;
-  const tabBtns = [`<button class="tab${S.tab === "__plan" ? " on" : ""}" data-tab="__plan">Plan<span>${nPlan || "&nbsp;"}</span></button>`].concat(
-    tabInfo.map(t => `<button class="tab${t.done ? " done" : t.up ? " up" : ""}${S.tab === t.g ? " on" : ""}" data-tab="${t.g}">${SHORT[t.g] || t.g}<span>${t.done ? "✓" : t.up ? t.up : "&nbsp;"}</span></button>`));
-  // split where both rows carry about the same amount of text, so long names get room
-  const wts = tabBtns.map(b => b.replace(/<span>.*?<\/span>/, "").replace(/<[^>]+>/g, "").length + 3);
-  let half = 1, bestD = Infinity, tot = wts.reduce((a, b) => a + b, 0);
-  for (let k = 1, acc = 0; k < wts.length; k++) { acc += wts[k - 1]; const d = Math.abs(tot - 2 * acc); if (d < bestD) { bestD = d; half = k; } }
-  h += `<div class="tabs"><div class="tr">${tabBtns.slice(0, half).join("")}</div><div class="tr">${tabBtns.slice(half).join("")}</div></div>`;
+  if (!S.tab || !tabInfo.find(t => t.g === S.tab)) S.tab = (tabInfo.find(t => !t.done) || tabInfo[0] || {}).g;
+  const mnav = (S.mnav === "base" || S.mnav === "alerts") ? S.mnav : "plan";
+  const nPlan = plan(S.cur).b.length + plan(S.cur).l.length + plan(S.cur).p.length;
+  const al = alGet();
+  h += `<div class="mnav">
+    <button class="mtab${mnav === "plan" ? " on" : ""}" data-mnav="plan">Plan${nPlan ? `<span>${nPlan}</span>` : ""}</button>
+    <button class="mtab${mnav === "base" ? " on" : ""}" data-mnav="base">Base<span>${Math.floor(overall)}%</span></button>
+    <button class="mtab${mnav === "alerts" ? " on" : ""}" data-mnav="alerts">Alerts<span>${al.on ? (al.lead >= 60 ? "1h" : (al.lead || 20) + "m") : "off"}</span></button>
+  </div>`;
+  if (mnav === "base") {
+    const SHORT = {};
+    const tabBtns = tabInfo.map(t => `<button class="tab${t.done ? " done" : t.up ? " up" : ""}${S.tab === t.g ? " on" : ""}" data-tab="${t.g}">${SHORT[t.g] || t.g}<span>${t.done ? "✓" : t.up ? t.up : "&nbsp;"}</span></button>`);
+    const wts = tabBtns.map(b => b.replace(/<span>.*?<\/span>/, "").replace(/<[^>]+>/g, "").length + 3);
+    let half = 1, bestD = Infinity, tot = wts.reduce((a, b) => a + b, 0);
+    for (let k = 1, acc = 0; k < wts.length; k++) { acc += wts[k - 1]; const d = Math.abs(tot - 2 * acc); if (d < bestD) { bestD = d; half = k; } }
+    h += `<div class="tabs"><div class="tr">${tabBtns.slice(0, half).join("")}</div><div class="tr">${tabBtns.slice(half).join("")}</div></div>`;
+  }
 
   // one line per copy
   const lineObjs = (r, onlyUp) => {
@@ -961,9 +1134,10 @@ function render(){
   if (EDIT) {
 
   }
-  const sig = [S.cur, S.tab, (S.sf && S.sf[S.tab] && S.sf[S.tab].sort) || "", S.gp || 0, S.hideMax ? 1 : 0, EDIT ? 1 : 0].join("|");
+  const sig = [S.cur, mnav, S.tab, (S.sf && S.sf[S.tab] && S.sf[S.tab].sort) || "", S.gp || 0, S.hideMax ? 1 : 0, EDIT ? 1 : 0].join("|");
   if (ORD.sig !== sig) ORD = { sig, m: {} };
-  if (S.tab === "__plan") h += planTab(v, R);
+  if (mnav === "plan") h += planTab(v, R);
+  else if (mnav === "alerts") h += alertsTab(v, R, now);
   else {
     const T = tabInfo.find(t => t.g === S.tab);
     if (T) {
@@ -1015,9 +1189,9 @@ function render(){
       }
       const editBtn = EDIT ? `<div class="editbar"><span>Set each one with − and +</span><button class="pri" id="btnDone">Save levels</button></div>` : `<button class="editbtn" id="btnEditLv">Edit levels</button>`;
       h += `<div class="sec open"><div class="head"><span class="nm">${g}</span><span class="pc mono">${p}%</span></div><div class="body">${remain}${!EDIT && T.rem > 0 && g !== "Equipment" ? fbar(g, rs) : ""}${body}${editBtn}</div></div>`;
+      h += `<label class="toggle"><input type="checkbox" id="hideMax"${S.hideMax ? " checked" : ""}> Hide maxed items</label>`;
     }
   }
-  h += `<label class="toggle"><input type="checkbox" id="hideMax"${S.hideMax ? " checked" : ""}> Hide maxed items</label>`;
   app.innerHTML = h;
 }
 function editRow(r){
@@ -1065,19 +1239,27 @@ document.addEventListener("click", e => {
   if (bsn) { S.snapClosed = !S.snapClosed; store.set(S); render(); return; }
   const gob = e.target.closest("[data-go]");
   if (gob) { S.go = S.go || {}; S.go[gob.dataset.go] = !S.go[gob.dataset.go]; store.set(S); render(); return; }
+  const mn = e.target.closest("[data-mnav]");
+  if (mn) { if (EDIT) finishEdit(); S.mnav = mn.dataset.mnav; store.set(S); render(); return; }
   const tb = e.target.closest("[data-tab]");
-  if (tb) { if (EDIT) finishEdit(); S.tab = tb.dataset.tab; store.set(S); render(); return; }
+  if (tb) { if (EDIT) finishEdit(); if (tb.dataset.tab === "__plan") S.mnav = "plan"; else { S.mnav = "base"; S.tab = tb.dataset.tab; } if (tb.dataset.ptab) S.ptab = tb.dataset.ptab; store.set(S); render(); return; }
+  const ptb = e.target.closest("[data-ptab]");
+  if (ptb) { S.ptab = ptb.dataset.ptab; store.set(S); render(); return; }
+  const alb = e.target.closest("[data-allead],[data-altype]");
+  if (alb) { const al = alGet(); if (alb.dataset.allead) al.lead = +alb.dataset.allead; else { al.types = al.types || { b: true, l: true, p: true }; al.types[alb.dataset.altype] = !(al.types[alb.dataset.altype] !== false); } alSave(al); render(); return; }
+  if (e.target.id === "btnAlSave") { saveAlerts(); return; }
+  if (e.target.id === "btnAlOff") { disableAlerts(); return; }
   const qb = e.target.closest("[data-act]");
   if (qb && !EDIT) {
     const a = qb.dataset.act, key = qb.dataset.q, lv = qb.dataset.lv, ix = qb.dataset.ix;
     if (a === "settime") { openTimeSheet(key, +lv, qb.dataset.n, +qb.dataset.left, ix); return; }
     if (a === "start") {
       // starting something that was planned takes it off the plan (undo puts it back)
-      const P = plan(S.cur), snap = JSON.stringify({ b: P.b, l: P.l });
-      let hit = false; ["b", "l"].forEach(w => { const k = P[w].findIndex(q => String(q.i) === String(key) && q.l === +lv); if (k >= 0 && !hit) { P[w].splice(k, 1); hit = true; } });
+      const P = plan(S.cur), snap = JSON.stringify({ b: P.b, l: P.l, p: P.p });
+      let hit = false; ["b", "l", "p"].forEach(w => { const k = P[w].findIndex(q => String(q.i) === String(key) && q.l === +lv); if (k >= 0 && !hit) { P[w].splice(k, 1); hit = true; } });
       if (hit) savePlan(S.cur);
       changeCopy(key, lv, (h, row, o) => { const step = (o.t || [])[h.l] || 0; h.t = -1; h.start = step; }, (row, h) => `${row.o.n} started · ${dur(h.start || 0)} (tap the time to change it)`, false, ix,
-        hit ? () => { const j = JSON.parse(snap), Q = plan(S.cur); Q.b = j.b; Q.l = j.l; savePlan(S.cur); } : null);
+        hit ? () => { const j = JSON.parse(snap), Q = plan(S.cur); Q.b = j.b; Q.l = j.l; Q.p = j.p; savePlan(S.cur); } : null);
     }
     else if (a === "cancel") changeCopy(key, lv, h => { h.t = 0; }, row => `${row.o.n} upgrade cancelled`, true, ix);
     else if (a === "done") changeCopy(key, lv, h => { h.l++; h.t = 0; }, (row, h) => `${row.o.n} done · level ${h.l}`, true, ix);
@@ -1091,6 +1273,18 @@ document.addEventListener("click", e => {
     if (pm.dataset.pmv) { if (k > 0) [P[w][k - 1], P[w][k]] = [P[w][k], P[w][k - 1]]; }
     else P[w].splice(k, 1);
     savePlan(S.cur); render(); return; }
+  const pmx = e.target.closest("[data-pmax]");
+  if (pmx && PK) {
+    let v; try { v = view(S.cur); } catch(_) { return; }
+    if (!v) return;
+    const R = compute(v, Math.floor(Date.now() / 1000)), I = planInfo(v, R), id = +pmx.dataset.pmax, row = I.rowBy[id];
+    if (!row) return;
+    const P = plan(S.cur), a = (I.virt[id] || []).slice();
+    let added = 0;
+    for (let i = 0; i < a.length; i++) while (a[i] < row.M) { P[PK].push({ i: id, l: a[i] }); a[i]++; added++; }
+    if (added) { savePlan(S.cur); toast("Queued " + row.o.n + " to max (" + added + " level" + (added === 1 ? "" : "s") + ")"); pickerList(); }
+    return;
+  }
   const pi = e.target.closest("[data-pi]");
   if (pi && PK) { const P = plan(S.cur); P[PK].push({ i: +pi.dataset.pi, l: +pi.dataset.pl }); savePlan(S.cur);
     toast("Added " + ((BY[+pi.dataset.pi] || {}).n || "") + " " + pi.dataset.pl + " → " + (+pi.dataset.pl + 1)); pickerList(); return; }
@@ -1156,7 +1350,72 @@ document.addEventListener("change", e => {
     const cur = arr.filter(h => h.l === L).length;
     moveWalls(L, want - cur); render(); return;
   } if (e.target.matches && e.target.matches("select[data-pin]")) { const P = plan(S.cur); P.pins[+e.target.dataset.pin] = e.target.value; savePlan(S.cur); render(); return; }
+  if (e.target.matches && e.target.matches("select[data-lpin]")) { const P = plan(S.cur); P.lpins[+e.target.dataset.lpin] = e.target.value; savePlan(S.cur); render(); return; }
+  if (e.target.matches && e.target.matches("select[data-ppin]")) { const P = plan(S.cur); P.ppin = e.target.value; savePlan(S.cur); render(); return; }
   if (e.target.id === "hideMax") { S.hideMax = e.target.checked; store.set(S); render(); } });
+document.addEventListener("toggle", e => { if (e.target && e.target.id === "alBox") { S.alOpen = e.target.open; store.set(S); } }, true);
+
+// ---- Web Push alerts: hybrid RSA-OAEP + AES-GCM sealed subscription saved to data/push_subs.json
+const ALKEY = "basetracker.alerts", ALIDKEY = "basetracker.devid";
+let AL_MSG = "";
+function alGet(){ try { return JSON.parse(localStorage.getItem(ALKEY)) || { on: false, lead: 20, types: { b: true, l: true, p: true } }; } catch(e) { return { on: false, lead: 20, types: { b: true, l: true, p: true } }; } }
+function alSave(v){ try { localStorage.setItem(ALKEY, JSON.stringify(v)); } catch(e) {} }
+function devId(){ try { let id = localStorage.getItem(ALIDKEY); if (!id) { id = "d_" + Array.from(crypto.getRandomValues(new Uint8Array(8)), b => b.toString(16).padStart(2, "0")).join(""); localStorage.setItem(ALIDKEY, id); } return id; } catch(e) { return "d_local"; } }
+const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+async function sealObj(obj, spkiB64){
+  const rsaKey = await crypto.subtle.importKey("spki", unb64(spkiB64), { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]);
+  const aesKey = await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt"]);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aesKey, new TextEncoder().encode(JSON.stringify(obj)));
+  const rawAes = await crypto.subtle.exportKey("raw", aesKey);
+  const ek = await crypto.subtle.encrypt({ name: "RSA-OAEP" }, rsaKey, rawAes);
+  return { v: 1, ek: b64u(ek), iv: b64u(iv), ct: b64u(ct) };
+}
+async function saveAlerts(){
+  const al = alGet(), setMsg = m => { AL_MSG = m; const el = $("#alMsg"); if (el) el.textContent = m; };
+  const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const inApp = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  if (ios && !inApp) { setMsg("On iPhone: tap Share, then Add to Home Screen, and turn alerts on inside the app."); return; }
+  if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) { setMsg("This browser does not support push alerts."); return; }
+  if (!tok()) { setMsg("Unlock with your passphrase first so this device can save alert settings."); return; }
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") { setMsg("Notifications are blocked. Allow them in iPhone Settings -> Notifications -> Base Tracker."); return; }
+    setMsg("Saving…");
+    const pub = await fetch("data/push.json?t=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.json() : null);
+    if (!pub || !pub.vapid || !pub.seal) throw new Error("Alert keys not published yet.");
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: unb64u(pub.vapid) });
+    const id = devId(), payload = { sub: sub.toJSON(), lead: al.lead || 20, types: al.types || { b: true, l: true, p: true }, welcomeTs: al.on ? 0 : Math.floor(Date.now() / 1000) };
+    const sealed = await sealObj(payload, pub.seal);
+    const curTxt = await getFile("data/push_subs.json").catch(() => null);
+    const doc = (curTxt && JSON.parse(curTxt)) || { v: 1, subs: {} };
+    doc.subs = doc.subs || {}; doc.subs[id] = sealed; doc.ts = Math.floor(Date.now() / 1000);
+    await putFile("data/push_subs.json", JSON.stringify(doc), "Update push alert subscription");
+    const wasOn = al.on; al.on = true; alSave(al);
+    AL_MSG = wasOn ? "Alert settings saved." : "Alerts on. A test ping will hit your phone & watch within 5 minutes.";
+    render();
+  } catch (err) { setMsg("Could not save alerts: " + (err && err.message || err)); }
+}
+async function disableAlerts(){
+  const al = alGet(), setMsg = m => { AL_MSG = m; const el = $("#alMsg"); if (el) el.textContent = m; };
+  try {
+    setMsg("Turning off…");
+    if ("serviceWorker" in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = reg && await reg.pushManager.getSubscription();
+      if (sub) await sub.unsubscribe().catch(() => {});
+    }
+    if (tok()) {
+      const id = devId(), curTxt = await getFile("data/push_subs.json").catch(() => null);
+      if (curTxt) {
+        const doc = JSON.parse(curTxt);
+        if (doc && doc.subs && doc.subs[id]) { delete doc.subs[id]; doc.ts = Math.floor(Date.now() / 1000); await putFile("data/push_subs.json", JSON.stringify(doc), "Disable push alert subscription"); }
+      }
+    }
+    al.on = false; alSave(al); AL_MSG = "Alerts are off on this device."; render();
+  } catch (err) { setMsg("Could not turn off alerts: " + (err && err.message || err)); }
+}
 function bump(key, d){
   const v = EDIT.v, R = compute(v, Math.floor(Date.now() / 1000));
   if (key === "weapon") { const M = (DATA.weapon[Math.min(v.th, DATA.top || 18)] || []).length; v.weapon = Math.max(0, Math.min(M, (v.weapon || 0) + Math.sign(d))); EDIT.dirty = true; return; }

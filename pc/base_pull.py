@@ -62,7 +62,13 @@ def main():
         changed[path] = content
         log(f"{p.get('name', tag)}: levels changed, queued for upload")
     if not changed:
-        log("OK no level changes"); return 0
+        log("OK no level changes")
+        try:
+            import push_alerts
+            push_alerts.check_and_send(log)
+        except Exception as e:
+            log(f"PUSH error: {e}")
+        return 0
     if "--no-upload" in sys.argv:
         log("Test mode (--no-upload): saved locally only."); return 0
     try: token = open(P("github_token.txt"), encoding="utf-8").read().strip()
@@ -99,6 +105,11 @@ def main():
     if code != 200: log(f"ERROR updating branch ({code}): {r.get('message','')}"); return 1
     st.update(hashes); json.dump(st, open(P("push_state.json"), "w", encoding="utf-8"))
     log(f"OK uploaded {len(changed)} file(s). Site: https://{USER}.github.io/{REPO}/")
+    try:
+        import push_alerts
+        push_alerts.check_and_send(log)
+    except Exception as e:
+        log(f"PUSH error: {e}")
     return 0
 
 if __name__ == "__main__":
