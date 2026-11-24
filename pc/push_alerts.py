@@ -7,7 +7,7 @@
   Gold / Elixir / Dark Elixir needed so Trent can raid if short on loot.
 Uses only Python stdlib + cryptography (RFC 8291 aes128gcm + RFC 8292 VAPID ES256).
 """
-import base64, hashlib, json, os, struct, time, urllib.error, urllib.parse, urllib.request
+import base64, hashlib, json, os, struct, subprocess, time, urllib.error, urllib.parse, urllib.request
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, utils
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -122,6 +122,17 @@ def send_web_push(sub: dict, payload: dict, vapid_priv, vapid_pub_b64u: str, sub
             return r.status
     except urllib.error.HTTPError as e:
         return e.code
+    except urllib.error.URLError:
+        # Windows OpenSSL may lack Apple Push root CA; Windows curl uses native Schannel TLS with full verification
+        cmd = ["curl.exe", "-sS", "-o", os.devnull, "-w", "%{http_code}", "-X", "POST", "--data-binary", "@-"]
+        for k, v in headers.items():
+            cmd.extend(["-H", f"{k}: {v}"])
+        cmd.append(endpoint)
+        p = subprocess.run(cmd, input=body, capture_output=True, timeout=25)
+        try:
+            return int(p.stdout.decode("ascii", "ignore").strip() or "0")
+        except ValueError:
+            return 0
 
 
 def _gh_get_file(path: str, token: str):

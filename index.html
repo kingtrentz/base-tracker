@@ -103,7 +103,10 @@ input[type=text]{width:100%;background:var(--bg);color:var(--tx);border:1px soli
 .empty p{color:var(--mut);font-size:14px;line-height:1.5}
 .hdr-btns{display:flex;gap:6px}
 .hdr-btns button{padding:8px 10px}
-#btnTheme{min-width:40px;font-size:16px;line-height:1}
+#btnTheme,#btnBell{min-width:38px;font-size:15px;line-height:1}
+#btnBell{position:relative}
+#btnBell.on{color:var(--acc);box-shadow:0 0 0 1px color-mix(in srgb,var(--acc) 55%,transparent)}
+#btnBell.on::after{content:"";position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--acc)}
 button.on{border-color:var(--acc);color:var(--acc)}
 .ed{display:flex;gap:6px;flex:none}
 .row.i{padding:7px 10px 7px 14px;gap:8px;min-height:44px}
@@ -396,6 +399,9 @@ body{background:transparent}
 }
 @media (prefers-reduced-motion: reduce){.embers{display:none}}
 .card,.sec,.bsnap,.alcard{background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#alSheetBody .alcard{background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;margin:0;border-radius:0}
+#alSheetBody .al-hd{padding:0 0 8px}
+#alSheetBody .al-body{padding:0}
 </style>
 <link id="lnkMan" rel="manifest" href="manifest.webmanifest">
 <link id="lnkApple" rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -412,7 +418,7 @@ body{background:transparent}
 <div class="wrap">
   <header>
     <h1>base<span>.</span>tracker</h1>
-    <div class="hdr-btns"><button id="btnTheme" aria-label="Switch light and dark mode" title="Light / dark"></button><button id="btnImport" title="Paste by hand, pick a file, or add a token" aria-label="More">⋯</button><button id="btnPaste" class="pri" title="Read the export you copied in game">Paste</button></div>
+    <div class="hdr-btns"><button id="btnBell" aria-label="Upgrade alerts" title="Upgrade alerts">🔔</button><button id="btnTheme" aria-label="Switch light and dark mode" title="Light / dark"></button><button id="btnImport" title="Paste by hand, pick a file, or add a token" aria-label="More">⋯</button><button id="btnPaste" class="pri" title="Read the export you copied in game">Paste</button></div>
   </header>
 
   <div id="panel" class="card panel">
@@ -460,6 +466,10 @@ body{background:transparent}
     <input id="pkQ" class="pkq" type="search" placeholder="Search" autocomplete="off">
     <div id="pkL" class="pkl"></div>
     <div class="sheet-a"><button id="pkClose" class="pri" type="button">Done</button></div>
+  </div></div>
+  <div id="alsheet" class="sheet"><div class="sheet-c" role="dialog" aria-label="Upgrade alerts">
+    <div id="alSheetBody"></div>
+    <div class="sheet-a" style="margin-top:10px"><button id="alClose" type="button">Done</button></div>
   </div></div>
   <footer>Game data: ClashKing static data (Nov 23, 2026) · buildings from the latest export, the rest auto-updates<br>built by kingtrents⚡️ x claude<br>Unofficial fan tool, not endorsed by Supercell. Town Hall art © Supercell.</footer>
 </div>
@@ -1144,6 +1154,9 @@ function render(){
       h += `<label class="toggle"><input type="checkbox" id="hideMax"${S.hideMax ? " checked" : ""}> Hide maxed items</label>`;
     }
   }
+  const bBell = $("#btnBell");
+  if (bBell) { const al = alGet(); bBell.classList.toggle("on", !!al.on); bBell.title = al.on ? `Alerts on (${al.lead >= 60 ? "1h" : (al.lead || 20) + "m"} before)` : "Upgrade alerts"; }
+  if (ALOPEN) $("#alSheetBody").innerHTML = alertsTab(v, R, now);
   app.innerHTML = h;
 }
 function editRow(r){
@@ -1183,8 +1196,11 @@ function moveWalls(L, delta){
   EDIT.dirty = true;
 }
 
+let ALOPEN = false;
 // events
 document.addEventListener("click", e => {
+  if (e.target.closest("#btnBell")) { ALOPEN = !ALOPEN; $("#alsheet").classList.toggle("show", ALOPEN); render(); return; }
+  if (e.target.id === "alClose" || e.target.id === "alsheet") { ALOPEN = false; $("#alsheet").classList.remove("show"); return; }
   if (e.target.closest("#btnGpTag")) { openPanel(); return; }
   const bsn = e.target.closest("[data-bsnap]");
   if (bsn) { BOPEN = !BOPEN; render(); return; }
