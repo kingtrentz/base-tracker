@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Base Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -23,7 +23,7 @@
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--tx);font-family:"Space Grotesk",system-ui,sans-serif;-webkit-text-size-adjust:100%}
 body{overflow-x:hidden}
-.wrap{max-width:720px;margin:0 auto;padding:14px 14px 40px}
+.wrap{max-width:720px;margin:0 auto;padding:calc(env(safe-area-inset-top, 0px) + 14px) 14px calc(env(safe-area-inset-bottom, 0px) + 40px)}
 .mono{font-family:"Space Mono",ui-monospace,monospace}
 header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
 h1{font-size:19px;margin:0;font-weight:700;letter-spacing:-.01em}
@@ -142,10 +142,11 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .tabs .tr .tab{flex:1 1 auto}
 @media (max-width:380px){.tab{font-size:10px;padding:6px 2px 5px}}
 .tab{min-width:0;border:0;border-radius:12px;padding:6px 3px 5px;font-size:11px;letter-spacing:-.01em;font-weight:600;line-height:1.2;background:var(--card);box-shadow:0 0 0 1px var(--hair);color:var(--tx);display:flex;flex-direction:column;align-items:center;gap:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tab span{font-size:10px;font-weight:700;color:var(--mut);height:12px}
+.tab span{font-size:10.5px;font-weight:700;color:var(--mut);height:13px;display:inline-flex;align-items:center;justify-content:center;gap:3px;font-variant-numeric:tabular-nums}
 .tab.done span{color:var(--acc)}
 .tab.done{color:var(--acc)}
 .tab.up span{color:var(--warn)}
+.tab.up span::before{content:"";width:4.5px;height:4.5px;border-radius:50%;background:currentColor;flex:none}
 .tab.on{background:var(--acc);color:var(--on-acc);box-shadow:none}
 .tab.on.done{background:var(--acc)}
 .row.i .q.s[data-act="cancel"]{color:var(--red)}
@@ -313,6 +314,16 @@ button{border-color:var(--hair)}
 .bex-tm{font-size:12.5px;font-weight:700;color:var(--warn);font-variant-numeric:tabular-nums}
 .bex-tm.free{color:var(--acc)}
 .bex-eta{font-size:10.5px;color:var(--mut)}
+/* Home Screen app elastic pull-to-refresh (ported from Golf Tracker) */
+html.app, html.app body{overscroll-behavior-y:none}
+html.app:is(.pulling,.settle,.glide) .wrap > :is(header,#panel,#chips,#app,footer){transform:translate3d(0,var(--pull,0px),0);will-change:transform}
+html.app.settle .wrap > :is(header,#panel,#chips,#app,footer){transition:transform .55s cubic-bezier(.34,1.35,.64,1)}
+html.app.glide .wrap > :is(header,#panel,#chips,#app,footer){transition:transform .42s cubic-bezier(.22,1,.36,1)}
+.ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top, 0px) + 12px);z-index:1;display:flex;flex-direction:column;align-items:center;gap:5px;opacity:0;transform:translate3d(-50%,-34px,0) scale(.7);pointer-events:none;will-change:transform,opacity;color:var(--mut);font-size:12px;font-weight:700;letter-spacing:.02em}
+.ptr img{width:46px;height:auto;filter:drop-shadow(0 4px 10px rgba(0,0,0,.45));transform:rotateY(var(--ptr-rot,0deg))}
+html.app:is(.settle,.glide) .ptr{transition:transform .45s cubic-bezier(.22,1,.36,1),opacity .28s ease}
+@keyframes ptrSpin{0%{transform:rotateY(0)}100%{transform:rotateY(360deg)}}
+.ptr.spin img{animation:ptrSpin .75s linear infinite}
 </style>
 <link id="lnkMan" rel="manifest" href="manifest.webmanifest">
 <link id="lnkApple" rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -873,6 +884,7 @@ function render(){
   try { v = view(S.cur) } catch(e) { app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return; }
   if (EDIT && EDIT.tag === S.cur) v = EDIT.v;
   if (v && v.th >= 16 && v.th <= 18) document.documentElement.setAttribute("data-th", v.th); else document.documentElement.removeAttribute("data-th");
+  syncThemeColor();
   if (!v) { app.innerHTML = `<div class="card empty"><p><b>No data yet for ${esc(NAME[S.cur])}.</b><br>Copy the village export in game, then tap Paste.</p></div>`; return; }
   const AO = !!v.apiOnly;
   const ago = s => s < 3600 ? Math.max(1, Math.round(s/60)) + "m" : dur(s);
@@ -913,9 +925,9 @@ function render(){
   const SHORT = {};
   const nTabs = tabInfo.length + (anyUp ? 1 : 0);
   const nPlan = plan(S.cur).b.length + plan(S.cur).l.length;
-  const tabBtns = (anyUp ? [`<button class="tab up${S.tab === "__up" ? " on" : ""}" data-tab="__up">Active<span>↑${tabInfo.reduce((s, t) => s + t.up, 0)}</span></button>`] : []).concat(
+  const tabBtns = (anyUp ? [`<button class="tab up${S.tab === "__up" ? " on" : ""}" data-tab="__up">Active<span>${tabInfo.reduce((s, t) => s + t.up, 0)}</span></button>`] : []).concat(
     [`<button class="tab${S.tab === "__plan" ? " on" : ""}" data-tab="__plan">Plan<span>${nPlan || "&nbsp;"}</span></button>`]).concat(
-    tabInfo.map(t => `<button class="tab${t.done ? " done" : t.up ? " up" : ""}${S.tab === t.g ? " on" : ""}" data-tab="${t.g}">${SHORT[t.g] || t.g}<span>${t.done ? "✓" : t.up ? "↑" + t.up : "&nbsp;"}</span></button>`));
+    tabInfo.map(t => `<button class="tab${t.done ? " done" : t.up ? " up" : ""}${S.tab === t.g ? " on" : ""}" data-tab="${t.g}">${SHORT[t.g] || t.g}<span>${t.done ? "✓" : t.up ? t.up : "&nbsp;"}</span></button>`));
   // split where both rows carry about the same amount of text, so long names get room
   const wts = tabBtns.map(b => b.replace(/<span>.*?<\/span>/, "").replace(/<[^>]+>/g, "").length + 3);
   let half = 1, bestD = Infinity, tot = wts.reduce((a, b) => a + b, 0);
@@ -1267,7 +1279,13 @@ document.addEventListener("click", e => { const ib = e.target.closest("[data-ico
 applyIcon();
 $("#btnEdit").onclick = () => { panel.classList.remove("show"); if (!EDIT) startEdit(); };
 // keeps itself fresh: re-reads the saved data every 2 minutes and whenever the page comes back on screen
-function themeIcon(){ const b = $("#btnTheme"); if (b) b.textContent = document.documentElement.getAttribute("data-theme") === "light" ? "☾" : "☀"; }
+function syncThemeColor(){
+  const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#0f1013";
+  const old = document.querySelector('meta[name="theme-color"]');
+  if (old) old.remove();
+  const m = document.createElement("meta"); m.name = "theme-color"; m.content = bg; document.head.appendChild(m);
+}
+function themeIcon(){ const b = $("#btnTheme"); if (b) b.textContent = document.documentElement.getAttribute("data-theme") === "light" ? "☾" : "☀"; syncThemeColor(); }
 $("#btnTheme").onclick = () => {
   const t = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", t);
@@ -1275,6 +1293,85 @@ $("#btnTheme").onclick = () => {
   themeIcon();
 };
 themeIcon();
+// Home Screen app elastic pull-to-refresh (ported from Golf Tracker: in-place refresh, smooth glide, iOS home-bar safe)
+(() => {
+  const inApp = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  if (!inApp()) return;
+  const root = document.documentElement;
+  root.classList.add("app");
+  const ind = document.createElement("div"); ind.className = "ptr"; ind.setAttribute("aria-hidden", "true");
+  ind.innerHTML = `<img src="assets/builder.webp" alt=""><span>Pull to refresh</span>`;
+  document.body.append(ind);
+  const lbl = ind.querySelector("span");
+  const busy = () => !!(EDIT || TS || PK || document.body.classList.contains("locked") || $("#panel").classList.contains("show"));
+  const LINE = 105;
+  let settleTimer = 0, refreshing = false;
+  const setPull = (p, mode) => {
+    clearTimeout(settleTimer);
+    root.classList.toggle("pulling", !mode && p > 0);
+    root.classList.toggle("settle", mode === "bounce");
+    root.classList.toggle("glide", mode === "glide");
+    root.style.setProperty("--pull", p.toFixed(1) + "px");
+    root.style.setProperty("--ptr-rot", (p * 2.2).toFixed(0) + "deg");
+    const k = Math.max(0, Math.min(1, (p - 16) / 68));
+    ind.style.opacity = k.toFixed(2);
+    const y = Math.max(-28, p * 0.46 - 28);
+    ind.style.transform = `translate3d(-50%,${y.toFixed(1)}px,0) scale(${(0.74 + 0.28 * k).toFixed(3)})`;
+    if (mode && p === 0) settleTimer = setTimeout(() => { root.classList.remove("settle", "glide", "pulling"); ind.classList.remove("spin"); }, mode === "glide" ? 450 : 580);
+  };
+  const go = async () => {
+    if (refreshing) return;
+    refreshing = true;
+    lbl.textContent = "Refreshing…"; ind.classList.add("spin");
+    setPull(116, "glide");
+    const minSpin = new Promise(r => setTimeout(r, 580));
+    const refreshWork = Promise.race([
+      loadRemote().then(catchUp).then(() => { if (!EDIT && !TS && !PK) render(); }).catch(() => {}),
+      new Promise(r => setTimeout(r, 4500))
+    ]);
+    await Promise.all([minSpin, refreshWork]);
+    setPull(0, "glide");
+    setTimeout(() => { refreshing = false; lbl.textContent = "Pull to refresh"; }, 460);
+  };
+  let y0 = null, d = 0, raf = 0, armed = null;
+  const paint = () => {
+    raf = 0;
+    if (y0 === null) return;
+    const pull = Math.max(0, d - 6);
+    const maxPull = Math.max(360, innerHeight * 0.72);
+    const travel = maxPull * (1 - Math.exp(-pull / (maxPull * 0.65)));
+    setPull(travel, false);
+    const a = travel > LINE;
+    if (a !== armed) { armed = a; lbl.textContent = a ? "Let go to refresh" : "Pull to refresh"; }
+  };
+  const release = () => {
+    if (y0 === null) return;
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    const pull = Math.max(0, d - 6);
+    const maxPull = Math.max(360, innerHeight * 0.72);
+    const travel = maxPull * (1 - Math.exp(-pull / (maxPull * 0.65)));
+    const fire = travel > LINE; y0 = null; d = 0;
+    if (fire) go(); else setPull(0, "bounce");
+  };
+  addEventListener("touchstart", e => {
+    if (refreshing) return;
+    y0 = (scrollY <= 2 && e.touches.length === 1 && !busy() && !e.target.closest("input,textarea,select,.flt")) ? e.touches[0].clientY : null; d = 0; armed = null;
+  }, { passive: true, capture: true });
+  addEventListener("touchmove", e => {
+    if (y0 === null) return;
+    if (!e.touches.length) { release(); return; }
+    const cy = e.touches[0].clientY;
+    d = cy - y0;
+    if (d <= 0) { y0 = null; setPull(0, "glide"); return; }
+    if (cy >= innerHeight - 16) { release(); return; }
+    if (d > 6) e.preventDefault();
+    if (!raf) raf = requestAnimationFrame(paint);
+  }, { passive: false, capture: true });
+  addEventListener("touchend", e => { if (!e.touches?.length) release(); }, { passive: true, capture: true });
+  addEventListener("touchcancel", release, { passive: true, capture: true });
+  addEventListener("pointercancel", release, { passive: true, capture: true });
+  addEventListener("blur", release);
+})();
 function autoRefresh(){
   if (EDIT || TS || PK || document.hidden || !tok()) return;
   loadRemote().then(catchUp).then(() => { if (!EDIT && !TS && !PK) render(); });
