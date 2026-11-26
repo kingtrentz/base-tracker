@@ -1816,7 +1816,7 @@ async function passKey(pass, salt){
 let LOCK = null, STARTED = false;
 function startApp(){ $("#lock").classList.remove("show"); document.body.classList.remove("locked"); if (STARTED) { loadRemote().then(catchUp).then(render); return; } STARTED = true; render(); loadRemote().then(catchUp).then(render); }
 document.addEventListener("click", e => {
-  if (e.target.closest("#syncFix")) { try { localStorage.removeItem(TOKKEY) } catch(_) {} SYNC.auth = false; startApp(); }
+  if (e.target.closest("#syncFix")) { try { localStorage.removeItem(TOKKEY) } catch(_) {} SYNC.auth = false; boot(); }
   else if (e.target.closest("#syncSend")) { SYNC.err = ""; loadRemote().then(catchUp).then(() => render()); }
 });
 function showLock(setup){
@@ -1858,7 +1858,7 @@ function boot(){
   if (tok()) { startApp(); return; }
   fetch(LOCKFILE + "?t=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.json() : null).catch(() => null).then(j => { LOCK = j && j.ct ? j : null; showLock(!LOCK); });
 }
-boot();
+startApp();
 window.__bt = { parse, compute };
 })();
 </script>
