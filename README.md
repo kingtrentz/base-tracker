@@ -12,6 +12,7 @@ Clash of Clans base progress tracker for two accounts (KingTrents and Khnum-Atum
 - Builders pill (top right): dropdown of every busy builder, lab, squad and pet with countdowns. Starts closed. Header shows when the next builder frees up, with date and time.
 - Progress: Overall bar, tap it to open the other six. Ring around the town hall.
 - Category tabs, then a Next section at the bottom of each tab. Next folds behind one header and starts closed.
+  - Defenses, Traps, Collectors and Storages show one dropdown per building (copies left, next upgrade); tap it to see each copy. Short tabs (Army, Guardians, Walls and the rest) stay as plain lists (`DROPDOWN_TABS`).
   - One line per builder, the lab (troops, spells, sieges and squads together) and the pet house: what it's on, a "next" dropdown and a "stays on" lane.
   - Next never auto-picks. The suggestion is only listed first.
   - "⚠ N need a next" shows when a busy builder or lab has nothing picked.
@@ -31,3 +32,4 @@ Clash of Clans base progress tracker for two accounts (KingTrents and Khnum-Atum
 - PR #4 progress bars fold to Overall, % above town hall removed
 - PR #5 TH19 fixes, folded Next with warnings, squads in the lab slot, goblin timers, date on next builder, completion pings
 - PR #6 lab and pet queues removed from Next, so no slot has a queue
+- PR #7 Traps tab gets the same per-building dropdown as Defenses
