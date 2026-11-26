@@ -5,7 +5,7 @@ Clash of Clans base progress tracker for two accounts (KingTrents and Khnum-Atum
 ## How it works
 - Edit `build/template.html`, then run `python3 build/build.py` to write `index.html`. Don't edit `index.html` by hand.
 - Game data comes from the in-game export you paste, plus ClashKing static data (in `data/`).
-- Plans (next picks, queues, goblin timers) save per account and sync through the repo.
+- Plans (next picks, goblin timers) save per account and sync through the repo.
 - `pc/push_alerts.py` runs on Trent's PC (Documents\2026\GitHubs\Clash of Clans\Base Tracker) and sends the push alerts. After changing it here, copy it to that folder by hand.
 
 ## What's on the page
@@ -16,7 +16,7 @@ Clash of Clans base progress tracker for two accounts (KingTrents and Khnum-Atum
   - Next never auto-picks. The suggestion is only listed first.
   - "⚠ N need a next" shows when a busy builder or lab has nothing picked.
   - Small "+ goblin builder" and "+ goblin researcher" links add a countdown for the goblin helpers.
-  - Lab queue and pet queue stay. The builder queue was removed (Nov 26, 2026).
+  - No queues in Next for any slot (builders, lab, pets, goblins). Each slot only has its next and lane dropdowns (Nov 26, 2026).
 - Push alerts: when a builder or lab frees up, and when an upgrade finishes ("X upgraded to level N. Next upgrade: Lvl M Y").
 
 ## TH19 rules in the code
@@ -30,3 +30,4 @@ Clash of Clans base progress tracker for two accounts (KingTrents and Khnum-Atum
 - PR #3 Next condensed to one line per slot, never auto-fills
 - PR #4 progress bars fold to Overall, % above town hall removed
 - PR #5 TH19 fixes, folded Next with warnings, squads in the lab slot, goblin timers, date on next builder, completion pings
+- PR #6 lab and pet queues removed from Next, so no slot has a queue
