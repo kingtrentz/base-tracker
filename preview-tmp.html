@@ -446,7 +446,7 @@ body{background:transparent}
 .sl-s.sl-p{flex:1}
 .sl-s > span{flex:none;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
 .slot .pin{display:block;flex:1;width:100%;min-width:0;max-width:none;margin:0;font-size:12.5px;padding:5px 4px;border:0;background:transparent;color:var(--tx)}
-.slot .pin.on{color:var(--acc);font-weight:600}
+.slot .pin.on{color:var(--acc);font-weight:600} .slot .nsel:not(.on){color:var(--mut)}
 .sl-f .q{flex:none;min-width:36px;padding:4px 0}
 .nxsec .subh{margin:8px 2px 2px}
 .nxsec .more{padding:6px 2px}
@@ -964,9 +964,9 @@ function alertsTab(v, R, now){
   if (first) {
     prevTitle = `${NAME[S.cur]}: ${first.r.o.n} →${first.x.l + 1} done in ${lead >= 60 ? "1h" : lead + "m"}`;
     let nxt = null, slotLbl = first.k === "b" ? "Builder" : first.k === "p" ? "Pet House" : (first.r.o.g === "Squads" ? "Squads" : "Lab");
-    if (first.k === "b") { const s = I.slots.find(s => s.job && s.job.r.o.i === first.r.o.i); nxt = (I.bq[0] && { r: I.bq[0].r, l: I.bq[0].q.l, co: I.bq[0].co }) || (s && s.auto); }
-    else if (first.k === "l") { const sq = first.r.o.g === "Squads", s = I.labSlots.find(s => (s.kind === "sq") === sq); const q0 = I.lq.find(e => (e.r.o.g === "Squads") === sq); nxt = (q0 && { r: q0.r, l: q0.q.l, co: q0.co }) || (s && s.auto); }
-    else if (first.k === "p") { nxt = (I.pq[0] && { r: I.pq[0].r, l: I.pq[0].q.l, co: I.pq[0].co }) || I.petSlot.auto; }
+    if (first.k === "b") { nxt = I.bq[0] ? { r: I.bq[0].r, l: I.bq[0].q.l, co: I.bq[0].co } : null; }
+    else if (first.k === "l") { const sq = first.r.o.g === "Squads", q0 = I.lq.find(e => (e.r.o.g === "Squads") === sq); nxt = q0 ? { r: q0.r, l: q0.q.l, co: q0.co } : null; }
+    else if (first.k === "p") { nxt = I.pq[0] ? { r: I.pq[0].r, l: I.pq[0].q.l, co: I.pq[0].co } : null; }
     if (nxt) {
       const rn = RESN[nxt.r.o.r] || "Loot";
       prevBody = nxt.co ? `Next (${slotLbl}): ${nxt.r.o.n} →${nxt.l + 1} (${num(nxt.co)} ${rn}). Raid if you need ${rn}!` : `Next (${slotLbl}): ${nxt.r.o.n} →${nxt.l + 1}`;
@@ -994,7 +994,7 @@ function nextSection(v, R, now){
     return `<div class="row i"><div class="l"><div class="n">${n}</div><div class="lvl mono">${e.q.l} → ${e.q.l + 1}${who}</div></div><div class="nx">${costSpan(e.r.o, e.co)}<span class="tm">${e.t ? dur(e.t) : "instant"}</span></div>${btns}</div>`;
   }).join("");
   // what a slot can do next: every upgrade of that kind still left (the pinned group or building first)
-  const nextOpts = (pred, pin, cur, curQ) => {
+  const nextOpts = (pred, pin, cur, curQ, sug) => {
     const by = {}, firstG = pin && pin.startsWith("g:") ? pin.slice(2) : "";
     R.rows.forEach(r => {
       if (!r.o.i || !pred(r.o)) return;
@@ -1003,11 +1003,11 @@ function nextSection(v, R, now){
       const lv = a.filter(l => l < r.M); if (!lv.length) return;
       const l = Math.min(...lv), t = (r.o.t || [])[l] || 0;
       if (r.o.i + ":" + l === cur) return;
-      const grp = pin && pin.startsWith("i:") && pin === "i:" + r.o.i ? "★" : r.o.g;
+      const grp = sug && sug.r.o.i === r.o.i && sug.l === l ? "☆" : pin && pin.startsWith("i:") && pin === "i:" + r.o.i ? "★" : r.o.g;
       (by[grp] = by[grp] || []).push({ r, l, t });
     });
-    const order = Object.keys(by).sort((a, b) => (b === "★") - (a === "★") || (b === firstG) - (a === firstG) || GROUPS.indexOf(a) - GROUPS.indexOf(b));
-    return order.map(g => `<optgroup label="${esc(g === "★" ? pinName(pin) : g)}">${by[g].sort((x, y) => x.r.o.n.localeCompare(y.r.o.n)).map(e => opt(e.r.o.i + ":" + e.l, `${e.r.o.n} ${e.l} → ${e.l + 1}${e.t ? " · " + dur(e.t) : ""}`, cur)).join("")}</optgroup>`).join("");
+    const order = Object.keys(by).sort((a, b) => (b === "☆") - (a === "☆") || (b === "★") - (a === "★") || (b === firstG) - (a === firstG) || GROUPS.indexOf(a) - GROUPS.indexOf(b));
+    return order.map(g => `<optgroup label="${esc(g === "☆" ? "Suggested" : g === "★" ? pinName(pin) : g)}">${by[g].sort((x, y) => x.r.o.n.localeCompare(y.r.o.n)).map(e => opt(e.r.o.i + ":" + e.l, `${e.r.o.n} ${e.l} → ${e.l + 1}${e.t ? " · " + dur(e.t) : ""}`, cur)).join("")}</optgroup>`).join("");
   };
   // one card per builder / lab / pet house: what it's doing now, what it does next, and what it stays on
   const slotCard = o => {
@@ -1022,14 +1022,13 @@ function nextSection(v, R, now){
   };
   const nextSel = (attr, pred, pin, cq, auto) => {
     const cur = cq ? cq.i + ":" + cq.l : "";
-    const first = auto ? opt("", `Auto: ${auto.r.o.n} ${auto.l} → ${auto.l + 1}`, cur) : opt("", "Not picked", cur);
+    const first = opt("", "Pick next", cur);
     const curOpt = cq ? opt(cur, `${(BY[cq.i] || {}).n || "?"} ${cq.l} → ${cq.l + 1}`, cur) : "";
-    return `<select class="pin nsel${cq ? " on" : ""}" ${attr}>${first}${curOpt ? `<optgroup label="Picked">${curOpt}</optgroup>` : ""}${nextOpts(pred, pin, cur, cq)}</select>`;
+    return `<select class="pin nsel${cq ? " on" : ""}" ${attr}>${first}${curOpt ? `<optgroup label="Picked">${curOpt}</optgroup>` : ""}${nextOpts(pred, pin, cur, cq, auto)}</select>`;
   };
   const startOf = (cq, auto, free) => {
     if (free > 0) return null;
     if (cq) return { i: cq.i, l: cq.l, ix: -1 };
-    if (auto && !auto.x.up) return { i: auto.r.o.i, l: auto.l, ix: auto.x.ix };
     return null;
   };
   let h = `<div class="nxhd" id="nx">Next</div>`;

@@ -252,34 +252,15 @@ def _pick_next_for_slot(kind: str, is_squad: bool, fin_item: dict, v: dict, plan
             return False
         return lv in virt[iid]
 
-    def auto_from_pin(pin: str, pred):
-        best = None
-        for o in gdata["items"]:
-            iid = o["i"]
-            if iid not in virt or not pred(o) or not _pin_match(pin, o):
-                continue
-            M = max_lv[iid]
-            for lv in virt[iid]:
-                if lv >= M:
-                    continue
-                t = (o.get("t") or [])[lv] if lv < len(o.get("t") or []) else 0
-                k = lv / M
-                if best is None or k < best[0] or (k == best[0] and t < best[1]):
-                    best = (k, t, o, lv)
-        return (best[2], best[3]) if best else None
-
     if kind == "b":
         pins = plan.get("pins") or []
         bq = [q for q in (plan.get("b") or []) if valid_q(q)]
-        # If this finishing building matches a pinned slot, prefer queued item matching that pin, else auto-suggest for pin
+        # If this finishing building matches a pinned slot, prefer queued item matching that pin (never an unpicked suggestion)
         matched_pin = next((p for p in pins if _pin_match(p, fin_item)), "")
         if matched_pin:
             for q in bq:
                 if _pin_match(matched_pin, by_id[q["i"]]):
                     return by_id[q["i"]], q["l"]
-            auto = auto_from_pin(matched_pin, lambda o: (o["k"] == "b" and o["g"] != "Walls") or o["k"] == "h")
-            if auto:
-                return auto
         if bq:
             return by_id[bq[0]["i"]], bq[0]["l"]
         return None
@@ -293,9 +274,6 @@ def _pick_next_for_slot(kind: str, is_squad: bool, fin_item: dict, v: dict, plan
             for q in slot_q:
                 if _pin_match(pin, by_id[q["i"]]):
                     return by_id[q["i"]], q["l"]
-            auto = auto_from_pin(pin, lambda o: o["k"] == "l" and (o["g"] == "Squads") == is_squad)
-            if auto:
-                return auto
         if slot_q:
             return by_id[slot_q[0]["i"]], slot_q[0]["l"]
         return None
@@ -307,9 +285,6 @@ def _pick_next_for_slot(kind: str, is_squad: bool, fin_item: dict, v: dict, plan
             for q in pq:
                 if _pin_match(ppin, by_id[q["i"]]):
                     return by_id[q["i"]], q["l"]
-            auto = auto_from_pin(ppin, lambda o: o["k"] == "p")
-            if auto:
-                return auto
         if pq:
             return by_id[pq[0]["i"]], pq[0]["l"]
         return None
