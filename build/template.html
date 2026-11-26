@@ -46,7 +46,6 @@ button:active{transform:scale(.98)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
 .hero{display:flex;align-items:center;gap:14px}
 .ringw{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;padding:0;cursor:pointer}
-.ringw .pct{font:700 18px "Space Grotesk",system-ui,sans-serif;color:var(--acc);line-height:1}
 .ring{width:84px;height:84px;flex:none;position:relative;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--warn) 24%,transparent) 0%,color-mix(in srgb,var(--acc) 10%,transparent) 48%,transparent 72%)}
 .ring img{position:absolute;inset:12px;width:calc(100% - 24px);height:calc(100% - 24px);object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
 .ring svg{transform:rotate(-90deg)}
@@ -141,6 +140,9 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .cb .k{font-size:12px;font-weight:600;color:var(--mut)}
 .cb .bar{margin:0;height:11px;border-radius:999px;background:var(--bar);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)}
 .cb .bar i{display:block;height:100%;border-radius:999px;transition:width .35s cubic-bezier(.22,1,.36,1);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 8px color-mix(in srgb,var(--acc) 25%,transparent)}
+.cb.c-all .bar i{background:linear-gradient(90deg,var(--acc),var(--warn))}
+.cb.c-all .k{color:var(--tx)}
+.cb .car{font-size:10px;color:var(--mut);margin-left:2px}
 .cb.c-build .bar i{background:linear-gradient(90deg,#d9a43b,#f0c259)}
 .cb.c-heroes .bar i{background:linear-gradient(90deg,#e06d3b,#f2994a)}
 .cb.c-lab .bar i{background:linear-gradient(90deg,#b359d4,#db84f0)}
@@ -1137,6 +1139,7 @@ function pickerList(){
 }
 function openPicker(w){ PK = w; $("#pkT").innerHTML = w === "b" ? "Add to the <b>builder plan</b>" : w === "p" ? "Add to the <b>pet plan</b>" : "Add to the <b>lab plan</b>"; $("#pkQ").value = ""; pickerList(); $("#psheet").classList.add("show"); }
 function closePicker(){ PK = null; $("#psheet").classList.remove("show"); render(); }
+let BAROPEN = false; // progress bars start folded to the Overall bar; tap it to show each category
 let BOPEN = true; // builder dropdown starts open on page load; Done or the pill closes it
 function builderData(v, R){
   const bld = [], lab = [], pet = [];
@@ -1209,7 +1212,8 @@ function render(){
   chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("") +
     (gp ? `<button class="gp-tag" id="btnGpTag" type="button" title="Gold Pass boost">GP ${gp}%</button>` : "") + bPill;
 
-  const barsHtml = `<div class="bars">${BAR_CATS.map(([k, label]) => {
+  const allRow = `<button type="button" class="cb c-all${overall >= 100 ? " done" : ""}" data-bars="1" aria-expanded="${BAROPEN}"><span class="k">Overall <span class="car">${BAROPEN ? "▴" : "▾"}</span></span><span class="bar"><i style="width:${overall}%"></i></span><span class="v mono">${Math.floor(overall)}%</span></button>`;
+  const barsHtml = `<div class="bars">${allRow}${!BAROPEN ? "" : BAR_CATS.map(([k, label]) => {
     if (AO && (k === "build" || k === "walls")) return "";
     if (!c[k].tot) return "";
     const p = pct(c[k]);
@@ -1217,7 +1221,7 @@ function render(){
   }).join("")}</div>`;
 
   let h = builderPopover(v, R, now, c, BD);
-  h += `<div class="card top"><div class="hero"><div class="ringw"><span class="pct">${Math.floor(overall)}%</span><span class="ring">${ringSVG(overall)}${TH_IMG[v.th] ? `<img src="${TH_IMG[v.th]}" alt="Town Hall ${v.th}">` : `<b>TH${v.th}</b>`}</span></div>
+  h += `<div class="card top"><div class="hero"><div class="ringw"><span class="ring">${ringSVG(overall)}${TH_IMG[v.th] ? `<img src="${TH_IMG[v.th]}" alt="Town Hall ${v.th}">` : `<b>TH${v.th}</b>`}</span></div>
     <div class="meta"><div class="th">Town Hall ${v.th}</div><div class="sub">${esc(NAME[S.cur])} · updated ${ago(now - Math.max(v.ts || 0, v.apiTs || 0))} ago</div>${syncLine()}</div></div>${barsHtml}</div>`;
 
   // Category tabs front & center + simple Up Next tab
@@ -1374,6 +1378,7 @@ document.addEventListener("click", e => {
   if (gn) { if (EDIT) finishEdit(); goNext(gn.dataset.gonext); return; }
   const bsn = e.target.closest("[data-bsnap]");
   if (bsn) { BOPEN = !BOPEN; render(); return; }
+  if (e.target.closest("[data-bars]")) { BAROPEN = !BAROPEN; render(); return; }
   const gob = e.target.closest("[data-go]");
   if (gob) { S.go = S.go || {}; S.go[gob.dataset.go] = !S.go[gob.dataset.go]; store.set(S); render(); return; }
   const tb = e.target.closest("[data-tab]");
