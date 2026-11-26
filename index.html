@@ -1153,7 +1153,7 @@ function pickerList(){
 function openPicker(w){ PK = w; $("#pkT").innerHTML = w === "b" ? "Add to the <b>builder plan</b>" : w === "p" ? "Add to the <b>pet plan</b>" : "Add to the <b>lab plan</b>"; $("#pkQ").value = ""; pickerList(); $("#psheet").classList.add("show"); }
 function closePicker(){ PK = null; $("#psheet").classList.remove("show"); render(); }
 let BAROPEN = false; // progress bars start folded to the Overall bar; tap it to show each category
-let BOPEN = false; // builder dropdown starts closed; the builders pill opens it
+let BOPEN = true; // builder dropdown starts open on page load (Trent likes it open); the pill closes it
 let NXOPEN = false; // the whole Next section starts folded on every load and tab switch
 function builderData(v, R){
   const bld = [], lab = [], pet = [];
@@ -1193,7 +1193,8 @@ function builderPopover(v, R, now, c, BD){
     const key = e.r.o.i || "weapon", nm = esc(e.r.o.n), endSec = now + Math.round(e.x.left);
     return `<button class="bex" data-gonext="${key}:${e.x.ix}" title="See this in Up Next"><span class="bex-k">${k}</span><span class="bex-n">${nm}</span><span class="bex-tm mono" data-end="${endSec}">${dur(e.x.left)}</span></button>`;
   };
-  if (lab.length) lab.forEach(e => ex.push(exRow(e.r.o.g === "Squads" ? "Sqd" : "Lab", e)));
+  // squads and troops share the lab; a second job at once is the goblin researcher (same order as Next)
+  if (lab.length) lab.forEach((e, i) => ex.push(exRow(i ? "Goblin lab" : "Lab", e)));
   else if (c.lab && c.lab.rem > 0) ex.push(`<button class="bex" data-gonext="#nx-l0"><span class="bex-k">Lab</span><span class="bex-n">idle</span><span class="bex-tm free">free</span></button>`);
   if (pet.length) pet.forEach(e => ex.push(exRow("Pet", e)));
   else if (c.pets && c.pets.rem > 0) ex.push(`<button class="bex" data-gonext="#nx-p"><span class="bex-k">Pet</span><span class="bex-n">idle</span><span class="bex-tm free">free</span></button>`);
