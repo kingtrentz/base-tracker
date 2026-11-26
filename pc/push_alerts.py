@@ -5,6 +5,8 @@
 - ~20 min (configurable) before an upgrade finishes, sends an iPhone/Apple Watch push
   saying what's finishing, what's next on the Plan (queue or pinned slot), and the exact
   Gold / Elixir / Dark Elixir needed so Trent can raid if short on loot.
+- Once an upgrade has finished, sends one more push: "xyz upgraded to level x" with the
+  next upgrade picked for that builder / lab / pet house.
 Uses only Python stdlib + cryptography (RFC 8291 aes128gcm + RFC 8292 VAPID ES256).
 """
 import base64, hashlib, json, os, struct, subprocess, time, urllib.error, urllib.parse, urllib.request
@@ -194,13 +196,15 @@ def _parse_export(raw_json: dict, by_id: dict, now: float):
                 arr.append({"l": e.get("lvl", 0) or 0, "t": e.get("timer", 0) or 0})
     ts = raw_json.get("timestamp") or int(now)
     age = now - ts
-    # Settle already-finished upgrades
-    for arr in inst.values():
+    # Settle already-finished upgrades, keeping a note of each one for the "upgraded" push
+    done = []
+    for iid, arr in inst.items():
         for h in arr:
             if h["t"] > 0 and h["t"] <= age:
+                done.append({"i": iid, "l": h["l"], "fin": ts + h["t"]})
                 h["l"] += 1
                 h["t"] = 0
-    return {"th": th, "ts": ts, "age": age, "inst": inst}
+    return {"th": th, "ts": ts, "age": age, "inst": inst, "done": done}
 
 
 def _pin_match(pin: str, item: dict) -> bool:
@@ -266,10 +270,10 @@ def _pick_next_for_slot(kind: str, is_squad: bool, fin_item: dict, v: dict, plan
         return None
 
     if kind == "l":
+        # squads research in the Laboratory too, so the lab has one queue and one pin for both
         lpins = plan.get("lpins") or []
-        pin = lpins[1] if is_squad and len(lpins) > 1 else (lpins[0] if not is_squad and len(lpins) > 0 else "")
-        lq = [q for q in (plan.get("l") or []) if valid_q(q)]
-        slot_q = [q for q in lq if (by_id[q["i"]]["g"] == "Squads") == is_squad]
+        pin = lpins[0] if lpins else ""
+        slot_q = [q for q in (plan.get("l") or []) if valid_q(q)]
         if pin:
             for q in slot_q:
                 if _pin_match(pin, by_id[q["i"]]):
@@ -290,6 +294,13 @@ def _pick_next_for_slot(kind: str, is_squad: bool, fin_item: dict, v: dict, plan
         return None
 
     return None
+
+
+def _kind(o: dict) -> str:
+    """b = builder (buildings and heroes, not walls), l = lab (troops, spells, sieges, squads), p = pet house."""
+    if (o["k"] == "b" and o["g"] != "Walls") or o["k"] == "h":
+        return "b"
+    return "l" if o["k"] == "l" else ("p" if o["k"] == "p" else "")
 
 
 def _cost_text(item: dict, from_lvl: int):
@@ -389,7 +400,7 @@ def check_and_send(log=print) -> int:
             o = by_id.get(iid)
             if not o:
                 continue
-            kind = "b" if ((o["k"] == "b" and o["g"] != "Walls") or o["k"] == "h") else ("l" if o["k"] == "l" else ("p" if o["k"] == "p" else ""))
+            kind = _kind(o)
             if not kind:
                 continue
             is_squad = (o["g"] == "Squads")
@@ -414,7 +425,7 @@ def check_and_send(log=print) -> int:
                         continue
 
                     nxt = _pick_next_for_slot(kind, is_squad, o, v, plan, gdata, by_id)
-                    slot_label = "Squad" if is_squad else ("Lab" if kind == "l" else ("Pet House" if kind == "p" else "Builder"))
+                    slot_label = "Lab" if kind == "l" else ("Pet House" if kind == "p" else "Builder")
                     title = f"{acc_name}: {o['n']} →{h['l'] + 1} done in {_dur_short(left)}"
                     if nxt:
                         no, nl = nxt
@@ -439,6 +450,42 @@ def check_and_send(log=print) -> int:
                         log(f"PUSH sent ({code}): {title} | {body}")
                     else:
                         log(f"PUSH failed ({code}) for {s['id'][:8]}: {title}")
+
+        # 3. Upgrades that finished in the last hour: "xyz upgraded to level x. Next upgrade: Lvl x xyz"
+        for d in v["done"]:
+            o = by_id.get(d["i"])
+            if not o or now - d["fin"] > 3600:
+                continue
+            kind = _kind(o)
+            if not kind:
+                continue
+            nxt = _pick_next_for_slot(kind, o["g"] == "Squads", o, v, plan, gdata, by_id)
+            title = f"{acc_name}: {o['n']} upgraded to level {d['l'] + 1}"
+            if nxt:
+                no, nl = nxt
+                body = f"Next upgrade: Lvl {nl + 1} {no['n']}"
+            else:
+                body = "No next picked yet. Pick one in Next."
+            for s in subs:
+                types = s.get("types") or {"b": True, "l": True, "p": True}
+                if not types.get(kind, True):
+                    continue
+                dk = f"done|{s['id']}|{tag}|{d['i']}|{d['l']}|{int(d['fin'] // 600)}"
+                if dk in sent:
+                    continue
+                code = send_web_push(
+                    s["sub"],
+                    {"title": title, "body": body, "tag": f"bt-done-{tag[1:]}-{d['i']}-{d['l']}", "url": "index.html"},
+                    vapid_priv,
+                    keys["vapid_public"],
+                    keys["vapid_subject"],
+                )
+                if 200 <= code < 300:
+                    sent[dk] = now
+                    sent_count += 1
+                    log(f"PUSH sent ({code}): {title} | {body}")
+                else:
+                    log(f"PUSH failed ({code}) for {s['id'][:8]}: {title}")
 
     json.dump(sent, open(sent_path, "w", encoding="utf-8"))
     return sent_count
