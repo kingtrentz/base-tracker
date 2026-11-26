@@ -53,7 +53,7 @@ button:active{transform:scale(.98)}
 .ring svg{transform:rotate(-90deg)}
 .ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px}
 .hero .meta{min-width:0}
-.hero .th{font-size:21px;font-weight:700}
+.hero .th{font-size:21px;font-weight:700;overflow-wrap:anywhere}
 .sub{color:var(--mut);font-size:13px;line-height:1.45}
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
 .box{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0}
@@ -562,6 +562,7 @@ let S = store.get(); S.acc = S.acc || {}; S.open = S.open || {}; S.go = {};
 let CATOPEN = false, MAXOPEN = false; // category list and maxed items start folded on every load and tab switch
 // Trent's two accounts are the only ones ever saved to the repo. Anyone else's account lives on their own phone only.
 const MINE = { "#R0RRV0VQ": "KingTrents", "#QUV9Q8Q2": "Khnum-Atum~ra" };
+const INGAME = { "#R0RRV0VQ": "KingTrents⚡" }; // in-game username shown in the page header (pills keep the short name)
 S.extra = []; // site is locked to Trent's own accounts
 let ACCOUNTS = [], NAME = {};
 function syncAccounts(){
@@ -1248,7 +1249,7 @@ function render(){
 
   let h = builderPopover(v, R, now, c, BD);
   h += `<div class="card top"><div class="hero"><div class="ringw"><span class="ring">${ringSVG(overall)}${TH_IMG[v.th] ? `<img src="${TH_IMG[v.th]}" alt="Town Hall ${v.th}">` : `<b>TH${v.th}</b>`}</span></div>
-    <div class="meta"><div class="th">Town Hall ${v.th}</div><div class="sub">${esc(NAME[S.cur])} · updated ${ago(now - Math.max(v.ts || 0, v.apiTs || 0))} ago</div>${syncLine()}</div></div>${barsHtml}</div>`;
+    <div class="meta"><div class="th">${esc(INGAME[S.cur] || NAME[S.cur])}</div><div class="sub">Town Hall ${v.th} · updated ${ago(now - Math.max(v.ts || 0, v.apiTs || 0))} ago</div>${syncLine()}</div></div>${barsHtml}</div>`;
 
   // Category tabs front & center + simple Up Next tab
   const tabInfo = TABS.map(g => {
