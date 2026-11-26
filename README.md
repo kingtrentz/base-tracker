@@ -15,7 +15,7 @@ Clash of Clans base progress tracker for two accounts (KingTrents and Khnum-Atum
   - Defenses, Traps, Collectors and Storages show one dropdown per building (copies left, next upgrade); tap it to see each copy. Short tabs (Army, Guardians, Walls and the rest) stay as plain lists (`DROPDOWN_TABS`).
   - Troops splits into two dropdowns, Elixir troops and Dark elixir troops (by each troop's resource), each with troops left, how many are upgrading and the soonest upgrade time; each troop is a named row inside. Sort still works inside each.
 - KingTrents only: a ⚡ watermark sits fixed behind the page (same approach as the McGrath Masters crest: fixed layer, GPU-locked, low opacity, see-through cards on that account). Khnum-Atum~ra has none.
-- KingTrents only: small gold lightning bolts flicker near the bottom of the screen in place of the floating ember dots (`.bolts`, opacity-only animation, off with reduced motion). Khnum-Atum~ra keeps the ember dots.
+- KingTrents only: real-looking lightning strikes near the bottom of the screen in place of the floating ember dots: jagged forked bolts drawn on a canvas (`#boltCv`), a quick flash, re-flash and fade with a soft gold glow, every 2 to 5 seconds at a random spot. Nothing runs between strikes, while the tab is hidden, on the other account or with reduced motion. Khnum-Atum~ra keeps the ember dots.
 - Account header: the name is the big line and "Town Hall 19 · updated …" sits under it (both accounts). KingTrents shows as his in-game name, KingTrents⚡ (`INGAME`); its account pill reads KingTrents⚡ too.
   - One line per builder, the lab (troops, spells, sieges and squads together) and the pet house: what it's on, a "next" dropdown and a "stays on" lane.
   - Next never auto-picks. The suggestion is only listed first.
@@ -44,3 +44,4 @@ Clash of Clans base progress tracker for two accounts (KingTrents and Khnum-Atum
 - PR #11 header shows the account name on top (KingTrents⚡) with Town Hall under it
 - PR #12 KingTrents account pill reads KingTrents⚡
 - PR #13 Next moved above the tabs, right under the overall card; flickering lightning bolts replace the ember dots on KingTrents
+- PR #14 real-looking lightning strikes replace the bolt icons on KingTrents
