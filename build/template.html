@@ -1006,13 +1006,6 @@ function nextSection(v, R, now){
   const I = planInfo(v, R);
   const costSpan = (o, co) => co ? `<span class="cs"><i class="dot" style="background:var(--${o.r})"></i>${num(co)}</span>` : "";
   const opt = (val, label, sel) => `<option value="${val}"${val === sel ? " selected" : ""}>${esc(label)}</option>`;
-  const listRows = (w, items, freeNow) => items.map(e => {
-    const n = esc(e.r.o.n), k = e.r.o.i, first = e.qi === 0;
-    const btns = (freeNow ? `<button class="q" data-act="start" data-q="${k}" data-lv="${e.q.l}" data-ix="-1" title="Start upgrade">↑</button>` : "") +
-      (first ? "" : `<button class="q s" data-pmv="${w}:${e.qi}" title="Move up">▲</button>`) + `<button class="q s" data-prm="${w}:${e.qi}" title="Remove">✕</button>`;
-    const who = w === "b" && e.slot >= 0 ? ` · ${I.slots[e.slot] && I.slots[e.slot].extra ? "Goblin" : "Builder " + (e.slot + 1)}` : "";
-    return `<div class="row i"><div class="l"><div class="n">${n}</div><div class="lvl mono">${e.q.l} → ${e.q.l + 1}${who}</div></div><div class="nx">${costSpan(e.r.o, e.co)}<span class="tm">${e.t ? dur(e.t) : "instant"}</span></div>${btns}</div>`;
-  }).join("");
   // what a slot can do next: every upgrade of that kind still left (the pinned group or building first)
   const nextOpts = (pred, pin, cur, curQ, sug) => {
     const by = {}, firstG = pin && pin.startsWith("g:") ? pin.slice(2) : "";
@@ -1093,8 +1086,7 @@ function nextSection(v, R, now){
         start: startOf(cq, auto, s.jobs.length ? s.jobs[0].x.left : 0), warn: s.jobs.length && !cq });
     }).join("");
     const capL = 1 + (G.l ? 1 : 0), busyL = I.labSlots[0].jobs.length, freeL = busyL < capL;
-    h += `<div class="sec open nxsec"><div class="head"><span class="nm">Lab</span><span class="pc">${freeL ? "free" : "busy"}</span></div><div class="body">${cards}${gobLine("l", "Goblin researcher")}
-      <div class="subh">Lab queue<span>${I.lq.length || ""}</span></div>${listRows("l", I.lq, freeL) || `<div class="more">Nothing queued.</div>`}<button class="editbtn" data-padd="l">+ Add troop, spell, or squad</button></div></div>`;
+    h += `<div class="sec open nxsec"><div class="head"><span class="nm">Lab</span><span class="pc">${freeL ? "free" : "busy"}</span></div><div class="body">${cards}${gobLine("l", "Goblin researcher")}</div></div>`;
   }
   // Pet House
   if (R.rows.some(r => isPet(r.o))) {
@@ -1107,8 +1099,7 @@ function nextSection(v, R, now){
       nextSel: nextSel(`data-pnext="1"`, isPet, ps.pin, cq, auto),
       pinSel: `<select class="pin${ps.pin ? " on" : ""}" data-ppin="1">${petPinOpts(ps.pin)}</select>`,
       start: startOf(cq, auto, ps.jobs.length ? ps.jobs[0].x.left : 0) });
-    h += `<div class="sec open nxsec"><div class="head"><span class="nm">Pets</span><span class="pc">${ps.jobs.length ? "busy" : "free"}</span></div><div class="body">${card}
-      <div class="subh">Pet queue<span>${I.pq.length || ""}</span></div>${listRows("p", I.pq, !ps.jobs.length) || `<div class="more">Nothing queued.</div>`}<button class="editbtn" data-padd="p">+ Add pet</button></div></div>`;
+    h += `<div class="sec open nxsec"><div class="head"><span class="nm">Pets</span><span class="pc">${ps.jobs.length ? "busy" : "free"}</span></div><div class="body">${card}</div></div>`;
   }
   return h;
 }
