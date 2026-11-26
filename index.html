@@ -158,7 +158,6 @@ footer{text-align:center;color:var(--mut);font-size:11px;margin-top:20px;line-he
 .tab.done span{color:var(--acc)}
 .tab.done{color:var(--acc)}
 .tab.up span{color:var(--warn)}
-.tab.up span::before{content:"";width:4.5px;height:4.5px;border-radius:50%;background:currentColor;flex:none}
 .tab.on{background:var(--acc);color:var(--on-acc);box-shadow:none}
 .tab.on.done{background:var(--acc)}
 .row.i .q.s[data-act="cancel"]{color:var(--red)}
@@ -402,6 +401,52 @@ body{background:transparent}
 #alSheetBody .alcard{background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;margin:0;border-radius:0}
 #alSheetBody .al-hd{padding:0 0 8px}
 #alSheetBody .al-body{padding:0}
+/* round 2: clearer lines and spacing */
+:root:not([data-theme="light"]) .card,:root:not([data-theme="light"]) .sec,:root:not([data-theme="light"]) .maxline{box-shadow:0 0 0 1px var(--line)}
+.row.i{min-height:52px;padding:9px 8px 9px 12px}
+.row.i + .row.i,.dg + .dg{box-shadow:inset 0 1px 0 var(--line)}
+.row.i .n{font-size:15px}
+.row.i .lvl{font-size:12.5px;margin-top:2px}
+.row.i .nx{font-size:12.5px;gap:2px}
+.remain{margin:4px 10px 12px;padding:11px 13px;line-height:1.5}
+.dg-h{padding:13px 10px 13px 12px}
+.dg-h .n{font-size:15px}
+.dg-h .lvl{font-size:12.5px;margin-top:2px}
+.car,.cat-car i{display:inline-flex;align-items:center;justify-content:center}
+.dg-h .car{width:26px;height:26px;border-radius:999px;background:var(--soft);color:var(--tx);font-size:13px;flex:none}
+.dg-h .car i,.cat-car i{font-style:normal;transition:transform .15s;transform:rotate(-90deg)}
+.dg.open .dg-h .car i,.sec.cat.open .cat-car i{transform:none}
+.dg.open{margin:6px 0;box-shadow:0 0 0 1px var(--line)}
+.dg.open + .dg{box-shadow:none}
+.dg-b{padding:0 6px 6px 12px}
+.sec.cat .body{border-top:1px solid var(--line);padding-top:8px}
+.cat-car{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--acc);background:var(--accs);border-radius:999px;padding:5px 8px 5px 11px}
+.cat-car i{width:14px;font-size:12px}
+.more.mxt{display:block;width:auto;margin:6px auto 4px;border:0;background:var(--soft);border-radius:999px;padding:6px 14px;font-size:12px;font-weight:600;color:var(--mut)}
+.row.i.mx{opacity:.75}
+/* Next section: one card per builder, the lab and the pet house */
+.nxhd{margin:20px 4px 10px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:10px}
+.nxhd::after{content:"";flex:1;height:1px;background:var(--line)}
+.nxsec .body{padding:2px 8px 8px}
+.slot{background:var(--bg);border-radius:14px;padding:11px 12px;margin:8px 0;box-shadow:0 0 0 1px var(--line);transition:box-shadow .3s}
+.slot.flash{box-shadow:0 0 0 2px var(--acc)}
+.sl-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
+.sl-nm{font-weight:700;font-size:15px}
+.sl-st{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--warn)}
+.sl-st.free{color:var(--acc)}
+.sl-now{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:0;background:var(--soft);border-radius:10px;padding:9px 10px;text-align:left;font:inherit;color:var(--tx);cursor:pointer}
+.sl-now.free{cursor:default;color:var(--mut)}
+.sl-up{min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl-up .mono{color:var(--mut);font-size:12.5px}
+.sl-tm{flex:none;font-size:13px;font-weight:700;color:var(--warn)}
+.sl-more{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--mut);padding:7px 10px 0}
+.sl-f{display:flex;align-items:center;gap:10px;margin-top:9px;font-size:12px;font-weight:600;color:var(--mut)}
+.sl-f > span:first-child{flex:none;width:56px}
+.sl-sel{flex:1;min-width:0}
+.slot .pin{display:block;width:100%;max-width:none;margin:0;font-size:13.5px;padding:8px 10px;border-radius:10px;color:var(--tx)}
+.slot .pin.on{color:var(--acc)}
+.sl-f .q{flex:none;min-width:44px;padding:8px 0}
+.nxsec .subh{margin:16px 6px 6px}
 </style>
 <link id="lnkMan" rel="manifest" href="manifest.webmanifest">
 <link id="lnkApple" rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -486,7 +531,8 @@ const store = {
   get(){ try { return JSON.parse(localStorage.getItem(KEY)) || {acc:{}, cur:null, hideMax:true, open:{}} } catch(e){ return {acc:{}, cur:null, hideMax:true, open:{}} } },
   set(s){ try { localStorage.setItem(KEY, JSON.stringify(s)) } catch(e){} }
 };
-let S = store.get(); S.acc = S.acc || {}; S.open = S.open || {}; if (S.hideMax === undefined) S.hideMax = true;
+let S = store.get(); S.acc = S.acc || {}; S.open = S.open || {}; S.go = {};
+let CATOPEN = false, MAXOPEN = false; // category list and maxed items start folded on every load and tab switch
 // Trent's two accounts are the only ones ever saved to the repo. Anyone else's account lives on their own phone only.
 const MINE = { "#R0RRV0VQ": "KingTrents", "#QUV9Q8Q2": "Khnum-Atum~ra" };
 S.extra = []; // site is locked to Trent's own accounts
@@ -833,7 +879,8 @@ function planInfo(v, R){
   });
   const bq = P.b.map((q, qi) => {
     const r = rowBy[q.i], t = (r.o.t || [])[q.l] || 0, co = (r.o.co || [])[q.l] || 0;
-    let cand = slots.filter(s => !s.extra && pinMatch(s.pin, r.o));
+    const own = typeof q.s === "number" ? slots.find(s => s.i === q.s && !s.extra) : null;
+    let cand = own ? [own] : slots.filter(s => !s.extra && pinMatch(s.pin, r.o));
     if (!cand.length) cand = slots.filter(s => !s.extra && !s.pin);
     if (!cand.length) cand = slots.filter(s => !s.extra);
     if (!cand.length) cand = slots;
@@ -930,25 +977,142 @@ function alertsTab(v, R, now){
     <div class="al-msg" id="alMsg">${esc(AL_MSG)}</div>
   </div></div>`;
 }
-function upNextTab(v, R, now){
+function upNextTab(v, R, now){ return nextSection(v, R, now) + alertsTab(v, R, now); }
+function nextSection(v, R, now){
   const I = planInfo(v, R);
   const costSpan = (o, co) => co ? `<span class="cs"><i class="dot" style="background:var(--${o.r})"></i>${num(co)}</span>` : "";
-  const listCard = (title, w, items, addLabel, freeNow) => {
-    const rows = items.map(e => {
-      const n = esc(e.r.o.n), k = e.r.o.i, first = e.qi === 0;
-      const btns = (freeNow ? `<button class="q" data-act="start" data-q="${k}" data-lv="${e.q.l}" data-ix="-1" title="Start upgrade">↑</button>` : "") +
-        (first ? "" : `<button class="q s" data-pmv="${w}:${e.qi}" title="Move up">▲</button>`) + `<button class="q s" data-prm="${w}:${e.qi}" title="Remove">✕</button>`;
-      return `<div class="row i"><div class="l"><div class="n">${n}</div><div class="lvl mono">${e.q.l} → ${e.q.l + 1}</div></div><div class="nx">${costSpan(e.r.o, e.co)}<span class="tm">${e.t ? dur(e.t) : "instant"}</span></div>${btns}</div>`;
-    }).join("");
-    return `<div class="sec open"><div class="head"><span class="nm">${title}</span><span class="pc">${items.length || ""}</span></div><div class="body">${rows || `<div class="more">Nothing picked yet.</div>`}<button class="editbtn" data-padd="${w}">${addLabel}</button></div></div>`;
+  const opt = (val, label, sel) => `<option value="${val}"${val === sel ? " selected" : ""}>${esc(label)}</option>`;
+  const listRows = (w, items, freeNow) => items.map(e => {
+    const n = esc(e.r.o.n), k = e.r.o.i, first = e.qi === 0;
+    const btns = (freeNow ? `<button class="q" data-act="start" data-q="${k}" data-lv="${e.q.l}" data-ix="-1" title="Start upgrade">↑</button>` : "") +
+      (first ? "" : `<button class="q s" data-pmv="${w}:${e.qi}" title="Move up">▲</button>`) + `<button class="q s" data-prm="${w}:${e.qi}" title="Remove">✕</button>`;
+    const who = w === "b" && e.slot >= 0 ? ` · ${I.slots[e.slot] && I.slots[e.slot].extra ? "Goblin" : "Builder " + (e.slot + 1)}` : "";
+    return `<div class="row i"><div class="l"><div class="n">${n}</div><div class="lvl mono">${e.q.l} → ${e.q.l + 1}${who}</div></div><div class="nx">${costSpan(e.r.o, e.co)}<span class="tm">${e.t ? dur(e.t) : "instant"}</span></div>${btns}</div>`;
+  }).join("");
+  // what a slot can do next: every upgrade of that kind still left (the pinned group or building first)
+  const nextOpts = (pred, pin, cur, curQ) => {
+    const by = {}, firstG = pin && pin.startsWith("g:") ? pin.slice(2) : "";
+    R.rows.forEach(r => {
+      if (!r.o.i || !pred(r.o)) return;
+      const a = (I.virt[r.o.i] || []).slice();
+      if (curQ && curQ.i === r.o.i) { const k = a.indexOf(curQ.l + 1); if (k >= 0) a[k]--; }
+      const lv = a.filter(l => l < r.M); if (!lv.length) return;
+      const l = Math.min(...lv), t = (r.o.t || [])[l] || 0;
+      if (r.o.i + ":" + l === cur) return;
+      const grp = pin && pin.startsWith("i:") && pin === "i:" + r.o.i ? "★" : r.o.g;
+      (by[grp] = by[grp] || []).push({ r, l, t });
+    });
+    const order = Object.keys(by).sort((a, b) => (b === "★") - (a === "★") || (b === firstG) - (a === firstG) || GROUPS.indexOf(a) - GROUPS.indexOf(b));
+    return order.map(g => `<optgroup label="${esc(g === "★" ? pinName(pin) : g)}">${by[g].sort((x, y) => x.r.o.n.localeCompare(y.r.o.n)).map(e => opt(e.r.o.i + ":" + e.l, `${e.r.o.n} ${e.l} → ${e.l + 1} · ${dur(e.t)}`, cur)).join("")}</optgroup>`).join("");
   };
-  const freeB = Math.max(0, (R.builders || 0) - I.slots.filter(s => s.job).length) > 0;
-  const freeL = I.labSlots.some(s => !s.jobs.length);
-  const freeP = !I.petSlot.jobs.length;
-  return listCard("Builders next", "b", I.bq, "+ Add building or hero", freeB) +
-    listCard("Lab next", "l", I.lq, "+ Add troop, spell, or squad", freeL) +
-    listCard("Pets next", "p", I.pq, "+ Add pet", freeP) +
-    alertsTab(v, R, now);
+  // one card per builder / lab / pet house: what it's doing now, what it does next, and what it stays on
+  const slotCard = o => {
+    const nowHtml = o.job ? `<button class="sl-now" data-act="settime" data-q="${o.job.r.o.i || "weapon"}" data-lv="${o.job.x.l}" data-ix="${o.job.x.ix}" data-n="${esc(o.job.r.o.n)}" data-left="${Math.round(o.job.x.left)}" title="Tap to edit or finish"><span class="sl-up">${esc(o.job.r.o.n)} <span class="mono">${o.job.x.l} → ${o.job.x.l + 1}</span></span><span class="sl-tm mono" data-end="${now + Math.round(o.job.x.left)}">${dur(o.job.x.left)}</span></button>`
+      : `<div class="sl-now free"><span class="sl-up">Free now</span></div>`;
+    const startBtn = o.start ? `<button class="q" data-act="start" data-q="${o.start.i}" data-lv="${o.start.l}" data-ix="${o.start.ix}" title="Start upgrade">↑</button>` : "";
+    const extra = (o.more || []).map(jx => `<div class="sl-more" data-job="${jx.r.o.i}:${jx.x.ix}"><span>Goblin · ${esc(jx.r.o.n)} <span class="mono">${jx.x.l} → ${jx.x.l + 1}</span></span><span class="mono" data-end="${now + Math.round(jx.x.left)}">${dur(jx.x.left)}</span></div>`).join("");
+    const jobKey = j => ` data-job="${j.r.o.i || "weapon"}:${j.x.ix}"`;
+    return `<div class="slot${o.job ? "" : " isfree"}" id="${o.id}"${o.job ? jobKey(o.job) : ""}><div class="sl-h"><span class="sl-nm">${o.name}</span>${o.job ? `<span class="sl-st">busy</span>` : `<span class="sl-st free">free</span>`}</div>${nowHtml}${extra}
+      ${o.nextSel ? `<div class="sl-f"><span>Next</span><span class="sl-sel">${o.nextSel}</span>${startBtn}</div>` : ""}
+      ${o.pinSel ? `<div class="sl-f"><span>Stays on</span><span class="sl-sel">${o.pinSel}</span></div>` : ""}</div>`;
+  };
+  const nextSel = (attr, pred, pin, cq, auto) => {
+    const cur = cq ? cq.i + ":" + cq.l : "";
+    const first = auto ? opt("", `Auto: ${auto.r.o.n} ${auto.l} → ${auto.l + 1}`, cur) : opt("", "Not picked", cur);
+    const curOpt = cq ? opt(cur, `${(BY[cq.i] || {}).n || "?"} ${cq.l} → ${cq.l + 1}`, cur) : "";
+    return `<select class="pin nsel${cq ? " on" : ""}" ${attr}>${first}${curOpt ? `<optgroup label="Picked">${curOpt}</optgroup>` : ""}${nextOpts(pred, pin, cur, cq)}</select>`;
+  };
+  const startOf = (cq, auto, free) => {
+    if (free > 0) return null;
+    if (cq) return { i: cq.i, l: cq.l, ix: -1 };
+    if (auto && !auto.x.up) return { i: auto.r.o.i, l: auto.l, ix: auto.x.ix };
+    return null;
+  };
+  let h = `<div class="nxhd" id="nx">Next</div>`;
+  // Builders
+  if (I.N) {
+    const pinOpts = sel => {
+      const gs = PIN_GROUPS.filter(g => R.rows.some(r => r.o.g === g && r.rem > 0));
+      const its = R.rows.filter(r => isBld(r.o) && r.o.g !== "Heroes" && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
+      return opt("", "Anything", sel) + `<optgroup label="A group">${gs.map(g => opt("g:" + g, g, sel)).join("")}</optgroup><optgroup label="One building">${its.map(x => opt("i:" + x.i, x.n, sel)).join("")}</optgroup>`;
+    };
+    const cards = I.slots.map(s => {
+      const qe = s.q.length ? I.bq[s.q[0]] : null, cq = qe ? qe.q : null, auto = cq ? null : s.auto;
+      return slotCard({ id: "nx-b" + s.i, name: s.extra ? "Goblin Builder" : "Builder " + (s.i + 1), job: s.job,
+        nextSel: s.extra ? "" : nextSel(`data-bnext="${s.i}"`, isBld, s.pin, cq, auto),
+        pinSel: s.extra ? "" : `<select class="pin${s.pin ? " on" : ""}" data-pin="${s.i}">${pinOpts(s.pin)}</select>`,
+        start: s.extra ? null : startOf(cq, auto, s.job ? s.job.x.left : 0) });
+    }).join("");
+    const freeB = Math.max(0, (R.builders || 0) - I.slots.filter(s => s.job).length) > 0;
+    h += `<div class="sec open nxsec"><div class="head"><span class="nm">Builders</span><span class="pc">${Math.max(0, (R.builders || 0) - I.slots.filter(s => s.job && !s.extra).length)}/${R.builders || 0} free</span></div><div class="body">${cards}
+      <div class="subh">Builder queue<span>${I.bq.length || ""}</span></div>${listRows("b", I.bq, freeB) || `<div class="more">Nothing queued.</div>`}<button class="editbtn" data-padd="b">+ Add building or hero</button></div></div>`;
+  }
+  // Lab + Squads
+  {
+    const labPinOpts = (kind, sel) => {
+      if (kind === "sq") {
+        const its = R.rows.filter(r => isLabSq(r.o) && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
+        return opt("", "Any squad", sel) + `<optgroup label="One squad">${its.map(x => opt("i:" + x.i, x.n, sel)).join("")}</optgroup>`;
+      }
+      const gs = LAB_GROUPS.filter(g => R.rows.some(r => r.o.g === g && r.rem > 0));
+      const its = R.rows.filter(r => isLabReg(r.o) && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
+      return opt("", "Anything", sel) + `<optgroup label="A group">${gs.map(g => opt("g:" + g, g, sel)).join("")}</optgroup><optgroup label="One research">${its.map(x => opt("i:" + x.i, x.n, sel)).join("")}</optgroup>`;
+    };
+    const cards = I.labSlots.map(s => {
+      const qe = s.q.length ? I.lq[s.q[0]] : null, cq = qe ? qe.q : null, auto = cq ? null : s.auto, pred = s.kind === "sq" ? isLabSq : isLabReg;
+      return slotCard({ id: "nx-l" + s.i, name: s.label, job: s.jobs[0], more: s.jobs.slice(1),
+        nextSel: nextSel(`data-lnext="${s.i}"`, pred, s.pin, cq, auto),
+        pinSel: `<select class="pin${s.pin ? " on" : ""}" data-lpin="${s.i}">${labPinOpts(s.kind, s.pin)}</select>`,
+        start: startOf(cq, auto, s.jobs.length ? s.jobs[0].x.left : 0) });
+    }).join("");
+    const freeL = I.labSlots.some(s => !s.jobs.length);
+    h += `<div class="sec open nxsec"><div class="head"><span class="nm">Lab</span><span class="pc">${I.labSlots.filter(s => !s.jobs.length).length ? "free" : "busy"}</span></div><div class="body">${cards}
+      <div class="subh">Lab queue<span>${I.lq.length || ""}</span></div>${listRows("l", I.lq, freeL) || `<div class="more">Nothing queued.</div>`}<button class="editbtn" data-padd="l">+ Add troop, spell, or squad</button></div></div>`;
+  }
+  // Pet House
+  if (R.rows.some(r => isPet(r.o))) {
+    const ps = I.petSlot, qe = ps.q.length ? I.pq[ps.q[0]] : null, cq = qe ? qe.q : null, auto = cq ? null : ps.auto;
+    const petPinOpts = sel => {
+      const its = R.rows.filter(r => isPet(r.o) && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
+      return opt("", "Any pet", sel) + `<optgroup label="One pet">${its.map(x => opt("i:" + x.i, x.n, sel)).join("")}</optgroup>`;
+    };
+    const card = slotCard({ id: "nx-p", name: "Pet House", job: ps.jobs[0], more: ps.jobs.slice(1),
+      nextSel: nextSel(`data-pnext="1"`, isPet, ps.pin, cq, auto),
+      pinSel: `<select class="pin${ps.pin ? " on" : ""}" data-ppin="1">${petPinOpts(ps.pin)}</select>`,
+      start: startOf(cq, auto, ps.jobs.length ? ps.jobs[0].x.left : 0) });
+    h += `<div class="sec open nxsec"><div class="head"><span class="nm">Pets</span><span class="pc">${ps.jobs.length ? "busy" : "free"}</span></div><div class="body">${card}
+      <div class="subh">Pet queue<span>${I.pq.length || ""}</span></div>${listRows("p", I.pq, !ps.jobs.length) || `<div class="more">Nothing queued.</div>`}<button class="editbtn" data-padd="p">+ Add pet</button></div></div>`;
+  }
+  return h;
+}
+// pick what one builder / the lab / the pet house does next (replaces its first planned upgrade)
+function setNext(w, si, val){
+  let v; try { v = view(S.cur); } catch(_) { return; }
+  if (!v) return;
+  const R = compute(v, Math.floor(Date.now() / 1000)), I = planInfo(v, R), P = plan(S.cur);
+  const slot = w === "b" ? I.slots[si] : w === "l" ? I.labSlots[si] : I.petSlot;
+  if (!slot) return;
+  const k = slot.q.length ? slot.q[0] : -1;
+  if (!val) { if (k >= 0) P[w].splice(k, 1); }
+  else {
+    const [i, l] = val.split(":").map(Number), q = { i, l };
+    if (w === "b") q.s = si;
+    if (k >= 0) P[w][k] = q; else P[w].unshift(q);
+    toast(((BY[i] || {}).n || "") + " " + l + " → " + (l + 1) + " is next");
+  }
+  savePlan(S.cur); render();
+}
+// scroll to the Next section at the bottom of the page: one builder ("id:ix"), the first free builder ("free"), or a card ("#nx-…")
+function goNext(t){
+  BOPEN = false; render();
+  let el = null;
+  if (t === "free") el = document.querySelector("#app .slot.isfree[id^='nx-b']");
+  else if (t[0] === "#") el = document.querySelector(t);
+  else { const j = document.querySelector(`#app [data-job="${CSS.escape(t)}"]`); el = j && j.closest(".slot"); }
+  el = el || document.querySelector("#nx");
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1400);
 }
 let PK = null;
 function pickerList(){
@@ -993,25 +1157,25 @@ function builderPopover(v, R, now, c, BD){
   const hdr = freeB > 0 ? `<b>${freeB}/${R.builders} free</b>${bld.length ? ` · next <b class="mono" data-end="${end0}">${dur(bld[0].x.left)}</b>` : ""}` : (bld.length ? `<b>0/${R.builders} free</b> · next <b class="mono" data-end="${end0}">${dur(bld[0].x.left)}</b> (${eta(end0)})` : `all idle`);
   const tiles = [];
   if (!bld.length && R.builders) {
-    tiles.push(`<button class="bslot free" data-tab="__next"><span class="bslot-n">All ${R.builders} builders free</span><span class="bslot-tm">UP NEXT →</span></button>`);
+    tiles.push(`<button class="bslot free" data-gonext="free"><span class="bslot-n">All ${R.builders} builders free</span><span class="bslot-tm">UP NEXT →</span></button>`);
   } else {
-    for (let i = 0; i < freeB; i++) tiles.push(`<button class="bslot free" data-tab="__next"><span class="bslot-n">Builder free</span><span class="bslot-tm">FREE</span></button>`);
+    for (let i = 0; i < freeB; i++) tiles.push(`<button class="bslot free" data-gonext="free"><span class="bslot-n">Builder free</span><span class="bslot-tm">FREE</span></button>`);
     bld.forEach(({ r, x }, idx) => {
       const key = r.o.i || "weapon", nm = esc(r.o.n), step = (r.o.t || [])[x.l] || 0;
       const p = step ? Math.max(4, Math.min(100, Math.round(100 * (1 - x.left / step)))) : 50;
       const endSec = now + Math.round(x.left);
-      tiles.push(`<button class="bslot${idx === 0 && freeB === 0 ? " next" : ""}" data-act="settime" data-q="${key}" data-lv="${x.l}" data-ix="${x.ix}" data-n="${nm}" data-left="${Math.round(x.left)}" title="Tap to edit or finish"><span class="bslot-n">${nm}</span><span class="bslot-tm mono" data-end="${endSec}">${dur(x.left)}</span><span class="bslot-bar"><i style="width:${p}%"></i></span></button>`);
+      tiles.push(`<button class="bslot${idx === 0 && freeB === 0 ? " next" : ""}" data-gonext="${key}:${x.ix}" title="See this builder in Up Next"><span class="bslot-n">${nm}</span><span class="bslot-tm mono" data-end="${endSec}">${dur(x.left)}</span><span class="bslot-bar"><i style="width:${p}%"></i></span></button>`);
     });
   }
   const ex = [];
   const exRow = (k, e) => {
     const key = e.r.o.i || "weapon", nm = esc(e.r.o.n), endSec = now + Math.round(e.x.left);
-    return `<button class="bex" data-act="settime" data-q="${key}" data-lv="${e.x.l}" data-ix="${e.x.ix}" data-n="${nm}" data-left="${Math.round(e.x.left)}" title="Tap to edit or finish"><span class="bex-k">${k}</span><span class="bex-n">${nm}</span><span class="bex-tm mono" data-end="${endSec}">${dur(e.x.left)}</span></button>`;
+    return `<button class="bex" data-gonext="${key}:${e.x.ix}" title="See this in Up Next"><span class="bex-k">${k}</span><span class="bex-n">${nm}</span><span class="bex-tm mono" data-end="${endSec}">${dur(e.x.left)}</span></button>`;
   };
   if (lab.length) lab.forEach(e => ex.push(exRow(e.r.o.g === "Squads" ? "Sqd" : "Lab", e)));
-  else if (c.lab && c.lab.rem > 0) ex.push(`<button class="bex" data-tab="Troops"><span class="bex-k">Lab</span><span class="bex-n">idle</span><span class="bex-tm free">free</span></button>`);
+  else if (c.lab && c.lab.rem > 0) ex.push(`<button class="bex" data-gonext="#nx-l0"><span class="bex-k">Lab</span><span class="bex-n">idle</span><span class="bex-tm free">free</span></button>`);
   if (pet.length) pet.forEach(e => ex.push(exRow("Pet", e)));
-  else if (c.pets && c.pets.rem > 0) ex.push(`<button class="bex" data-tab="Pets"><span class="bex-k">Pet</span><span class="bex-n">idle</span><span class="bex-tm free">free</span></button>`);
+  else if (c.pets && c.pets.rem > 0) ex.push(`<button class="bex" data-gonext="#nx-p"><span class="bex-k">Pet</span><span class="bex-n">idle</span><span class="bex-tm free">free</span></button>`);
   return `<div class="bsnap"><div class="bsnap-bar"><span>${hdr}</span><button class="bsnap-x" type="button" data-bsnap="1">Done</button></div><div class="bsnap-b"><div class="bsnap-g">${tiles.join("")}</div>${ex.length ? `<div class="bsnap-extra">${ex.join("")}</div>` : ""}</div></div>`;
 }
 const BAR_TARGET = { build: "Defenses", heroes: "Heroes", lab: "Troops", pets: "Pets", walls: "Walls", equip: "Equipment" };
@@ -1097,7 +1261,7 @@ function render(){
   if (EDIT) {
 
   }
-  const sig = [S.cur, S.tab, (S.sf && S.sf[S.tab] && S.sf[S.tab].sort) || "", S.gp || 0, S.hideMax ? 1 : 0, EDIT ? 1 : 0].join("|");
+  const sig = [S.cur, S.tab, (S.sf && S.sf[S.tab] && S.sf[S.tab].sort) || "", S.gp || 0, MAXOPEN ? 1 : 0, EDIT ? 1 : 0].join("|");
   if (ORD.sig !== sig) ORD = { sig, m: {} };
   if (S.tab === "__next") h += upNextTab(v, R, now);
   else {
@@ -1126,7 +1290,7 @@ function render(){
             const nextT = mn(rows.map(x => x.time).filter(Boolean)), nextC = mn(rows.map(x => x.cost).filter(Boolean));
             const built = [...new Set(r.inst.filter(x => x.l > 0).map(x => x.l))].sort((a, b) => b - a), nNew = r.inst.filter(x => x.l === 0).length;
             const open = !!S.go[key];
-            const head = `<button class="dg-h" data-go="${key}"><span class="l"><span class="n">${esc(r.o.n)}</span><span class="lvl mono">${built.length ? (built.length === 1 ? built[0] : built[built.length - 1] + "–" + built[0]) + "/" + r.M : "max " + r.M}${nNew ? ` · ${nNew} new` : ""} · ${left_} to go${ups ? ` · <b class="upc">${ups} upgrading</b>` : ""}</span></span><span class="nx">${nextT ? `<span class="tm">${dur(nextT)}</span>` : ""}</span><span class="car">${open ? "▾" : "▸"}</span></button>`;
+            const head = `<button class="dg-h" data-go="${key}"><span class="l"><span class="n">${esc(r.o.n)}</span><span class="lvl mono">${built.length ? (built.length === 1 ? built[0] : built[built.length - 1] + "–" + built[0]) + "/" + r.M : "max " + r.M}${nNew ? ` · ${nNew} new` : ""} · ${left_} to go${ups ? ` · <b class="upc">${ups} upgrading</b>` : ""}</span></span><span class="nx">${nextT ? `<span class="tm">${dur(nextT)}</span>` : ""}</span><span class="car"><i>▾</i></span></button>`;
             return { id: "g:" + key, time: nextT, cost: nextC, h: `<div class="dg${open ? " open" : ""}">${head}${open ? `<div class="dg-b">${rows.map(x => x.h).join("")}</div>` : ""}</div>` };
           });
         } else ls = left.flatMap(r => lineObjs(r).map(x => ({ ...x, hero: r.o.h, lvLeft: r.rem, nm: r.o.n })));
@@ -1142,16 +1306,17 @@ function render(){
           S.go = S.go || {};
           ls = order.map(n => {
             const k = "eq:" + n, open = !!S.go[k], lv = by[n].reduce((a, x) => a + (x.lvLeft || 0), 0);
-            const head = `<button class="dg-h" data-go="${esc(k)}"><span class="l"><span class="n">${esc(n)}</span><span class="lvl mono">${by[n].length} piece${by[n].length === 1 ? "" : "s"} · ${lv} level${lv === 1 ? "" : "s"} to go</span></span><span class="car">${open ? "▾" : "▸"}</span></button>`;
+            const head = `<button class="dg-h" data-go="${esc(k)}"><span class="l"><span class="n">${esc(n)}</span><span class="lvl mono">${by[n].length} piece${by[n].length === 1 ? "" : "s"} · ${lv} level${lv === 1 ? "" : "s"} to go</span></span><span class="car"><i>▾</i></span></button>`;
             return { h: `<div class="dg eq${open ? " open" : ""}">${head}${open ? `<div class="dg-b">${by[n].map(x => x.h).join("")}</div>` : ""}</div>` };
           });
         }
         body = ls.map(x => x.h).join("") || (FON ? `<div class="more" data-fg="${g}" data-fclear="1">Nothing matches · clear filter</div>` : `<div class="more">Everything here is maxed for TH${v.th}.</div>`);
-        if (maxed.length) body += S.hideMax ? `<div class="more" data-showmax="1">${maxed.length} maxed · show</div>` : maxed.map(r => `<div class="row i mx"><div class="l"><div class="n">${esc(r.o.n)}</div><div class="lvl mono">${r.M}/${r.M}</div></div><span class="ok">max</span></div>`).join("");
+        if (maxed.length) body += !MAXOPEN ? `<button class="more mxt" data-showmax="1">${maxed.length} maxed · show</button>` : maxed.map(r => `<div class="row i mx"><div class="l"><div class="n">${esc(r.o.n)}</div><div class="lvl mono">${r.M}/${r.M}</div></div><span class="ok">max</span></div>`).join("") + `<button class="more mxt" data-showmax="0">hide maxed</button>`;
       }
       const editBtn = EDIT ? `<div class="editbar"><span>Set each one with − and +</span><button class="pri" id="btnDone">Save levels</button></div>` : `<button class="editbtn" id="btnEditLv">Edit levels</button>`;
-      h += `<div class="sec open"><div class="head"><span class="nm">${g}</span><span class="pc mono">${p}%</span></div><div class="body">${remain}${!EDIT && T.rem > 0 && g !== "Equipment" ? fbar(g, rs) : ""}${body}${editBtn}</div></div>`;
-      h += `<label class="toggle"><input type="checkbox" id="hideMax"${S.hideMax ? " checked" : ""}> Hide maxed items</label>`;
+      const catOpen = CATOPEN || EDIT;
+      h += `<div class="sec cat${catOpen ? " open" : ""}"><div class="head" data-cat="1"><span class="nm">${g}</span><span class="pc mono">${p}%</span><span class="cat-car">${catOpen ? "Hide" : "Show"}<i>▾</i></span></div><div class="body">${remain}${!EDIT && T.rem > 0 && g !== "Equipment" ? fbar(g, rs) : ""}${body}${editBtn}</div></div>`;
+      if (!EDIT) h += nextSection(v, R, now);
     }
   }
   const bBell = $("#btnBell");
@@ -1202,12 +1367,15 @@ document.addEventListener("click", e => {
   if (e.target.closest("#btnBell")) { ALOPEN = !ALOPEN; $("#alsheet").classList.toggle("show", ALOPEN); render(); return; }
   if (e.target.id === "alClose" || e.target.id === "alsheet") { ALOPEN = false; $("#alsheet").classList.remove("show"); return; }
   if (e.target.closest("#btnGpTag")) { openPanel(); return; }
+  const gn = e.target.closest("[data-gonext]");
+  if (gn) { if (EDIT) finishEdit(); goNext(gn.dataset.gonext); return; }
   const bsn = e.target.closest("[data-bsnap]");
   if (bsn) { BOPEN = !BOPEN; render(); return; }
   const gob = e.target.closest("[data-go]");
   if (gob) { S.go = S.go || {}; S.go[gob.dataset.go] = !S.go[gob.dataset.go]; store.set(S); render(); return; }
   const tb = e.target.closest("[data-tab]");
-  if (tb) { if (EDIT) finishEdit(); BOPEN = false; S.tab = tb.dataset.tab; store.set(S); render(); return; }
+  if (tb) { if (EDIT) finishEdit(); BOPEN = false; CATOPEN = false; MAXOPEN = false; S.go = {}; S.tab = tb.dataset.tab; store.set(S); render(); return; }
+  if (e.target.closest("[data-cat]")) { CATOPEN = !CATOPEN; render(); return; }
   const alb = e.target.closest("[data-allead],[data-altype]");
   if (alb) { const al = alGet(); if (alb.dataset.allead) al.lead = +alb.dataset.allead; else { al.types = al.types || { b: true, l: true, p: true }; al.types[alb.dataset.altype] = !(al.types[alb.dataset.altype] !== false); } alSave(al); render(); return; }
   if (e.target.id === "btnAlSave") { saveAlerts(); return; }
@@ -1275,7 +1443,7 @@ document.addEventListener("click", e => {
   const gpb = e.target.closest("[data-gp]");
   if (gpb) { S.gp = +gpb.dataset.gp; store.set(S); render(); return; }
   const sm = e.target.closest("[data-showmax]");
-  if (sm) { S.hideMax = false; store.set(S); render(); return; }
+  if (sm) { MAXOPEN = sm.dataset.showmax === "1"; render(); return; }
   const head = e.target.closest(".sec .head");
   if (head) { const sec = head.parentElement, k = sec.dataset.sec; sec.classList.toggle("open"); S.open[k] = sec.classList.contains("open"); store.set(S); }
 });
@@ -1314,8 +1482,9 @@ document.addEventListener("change", e => {
     moveWalls(L, want - cur); render(); return;
   } if (e.target.matches && e.target.matches("select[data-pin]")) { const P = plan(S.cur); P.pins[+e.target.dataset.pin] = e.target.value; savePlan(S.cur); render(); return; }
   if (e.target.matches && e.target.matches("select[data-lpin]")) { const P = plan(S.cur); P.lpins[+e.target.dataset.lpin] = e.target.value; savePlan(S.cur); render(); return; }
+  if (e.target.matches && e.target.matches("select[data-bnext],select[data-lnext],select[data-pnext]")) { const d = e.target.dataset; setNext(d.bnext !== undefined ? "b" : d.lnext !== undefined ? "l" : "p", +(d.bnext || d.lnext || 0), e.target.value); return; }
   if (e.target.matches && e.target.matches("select[data-ppin]")) { const P = plan(S.cur); P.ppin = e.target.value; savePlan(S.cur); render(); return; }
-  if (e.target.id === "hideMax") { S.hideMax = e.target.checked; store.set(S); render(); } });
+});
 document.addEventListener("toggle", e => { if (e.target && e.target.id === "alBox") { S.alOpen = e.target.open; store.set(S); } }, true);
 
 // ---- Web Push alerts: hybrid RSA-OAEP + AES-GCM sealed subscription saved to data/push_subs.json
