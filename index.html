@@ -403,17 +403,17 @@ body{background:transparent}
 #alSheetBody .al-body{padding:0}
 /* round 2: clearer lines and spacing */
 :root:not([data-theme="light"]) .card,:root:not([data-theme="light"]) .sec,:root:not([data-theme="light"]) .maxline{box-shadow:0 0 0 1px var(--line)}
-.row.i{min-height:52px;padding:9px 8px 9px 12px}
+.row.i{min-height:44px;padding:7px 8px 7px 12px}
 .row.i + .row.i,.dg + .dg{box-shadow:inset 0 1px 0 var(--line)}
-.row.i .n{font-size:15px}
-.row.i .lvl{font-size:12.5px;margin-top:2px}
-.row.i .nx{font-size:12.5px;gap:2px}
-.remain{margin:4px 10px 12px;padding:11px 13px;line-height:1.5}
-.dg-h{padding:13px 10px 13px 12px}
-.dg-h .n{font-size:15px}
-.dg-h .lvl{font-size:12.5px;margin-top:2px}
+.row.i .n{font-size:14px}
+.row.i .lvl{font-size:12px;margin-top:1px}
+.row.i .nx{font-size:12px;gap:1px}
+.remain{margin:4px 10px 8px;padding:8px 12px;line-height:1.45}
+.dg-h{padding:9px 8px 9px 12px}
+.dg-h .n{font-size:14px}
+.dg-h .lvl{font-size:12px;margin-top:1px}
 .car,.cat-car i{display:inline-flex;align-items:center;justify-content:center}
-.dg-h .car{width:26px;height:26px;border-radius:999px;background:var(--soft);color:var(--tx);font-size:13px;flex:none}
+.dg-h .car{width:24px;height:24px;border-radius:999px;background:var(--soft);color:var(--tx);font-size:13px;flex:none}
 .dg-h .car i,.cat-car i{font-style:normal;transition:transform .15s;transform:rotate(-90deg)}
 .dg.open .dg-h .car i,.sec.cat.open .cat-car i{transform:none}
 .dg.open{margin:6px 0;box-shadow:0 0 0 1px var(--line)}
@@ -424,29 +424,33 @@ body{background:transparent}
 .cat-car i{width:14px;font-size:12px}
 .more.mxt{display:block;width:auto;margin:6px auto 4px;border:0;background:var(--soft);border-radius:999px;padding:6px 14px;font-size:12px;font-weight:600;color:var(--mut)}
 .row.i.mx{opacity:.75}
-/* Next section: one card per builder, the lab and the pet house */
-.nxhd{margin:20px 4px 10px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:10px}
+/* Next section: compact, two lines per builder / lab / pets */
+.nxhd{margin:14px 4px 6px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:10px}
 .nxhd::after{content:"";flex:1;height:1px;background:var(--line)}
-.nxsec .body{padding:2px 8px 8px}
-.slot{background:var(--bg);border-radius:14px;padding:11px 12px;margin:8px 0;box-shadow:0 0 0 1px var(--line);transition:box-shadow .3s}
+.nxsec{margin-bottom:8px}
+.nxsec .head{padding:9px 12px}
+.nxsec .body{padding:0 10px 4px}
+.slot{padding:7px 0;transition:box-shadow .3s;border-radius:8px}
+.slot + .slot{box-shadow:inset 0 1px 0 var(--line)}
 .slot.flash{box-shadow:0 0 0 2px var(--acc)}
-.sl-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
-.sl-nm{font-weight:700;font-size:15px}
-.sl-st{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--warn)}
-.sl-st.free{color:var(--acc)}
-.sl-now{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:0;background:var(--soft);border-radius:10px;padding:9px 10px;text-align:left;font:inherit;color:var(--tx);cursor:pointer}
-.sl-now.free{cursor:default;color:var(--mut)}
-.sl-up{min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sl-up .mono{color:var(--mut);font-size:12.5px}
-.sl-tm{flex:none;font-size:13px;font-weight:700;color:var(--warn)}
-.sl-more{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--mut);padding:7px 10px 0}
-.sl-f{display:flex;align-items:center;gap:10px;margin-top:9px;font-size:12px;font-weight:600;color:var(--mut)}
-.sl-f > span:first-child{flex:none;width:56px}
-.sl-sel{flex:1;min-width:0}
-.slot .pin{display:block;width:100%;max-width:none;margin:0;font-size:13.5px;padding:8px 10px;border-radius:10px;color:var(--tx)}
-.slot .pin.on{color:var(--acc)}
-.sl-f .q{flex:none;min-width:44px;padding:8px 0}
-.nxsec .subh{margin:16px 6px 6px}
+.sl-now{display:flex;align-items:baseline;gap:8px;width:100%;border:0;background:none;padding:0;text-align:left;font:inherit;color:var(--tx);cursor:pointer}
+.sl-now.free{cursor:default}
+.sl-now.free .sl-up{color:var(--acc);font-weight:600}
+.sl-nm{flex:none;min-width:44px;font-size:13px;font-weight:700}
+.sl-up{flex:1;min-width:0;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl-up .mono{color:var(--mut);font-size:12px}
+.sl-tm{flex:none;font-size:12.5px;font-weight:700;color:var(--warn)}
+.sl-more{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--mut);padding:2px 0 0 52px}
+.sl-f{display:flex;align-items:center;gap:6px;margin-top:5px}
+.sl-s{flex:1.5;min-width:0;display:flex;align-items:center;gap:5px;background:var(--soft);border-radius:8px;padding:0 0 0 8px}
+.sl-s.sl-p{flex:1}
+.sl-s > span{flex:none;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
+.slot .pin{display:block;flex:1;width:100%;min-width:0;max-width:none;margin:0;font-size:12.5px;padding:5px 4px;border:0;background:transparent;color:var(--tx)}
+.slot .pin.on{color:var(--acc);font-weight:600}
+.sl-f .q{flex:none;min-width:36px;padding:4px 0}
+.nxsec .subh{margin:8px 2px 2px}
+.nxsec .more{padding:6px 2px}
+.nxsec .editbtn{margin:4px 0 6px;padding:7px}
 </style>
 <link id="lnkMan" rel="manifest" href="manifest.webmanifest">
 <link id="lnkApple" rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -1007,14 +1011,14 @@ function nextSection(v, R, now){
   };
   // one card per builder / lab / pet house: what it's doing now, what it does next, and what it stays on
   const slotCard = o => {
-    const nowHtml = o.job ? `<button class="sl-now" data-act="settime" data-q="${o.job.r.o.i || "weapon"}" data-lv="${o.job.x.l}" data-ix="${o.job.x.ix}" data-n="${esc(o.job.r.o.n)}" data-left="${Math.round(o.job.x.left)}" title="Tap to edit or finish"><span class="sl-up">${esc(o.job.r.o.n)} <span class="mono">${o.job.x.l} → ${o.job.x.l + 1}</span></span><span class="sl-tm mono" data-end="${now + Math.round(o.job.x.left)}">${dur(o.job.x.left)}</span></button>`
-      : `<div class="sl-now free"><span class="sl-up">Free now</span></div>`;
+    const nm = `<b class="sl-nm">${o.name}</b>`;
+    const nowHtml = o.job ? `<button class="sl-now" data-act="settime" data-q="${o.job.r.o.i || "weapon"}" data-lv="${o.job.x.l}" data-ix="${o.job.x.ix}" data-n="${esc(o.job.r.o.n)}" data-left="${Math.round(o.job.x.left)}" title="Tap to edit or finish">${nm}<span class="sl-up">${esc(o.job.r.o.n)} <span class="mono">${o.job.x.l} → ${o.job.x.l + 1}</span></span><span class="sl-tm mono" data-end="${now + Math.round(o.job.x.left)}">${dur(o.job.x.left)}</span></button>`
+      : `<div class="sl-now free">${nm}<span class="sl-up">free now</span></div>`;
     const startBtn = o.start ? `<button class="q" data-act="start" data-q="${o.start.i}" data-lv="${o.start.l}" data-ix="${o.start.ix}" title="Start upgrade">↑</button>` : "";
     const extra = (o.more || []).map(jx => `<div class="sl-more" data-job="${jx.r.o.i}:${jx.x.ix}"><span>Goblin · ${esc(jx.r.o.n)} <span class="mono">${jx.x.l} → ${jx.x.l + 1}</span></span><span class="mono" data-end="${now + Math.round(jx.x.left)}">${dur(jx.x.left)}</span></div>`).join("");
     const jobKey = j => ` data-job="${j.r.o.i || "weapon"}:${j.x.ix}"`;
-    return `<div class="slot${o.job ? "" : " isfree"}" id="${o.id}"${o.job ? jobKey(o.job) : ""}><div class="sl-h"><span class="sl-nm">${o.name}</span>${o.job ? `<span class="sl-st">busy</span>` : `<span class="sl-st free">free</span>`}</div>${nowHtml}${extra}
-      ${o.nextSel ? `<div class="sl-f"><span>Next</span><span class="sl-sel">${o.nextSel}</span>${startBtn}</div>` : ""}
-      ${o.pinSel ? `<div class="sl-f"><span>Stays on</span><span class="sl-sel">${o.pinSel}</span></div>` : ""}</div>`;
+    const sels = (o.nextSel || o.pinSel) ? `<div class="sl-f">${o.nextSel ? `<label class="sl-s"><span>next</span>${o.nextSel}</label>` : ""}${o.pinSel ? `<label class="sl-s sl-p"><span>on</span>${o.pinSel}</label>` : ""}${startBtn}</div>` : "";
+    return `<div class="slot${o.job ? "" : " isfree"}" id="${o.id}"${o.job ? jobKey(o.job) : ""}>${nowHtml}${extra}${sels}</div>`;
   };
   const nextSel = (attr, pred, pin, cq, auto) => {
     const cur = cq ? cq.i + ":" + cq.l : "";
@@ -1038,7 +1042,7 @@ function nextSection(v, R, now){
     };
     const cards = I.slots.map(s => {
       const qe = s.q.length ? I.bq[s.q[0]] : null, cq = qe ? qe.q : null, auto = cq ? null : s.auto;
-      return slotCard({ id: "nx-b" + s.i, name: s.extra ? "Goblin Builder" : "Builder " + (s.i + 1), job: s.job,
+      return slotCard({ id: "nx-b" + s.i, name: s.extra ? "Goblin" : "B" + (s.i + 1), job: s.job,
         nextSel: s.extra ? "" : nextSel(`data-bnext="${s.i}"`, isBld, s.pin, cq, auto),
         pinSel: s.extra ? "" : `<select class="pin${s.pin ? " on" : ""}" data-pin="${s.i}">${pinOpts(s.pin)}</select>`,
         start: s.extra ? null : startOf(cq, auto, s.job ? s.job.x.left : 0) });
@@ -1076,7 +1080,7 @@ function nextSection(v, R, now){
       const its = R.rows.filter(r => isPet(r.o) && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
       return opt("", "Any pet", sel) + `<optgroup label="One pet">${its.map(x => opt("i:" + x.i, x.n, sel)).join("")}</optgroup>`;
     };
-    const card = slotCard({ id: "nx-p", name: "Pet House", job: ps.jobs[0], more: ps.jobs.slice(1),
+    const card = slotCard({ id: "nx-p", name: "Pets", job: ps.jobs[0], more: ps.jobs.slice(1),
       nextSel: nextSel(`data-pnext="1"`, isPet, ps.pin, cq, auto),
       pinSel: `<select class="pin${ps.pin ? " on" : ""}" data-ppin="1">${petPinOpts(ps.pin)}</select>`,
       start: startOf(cq, auto, ps.jobs.length ? ps.jobs[0].x.left : 0) });
