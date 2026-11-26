@@ -562,7 +562,7 @@ let S = store.get(); S.acc = S.acc || {}; S.open = S.open || {}; S.go = {};
 let CATOPEN = false, MAXOPEN = false; // category list and maxed items start folded on every load and tab switch
 // Trent's two accounts are the only ones ever saved to the repo. Anyone else's account lives on their own phone only.
 const MINE = { "#R0RRV0VQ": "KingTrents", "#QUV9Q8Q2": "Khnum-Atum~ra" };
-const INGAME = { "#R0RRV0VQ": "KingTrents⚡" }; // in-game username shown in the page header (pills keep the short name)
+const INGAME = { "#R0RRV0VQ": "KingTrents⚡" }; // in-game username shown in the page header and the account pill
 S.extra = []; // site is locked to Trent's own accounts
 let ACCOUNTS = [], NAME = {};
 function syncAccounts(){
@@ -1219,14 +1219,14 @@ function render(){
   if (gpEl) gpEl.innerHTML = GP_STEPS.map(x => `<button type="button" class="${x === gp ? "on" : ""}" data-gp="${x}">${x ? x + "%" : "off"}</button>`).join("");
   let v = null;
   try { v = view(S.cur) } catch(e) {
-    chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("");
+    chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(INGAME[a.tag] || a.name)}</button>`).join("");
     app.innerHTML = `<div class="card">${esc(e.message)}</div>`; return;
   }
   if (EDIT && EDIT.tag === S.cur) v = EDIT.v;
   if (v && v.th >= 16 && v.th <= 18) document.documentElement.setAttribute("data-th", v.th); else document.documentElement.removeAttribute("data-th");
   syncThemeColor();
   if (!v) {
-    chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("");
+    chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(INGAME[a.tag] || a.name)}</button>`).join("");
     app.innerHTML = `<div class="card empty"><p><b>No data yet for ${esc(NAME[S.cur])}.</b><br>Copy the village export in game, then tap Paste.</p></div>`; return;
   }
   const AO = !!v.apiOnly;
@@ -1236,7 +1236,7 @@ function render(){
   const overall = pct(timed);
   const BD = builderData(v, R);
   const bPill = !AO && R.builders ? `<button class="bpill${BD.freeB > 0 ? " free" : ""}${BOPEN ? " open" : ""}" type="button" data-bsnap="1" title="Builder timers"><img src="assets/builder.webp" alt="Builders"><span class="bc">${BD.freeB}/${BD.nB}</span><span class="bcar">${BOPEN ? "▴" : "▾"}</span></button>` : "";
-  chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("") +
+  chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(INGAME[a.tag] || a.name)}</button>`).join("") +
     (gp ? `<button class="gp-tag" id="btnGpTag" type="button" title="Gold Pass boost">GP ${gp}%</button>` : "") + bPill;
 
   const allRow = `<button type="button" class="cb c-all${overall >= 100 ? " done" : ""}" data-bars="1" aria-expanded="${BAROPEN}"><span class="k">Overall <span class="car">${BAROPEN ? "▴" : "▾"}</span></span><span class="bar"><i style="width:${overall}%"></i></span><span class="v mono">${overall}%</span></button>`;
