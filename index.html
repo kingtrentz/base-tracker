@@ -400,6 +400,13 @@ body{background:transparent}
   100%{transform:translate3d(var(--dx),-78vh,0) scale(.2);opacity:0}
 }
 @media (prefers-reduced-motion: reduce){.embers{display:none}}
+/* KingTrents only: fixed, GPU-locked ⚡ watermark behind the page (same approach as the McGrath Masters crest) */
+.wm{position:fixed;inset:0;z-index:1;pointer-events:none;display:none;align-items:center;justify-content:center;padding-top:14vh;transform:translate3d(0,0,0)}
+:root[data-wm] .wm{display:flex}
+.wm span{font-size:min(74vw,460px);line-height:1;opacity:.2;user-select:none;-webkit-user-select:none;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+:root[data-theme="light"] .wm span{opacity:.3}
+@media (min-width:700px){.wm{top:150px;padding-top:0}.wm span{font-size:min(78vw,500px,calc((100vh - 190px) * .93))}}
+:root[data-wm] :is(.card,.sec,.bsnap,.alcard){background:color-mix(in srgb,var(--card) 78%,transparent);backdrop-filter:none;-webkit-backdrop-filter:none}
 .card,.sec,.bsnap,.alcard{background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 #alSheetBody .alcard{background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;margin:0;border-radius:0}
 #alSheetBody .al-hd{padding:0 0 8px}
@@ -479,6 +486,7 @@ button.nxhd{width:calc(100% - 8px);border:0;background:none;font-family:inherit;
 <body>
 <div class="bg-forge" aria-hidden="true"></div>
 <div class="embers" aria-hidden="true"><i style="--x:8%;--sz:4px;--d:7.5s;--dl:0s;--dx:18px"></i><i style="--x:19%;--sz:3px;--d:9.2s;--dl:-2.1s;--dx:-14px"></i><i style="--x:31%;--sz:5px;--d:8.4s;--dl:-4.8s;--dx:22px"></i><i style="--x:44%;--sz:3px;--d:6.8s;--dl:-1.3s;--dx:-16px"></i><i style="--x:56%;--sz:4px;--d:9.8s;--dl:-6.2s;--dx:12px"></i><i style="--x:67%;--sz:5px;--d:7.9s;--dl:-3.4s;--dx:-20px"></i><i style="--x:79%;--sz:3px;--d:8.8s;--dl:-5.5s;--dx:16px"></i><i style="--x:91%;--sz:4px;--d:7.2s;--dl:-0.8s;--dx:-18px"></i><i style="--x:25%;--sz:3px;--d:10.5s;--dl:-7.4s;--dx:14px"></i><i style="--x:73%;--sz:4px;--d:9.1s;--dl:-2.9s;--dx:-12px"></i></div>
+<div class="wm" aria-hidden="true"><span>⚡</span></div>
 <div class="wrap">
   <header>
     <h1>base<span>.</span>tracker</h1>
@@ -1204,6 +1212,7 @@ function builderPopover(v, R, now, c, BD){
 const BAR_TARGET = { build: "Defenses", heroes: "Heroes", lab: "Troops", pets: "Pets", walls: "Walls", equip: "Equipment" };
 function render(){
   const app = $("#app"), chips = $("#chips");
+  document.documentElement.toggleAttribute("data-wm", S.cur === "#R0RRV0VQ");
   const gp = GP_STEPS.includes(S.gp) ? S.gp : 0;
   const gpEl = $("#gpOpts");
   if (gpEl) gpEl.innerHTML = GP_STEPS.map(x => `<button type="button" class="${x === gp ? "on" : ""}" data-gp="${x}">${x ? x + "%" : "off"}</button>`).join("");
@@ -1317,7 +1326,7 @@ function render(){
             const head = `<button class="dg-h" data-go="${key}"><span class="l"><span class="n">${esc(r.o.n)}</span><span class="lvl mono">${built.length ? (built.length === 1 ? built[0] : built[built.length - 1] + "–" + built[0]) + "/" + r.M : "max " + r.M}${nNew ? ` · ${nNew} new` : ""} · ${left_} to go${ups ? ` · <b class="upc">${ups} upgrading</b>` : ""}</span></span><span class="nx">${nextT ? `<span class="tm">${dur(nextT)}</span>` : ""}</span><span class="car"><i>▾</i></span></button>`;
             return { id: "g:" + key, time: nextT, cost: nextC, h: `<div class="dg${open ? " open" : ""}">${head}${open ? `<div class="dg-b">${rows.map(x => x.h).join("")}</div>` : ""}</div>` };
           });
-        } else ls = left.flatMap(r => lineObjs(r).map(x => ({ ...x, hero: r.o.h, lvLeft: r.rem, nm: r.o.n })));
+        } else ls = left.flatMap(r => lineObjs(r).map(x => ({ ...x, hero: r.o.h, lvLeft: r.rem, nm: r.o.n, res: r.o.r })));
         if (F.sort) { const [k, dir] = F.sort.split(":"); ls.sort((a, b) => dir === "up" ? a[k] - b[k] : b[k] - a[k]); }
         if (g !== "Equipment") ls = stable(ls, "top");
         if (g === "Equipment") {
@@ -1333,6 +1342,18 @@ function render(){
             const head = `<button class="dg-h" data-go="${esc(k)}"><span class="l"><span class="n">${esc(n)}</span><span class="lvl mono">${by[n].length} piece${by[n].length === 1 ? "" : "s"} · ${lv} level${lv === 1 ? "" : "s"} to go</span></span><span class="car"><i>▾</i></span></button>`;
             return { h: `<div class="dg eq${open ? " open" : ""}">${head}${open ? `<div class="dg-b">${by[n].map(x => x.h).join("")}</div>` : ""}</div>` };
           });
+        }
+        if (g === "Troops") {
+          // two dropdowns: elixir troops and dark elixir troops; each troop is a named row inside (eq styling shows names)
+          S.go = S.go || {};
+          const mn = arr => arr.length ? Math.min(...arr) : 0;
+          ls = [["e", "Elixir troops"], ["d", "Dark elixir troops"]].map(([res, label]) => {
+            const items = ls.filter(x => (x.res === "d" ? "d" : "e") === res);
+            if (!items.length) return null;
+            const k = "tr:" + res, open = !!S.go[k], n = new Set(items.map(x => x.nm)).size, nextT = mn(items.map(x => x.time).filter(Boolean)), ups = items.filter(x => x.h.includes('class="row i upg"')).length;
+            const head = `<button class="dg-h" data-go="${k}"><span class="l"><span class="n">${label}</span><span class="lvl mono">${n} troop${n === 1 ? "" : "s"} to go${ups ? ` · <b class="upc">${ups} upgrading</b>` : ""}</span></span><span class="nx">${nextT ? `<span class="tm">${dur(nextT)}</span>` : ""}</span><span class="car"><i>▾</i></span></button>`;
+            return { h: `<div class="dg eq${open ? " open" : ""}">${head}${open ? `<div class="dg-b">${items.map(x => x.h).join("")}</div>` : ""}</div>` };
+          }).filter(Boolean);
         }
         body = ls.map(x => x.h).join("") || (FON ? `<div class="more" data-fg="${g}" data-fclear="1">Nothing matches · clear filter</div>` : `<div class="more">Everything here is maxed for TH${v.th}.</div>`);
         if (maxed.length) body += !MAXOPEN ? `<button class="more mxt" data-showmax="1">${maxed.length} maxed · show</button>` : maxed.map(r => `<div class="row i mx"><div class="l"><div class="n">${esc(r.o.n)}</div><div class="lvl mono">${r.M}/${r.M}</div></div><span class="ok">max</span></div>`).join("") + `<button class="more mxt" data-showmax="0">hide maxed</button>`;
