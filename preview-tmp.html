@@ -1212,7 +1212,7 @@ function render(){
   chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("") +
     (gp ? `<button class="gp-tag" id="btnGpTag" type="button" title="Gold Pass boost">GP ${gp}%</button>` : "") + bPill;
 
-  const allRow = `<button type="button" class="cb c-all${overall >= 100 ? " done" : ""}" data-bars="1" aria-expanded="${BAROPEN}"><span class="k">Overall <span class="car">${BAROPEN ? "▴" : "▾"}</span></span><span class="bar"><i style="width:${overall}%"></i></span><span class="v mono">${Math.floor(overall)}%</span></button>`;
+  const allRow = `<button type="button" class="cb c-all${overall >= 100 ? " done" : ""}" data-bars="1" aria-expanded="${BAROPEN}"><span class="k">Overall <span class="car">${BAROPEN ? "▴" : "▾"}</span></span><span class="bar"><i style="width:${overall}%"></i></span><span class="v mono">${overall}%</span></button>`;
   const barsHtml = `<div class="bars">${allRow}${!BAROPEN ? "" : BAR_CATS.map(([k, label]) => {
     if (AO && (k === "build" || k === "walls")) return "";
     if (!c[k].tot) return "";
