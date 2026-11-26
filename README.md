@@ -9,7 +9,7 @@ Clash of Clans base progress tracker for two accounts (KingTrents and Khnum-Atum
 - `pc/push_alerts.py` runs on Trent's PC (Documents\2026\GitHubs\Clash of Clans\Base Tracker) and sends the push alerts. After changing it here, copy it to that folder by hand.
 
 ## What's on the page
-- Builders pill (top right): dropdown of every busy builder, lab, squad and pet with countdowns. Starts closed. Header shows when the next builder frees up, with date and time.
+- Builders pill (top right): dropdown of every busy builder, lab, squad and pet with countdowns. Starts open on page load; tap the pill to close it. Lab rows read "Lab" and "Goblin lab" (squads are lab work, no separate squad row). Header shows when the next builder frees up, with date and time.
 - Progress: Overall bar, tap it to open the other six. Ring around the town hall.
 - Category tabs, then a Next section at the bottom of each tab. Next folds behind one header and starts closed.
   - Defenses, Traps, Collectors and Storages show one dropdown per building (copies left, next upgrade); tap it to see each copy. Short tabs (Army, Guardians, Walls and the rest) stay as plain lists (`DROPDOWN_TABS`).
@@ -26,10 +26,11 @@ Clash of Clans base progress tracker for two accounts (KingTrents and Khnum-Atum
 - The next dropdown lists every level the copies of a building sit at (e.g. "Air Defense 16 → 17 ×4").
 
 ## History
-- PR #1 builder dropdown opens on load (since changed: starts closed in #5)
+- PR #1 builder dropdown opens on load (closed in #5, open again in #8)
 - PR #2 Next section on every tab, folded tabs, maxed items hidden
 - PR #3 Next condensed to one line per slot, never auto-fills
 - PR #4 progress bars fold to Overall, % above town hall removed
 - PR #5 TH19 fixes, folded Next with warnings, squads in the lab slot, goblin timers, date on next builder, completion pings
 - PR #6 lab and pet queues removed from Next, so no slot has a queue
 - PR #7 Traps tab gets the same per-building dropdown as Defenses
+- PR #8 builder dropdown starts open again; its lab rows read Lab and Goblin lab (no separate squad row)
