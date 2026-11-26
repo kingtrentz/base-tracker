@@ -453,6 +453,18 @@ body{background:transparent}
 .nxsec .subh{margin:8px 2px 2px}
 .nxsec .more{padding:6px 2px}
 .nxsec .editbtn{margin:4px 0 6px;padding:7px}
+button.nxhd{width:calc(100% - 8px);border:0;background:none;font-family:inherit;cursor:pointer;padding:0}
+.nxhd .nxt{flex:none}
+.nxhd .nxw{flex:none;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--warn)}
+.nxhd .cat-car{order:3;text-transform:none;letter-spacing:0}
+.nxhd::after{order:2}
+.nxhd.open .cat-car i{transform:none}
+.sl-s.warn{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--warn) 55%,transparent)}
+.sl-s.warn > span{color:var(--warn)}
+.gfree{color:var(--acc);font-weight:600}
+.gobl{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:var(--mut);padding:6px 0 2px;box-shadow:inset 0 1px 0 var(--line)}
+.gobl button{border:0;background:none;color:var(--mut);font-size:12px;padding:2px 4px;cursor:pointer}
+.goba{display:block;margin:2px 0 4px auto;border:0;background:none;color:var(--mut);font-family:inherit;font-size:11.5px;padding:4px 2px;cursor:pointer;opacity:.75}
 </style>
 <link id="lnkMan" rel="manifest" href="manifest.webmanifest">
 <link id="lnkApple" rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -711,6 +723,8 @@ function boosted(){
   });
   GP_CACHE = { gp, items }; return items;
 }
+// Supercell, Clash of Titans update (TH19): "up to 150 Walls upgradable to level 20"; the rest top out one level lower
+const WALL_CAP = { 19: 150 };
 function compute(v, now){
   const t = Math.min(Math.max(v.th, 1), DATA.top || 18);
   const owned = id => (v.inst[id] || []).length;
@@ -727,20 +741,21 @@ function compute(v, now){
     const cat = CAT[o.g], C = cats[cat];
     const row = { o, n, lv: [], inst: [], rem: 0, tot: 0, upn: 0, cost: 0, ore: [0,0,0], up: [], M };
     for (let i = 0; i < n; i++) {
-      const h = have[i], l = h ? Math.min(h.l, M) : 0;
-      row.lv.push(l); row.upn += M - l;
       const isWall = o.g === "Walls";
-      let r = sum(o.t, l+1, M), tot = sum(o.t, 1, M);
-      if (isWall) { r = sum(o.co, l+1, M); tot = sum(o.co, 1, M); }
+      const Mi = isWall && WALL_CAP[t] && i >= WALL_CAP[t] ? M - 1 : M; // this piece's top level
+      const h = have[i], l = h ? Math.min(h.l, M) : 0;
+      row.lv.push(l); row.upn += Math.max(0, Mi - l);
+      let r = sum(o.t, l+1, Mi), tot = sum(o.t, 1, Mi);
+      if (isWall) { r = sum(o.co, l+1, Mi); tot = sum(o.co, 1, Mi); }
       if (o.k === "e") { r = M - l; tot = M; const ore = sumOre(o.co, l+1, M); row.ore = row.ore.map((x, j) => x + ore[j]); }
-      else row.cost += sum(o.co, l+1, M);
+      else row.cost += sum(o.co, l+1, Mi);
       if (h && h.t && l < M) {
         const left = Math.max(0, h.t - age);
         if (!isWall && o.k !== "e") { r = r - (o.t[l] || 0) + left; row.cost -= o.co[l] || 0; }
         row.up.push(l + 1);
         ups.push({ id: o.i, name: o.n, to: l + 1, end: v.ts + h.t, cat });
       }
-      row.inst.push({ l, r, up: !!(h && h.t && l < M), left: h && h.t ? Math.max(0, h.t - age) : 0, ix: h ? h.ix : -1 });
+      row.inst.push({ l, r, M: Mi, up: !!(h && h.t && l < M), left: h && h.t ? Math.max(0, h.t - age) : 0, ix: h ? h.ix : -1 });
       row.rem += r; row.tot += tot;
     }
     C.rem += row.rem; C.tot += row.tot; C.upn += row.upn;
@@ -758,7 +773,9 @@ function compute(v, now){
     cats.build.rem += r; cats.build.tot += tot; cats.build.upn += M - l; cats.build.cost.g += cost;
   }
   const builders = owned(1000015) + (owned(1000064) ? 1 : 0);
-  return { t, rows, ups, cats, builders, age };
+  const G = (S.plan[v.tag] || S.plan[S.cur] || {}).gob || {}, nowS = Math.floor(Date.now() / 1000);
+  const gob = { b: G.b > nowS ? G.b : 0, l: G.l > nowS ? G.l : 0 };
+  return { t, rows, ups, cats, builders, gob, age };
 }
 
 const pct = c => c.tot ? Math.floor(1000 * (1 - c.rem / c.tot)) / 10 : 100;
@@ -770,6 +787,7 @@ function dur(s){
   if (h) return h + "h" + (m ? " " + m + "m" : "");
   return Math.max(1, m) + "m";
 }
+function whenAt(endSec){ return new Date(endSec * 1000).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); }
 function eta(endSec){
   const d = new Date(endSec * 1000), n = new Date();
   const hr = d.getHours(), ap = hr >= 12 ? "p" : "a", h12 = hr % 12 || 12, mn = d.getMinutes();
@@ -875,7 +893,7 @@ function planInfo(v, R){
   const busyB = [];
   R.rows.forEach(r => { if (isBld(r.o)) r.inst.forEach(x => { if (x.up) busyB.push({ r, x }); }); });
   busyB.sort((a, b) => a.x.left - b.x.left);
-  const N = AOof(v) ? 0 : Math.max(R.builders || 0, busyB.length);
+  const N = AOof(v) ? 0 : Math.max((R.builders || 0) + (R.gob && R.gob.b ? 1 : 0), busyB.length);
   const slots = Array.from({ length: N }, (_, i) => ({ i, extra: i >= (R.builders || 0), pin: P.pins[i] || "", job: null, free: 0, q: [] }));
   const lastEnd = {};
   busyB.forEach(bj => {
@@ -909,7 +927,6 @@ function planInfo(v, R){
   slots.forEach(s => { if (s.pin && !s.q.length) s.auto = bestAuto(s.pin, isBld, qB); });
 
   // Lab slots: Laboratory (Troops/Spells/Sieges) + Squads (TH19 Squad Barracks)
-  const hasSquads = R.rows.some(r => isLabSq(r.o));
   const busyReg = [], busySq = [];
   R.rows.forEach(r => {
     if (isLabReg(r.o)) r.inst.forEach(x => { if (x.up) busyReg.push({ r, x }); });
@@ -917,17 +934,18 @@ function planInfo(v, R){
   });
   busyReg.sort((a, b) => a.x.left - b.x.left);
   busySq.sort((a, b) => a.x.left - b.x.left);
-  const labSlots = [{ i: 0, kind: "reg", label: "Laboratory", pin: P.lpins[0] || "", jobs: busyReg, free: busyReg.length ? busyReg[0].x.left : 0, q: [] }];
-  if (hasSquads) labSlots.push({ i: 1, kind: "sq", label: "Squads", pin: P.lpins[1] || "", jobs: busySq, free: busySq.length ? busySq[0].x.left : 0, q: [] });
+  // squads research in the Laboratory too, so the Next section has one Lab slot for both (the top bar still lists them apart)
+  const busyLab = busyReg.concat(busySq).sort((a, b) => a.x.left - b.x.left);
+  const labSlots = [{ i: 0, kind: "lab", label: "Lab", pin: P.lpins[0] || "", jobs: busyLab, free: busyLab.length ? busyLab[0].x.left : 0, q: [] }];
   const lq = P.l.map((q, qi) => {
     const r = rowBy[q.i], t = (r.o.t || [])[q.l] || 0, co = (r.o.co || [])[q.l] || 0;
-    const s = (isLabSq(r.o) && labSlots[1]) ? labSlots[1] : labSlots[0];
+    const s = labSlots[0];
     const start = s.free, end = start + t;
     s.free = end; s.q.push(qi);
     return { q, qi, r, t, co, start, end, slotName: s.kind === "sq" ? "Squads" : "Lab" };
   });
   const qL = new Set(P.l.map(q => q.i));
-  labSlots.forEach(s => { if (s.pin && !s.q.length) s.auto = bestAuto(s.pin, s.kind === "sq" ? isLabSq : isLabReg, qL); });
+  labSlots.forEach(s => { if (s.pin && !s.q.length) s.auto = bestAuto(s.pin, isLab, qL); });
 
   // Pet House slot
   const busyPet = [];
@@ -965,9 +983,9 @@ function alertsTab(v, R, now){
   let prevBody = "Next up from your Plan + exact Gold, Elixir, or Dark needed to start it.";
   if (first) {
     prevTitle = `${NAME[S.cur]}: ${first.r.o.n} →${first.x.l + 1} done in ${lead >= 60 ? "1h" : lead + "m"}`;
-    let nxt = null, slotLbl = first.k === "b" ? "Builder" : first.k === "p" ? "Pet House" : (first.r.o.g === "Squads" ? "Squads" : "Lab");
+    let nxt = null, slotLbl = first.k === "b" ? "Builder" : first.k === "p" ? "Pet House" : "Lab";
     if (first.k === "b") { nxt = I.bq[0] ? { r: I.bq[0].r, l: I.bq[0].q.l, co: I.bq[0].co } : null; }
-    else if (first.k === "l") { const sq = first.r.o.g === "Squads", q0 = I.lq.find(e => (e.r.o.g === "Squads") === sq); nxt = q0 ? { r: q0.r, l: q0.q.l, co: q0.co } : null; }
+    else if (first.k === "l") { const q0 = I.lq[0]; nxt = q0 ? { r: q0.r, l: q0.q.l, co: q0.co } : null; }
     else if (first.k === "p") { nxt = I.pq[0] ? { r: I.pq[0].r, l: I.pq[0].q.l, co: I.pq[0].co } : null; }
     if (nxt) {
       const rn = RESN[nxt.r.o.r] || "Loot";
@@ -975,7 +993,7 @@ function alertsTab(v, R, now){
     } else prevBody = `${slotLbl} free in ${lead >= 60 ? "1h" : lead + "m"}. Open Plan to assign what's next.`;
   }
   return `<div class="alcard"><div class="al-hd"><b>Upgrade alerts</b><span class="alst${al.on ? " on" : ""}">${st}</span></div><div class="al-body">
-    <div class="al-msg">Pings your iPhone &amp; Apple Watch before an upgrade finishes with your next planned upgrade and how much loot you need.</div>
+    <div class="al-msg">Pings your iPhone &amp; Apple Watch before an upgrade finishes with your next planned upgrade and how much loot you need, then again once it's done (“Air Defense upgraded to level 17. Next upgrade: Lvl 18 Cannon”).</div>
     <div><div class="al-lbl">Sample notification (your next finish)</div><div class="al-prev"><img src="assets/builder.webp" alt=""><div class="al-prev-b"><div class="al-prev-t">${esc(prevTitle)}</div><div class="al-prev-s">${esc(prevBody)}</div></div></div></div>
     <div><div class="al-lbl">Remind me before finish</div><div class="al-chips">${leadBtn(10,"10m")}${leadBtn(20,"20m")}${leadBtn(30,"30m")}${leadBtn(60,"1h")}</div></div>
     <div><div class="al-lbl">Alert for</div><div class="al-chips">${typeBtn("b","Builders")}${typeBtn("l","Lab & Squads")}${typeBtn("p","Pet House")}</div></div>
@@ -1002,14 +1020,16 @@ function nextSection(v, R, now){
       if (!r.o.i || !pred(r.o)) return;
       const a = (I.virt[r.o.i] || []).slice();
       if (curQ && curQ.i === r.o.i) { const k = a.indexOf(curQ.l + 1); if (k >= 0) a[k]--; }
-      const lv = a.filter(l => l < r.M); if (!lv.length) return;
-      const l = Math.min(...lv), t = (r.o.t || [])[l] || 0;
-      if (r.o.i + ":" + l === cur) return;
-      const grp = sug && sug.r.o.i === r.o.i && sug.l === l ? "☆" : pin && pin.startsWith("i:") && pin === "i:" + r.o.i ? "★" : r.o.g;
-      (by[grp] = by[grp] || []).push({ r, l, t });
+      const cnt = {}; a.forEach(l => { if (l < r.M) cnt[l] = (cnt[l] || 0) + 1; });
+      Object.keys(cnt).map(Number).forEach(l => {
+        if (r.o.i + ":" + l === cur) return;
+        const t = (r.o.t || [])[l] || 0;
+        const grp = sug && sug.r.o.i === r.o.i && sug.l === l ? "☆" : pin && pin.startsWith("i:") && pin === "i:" + r.o.i ? "★" : r.o.g;
+        (by[grp] = by[grp] || []).push({ r, l, t, c: cnt[l] });
+      });
     });
     const order = Object.keys(by).sort((a, b) => (b === "☆") - (a === "☆") || (b === "★") - (a === "★") || (b === firstG) - (a === firstG) || GROUPS.indexOf(a) - GROUPS.indexOf(b));
-    return order.map(g => `<optgroup label="${esc(g === "☆" ? "Suggested" : g === "★" ? pinName(pin) : g)}">${by[g].sort((x, y) => x.r.o.n.localeCompare(y.r.o.n)).map(e => opt(e.r.o.i + ":" + e.l, `${e.r.o.n} ${e.l} → ${e.l + 1}${e.t ? " · " + dur(e.t) : ""}`, cur)).join("")}</optgroup>`).join("");
+    return order.map(g => `<optgroup label="${esc(g === "☆" ? "Suggested" : g === "★" ? pinName(pin) : g)}">${by[g].sort((x, y) => x.r.o.n.localeCompare(y.r.o.n) || y.l - x.l).map(e => opt(e.r.o.i + ":" + e.l, `${e.r.o.n} ${e.l} → ${e.l + 1}${e.c > 1 ? " ×" + e.c : ""}${e.t ? " · " + dur(e.t) : ""}`, cur)).join("")}</optgroup>`).join("");
   };
   // one card per builder / lab / pet house: what it's doing now, what it does next, and what it stays on
   const slotCard = o => {
@@ -1019,8 +1039,8 @@ function nextSection(v, R, now){
     const startBtn = o.start ? `<button class="q" data-act="start" data-q="${o.start.i}" data-lv="${o.start.l}" data-ix="${o.start.ix}" title="Start upgrade">↑</button>` : "";
     const extra = (o.more || []).map(jx => `<div class="sl-more" data-job="${jx.r.o.i}:${jx.x.ix}"><span>Goblin · ${esc(jx.r.o.n)} <span class="mono">${jx.x.l} → ${jx.x.l + 1}</span></span><span class="mono" data-end="${now + Math.round(jx.x.left)}">${dur(jx.x.left)}</span></div>`).join("");
     const jobKey = j => ` data-job="${j.r.o.i || "weapon"}:${j.x.ix}"`;
-    const sels = (o.nextSel || o.pinSel) ? `<div class="sl-f">${o.nextSel ? `<label class="sl-s"><span>next</span>${o.nextSel}</label>` : ""}${o.pinSel ? `<label class="sl-s sl-p"><span>on</span>${o.pinSel}</label>` : ""}${startBtn}</div>` : "";
-    return `<div class="slot${o.job ? "" : " isfree"}" id="${o.id}"${o.job ? jobKey(o.job) : ""}>${nowHtml}${extra}${sels}</div>`;
+    const sels = (o.nextSel || o.pinSel) ? `<div class="sl-f">${o.nextSel ? `<label class="sl-s${o.warn ? " warn" : ""}"${o.warn ? ` title="Working with nothing picked next"` : ""}><span>${o.warn ? "⚠ next" : "next"}</span>${o.nextSel}</label>` : ""}${o.pinSel ? `<label class="sl-s sl-p"><span>on</span>${o.pinSel}</label>` : ""}${startBtn}</div>` : "";
+    return `<div class="slot${o.job ? "" : " isfree"}" id="${o.id}"${o.job ? jobKey(o.job) : ""}>${nowHtml}${extra}${o.gobFree ? `<div class="sl-more"><span>Goblin · <span class="gfree">free now</span></span></div>` : ""}${sels}</div>`;
   };
   const nextSel = (attr, pred, pin, cq, auto) => {
     const cur = cq ? cq.i + ":" + cq.l : "";
@@ -1033,7 +1053,14 @@ function nextSection(v, R, now){
     if (cq) return { i: cq.i, l: cq.l, ix: -1 };
     return null;
   };
-  let h = `<div class="nxhd" id="nx">Next</div>`;
+  const G = R.gob || {}, gobLine = (k, lbl) => G[k]
+    ? `<div class="gobl"><span>${lbl} · here <span class="mono" data-end="${G[k]}">${dur(G[k] - now)}</span></span><button type="button" data-gobx="${k}" title="Remove">✕</button></div>`
+    : `<button type="button" class="goba" data-goba="${k}">+ ${lbl.toLowerCase()}</button>`;
+  // a builder or the lab that is working with nothing picked next gets a small warning
+  const warnB = I.slots.filter(s => !s.extra && s.job && !s.q.length).length, warnL = I.labSlots.filter(s => s.jobs.length && !s.q.length).length, warnN = warnB + warnL;
+  let h = `<button type="button" class="nxhd" id="nx" data-nxfold="1"><span class="nxt">Next</span>${warnN ? `<span class="nxw">⚠ ${warnN} need${warnN > 1 ? "" : "s"} a next</span>` : ""}<span class="cat-car">${NXOPEN ? "Hide" : "Show"}<i>▾</i></span></button>`;
+  if (!NXOPEN) return h;
+  h = h.replace('class="nxhd"', 'class="nxhd open"');
   // Builders
   if (I.N) {
     const pinOpts = sel => {
@@ -1046,32 +1073,27 @@ function nextSection(v, R, now){
       return slotCard({ id: "nx-b" + s.i, name: s.extra ? "Goblin" : "B" + (s.i + 1), job: s.job,
         nextSel: s.extra ? "" : nextSel(`data-bnext="${s.i}"`, isBld, s.pin, cq, auto),
         pinSel: s.extra ? "" : `<select class="pin${s.pin ? " on" : ""}" data-pin="${s.i}">${pinOpts(s.pin)}</select>`,
-        start: s.extra ? null : startOf(cq, auto, s.job ? s.job.x.left : 0) });
+        start: s.extra ? null : startOf(cq, auto, s.job ? s.job.x.left : 0), warn: !s.extra && s.job && !cq });
     }).join("");
-    const freeB = Math.max(0, (R.builders || 0) - I.slots.filter(s => s.job).length) > 0;
-    h += `<div class="sec open nxsec"><div class="head"><span class="nm">Builders</span><span class="pc">${Math.max(0, (R.builders || 0) - I.slots.filter(s => s.job && !s.extra).length)}/${R.builders || 0} free</span></div><div class="body">${cards}
-      <div class="subh">Builder queue<span>${I.bq.length || ""}</span></div>${listRows("b", I.bq, freeB) || `<div class="more">Nothing queued.</div>`}<button class="editbtn" data-padd="b">+ Add building or hero</button></div></div>`;
+    const nB = (R.builders || 0) + (G.b ? 1 : 0);
+    h += `<div class="sec open nxsec"><div class="head"><span class="nm">Builders</span><span class="pc">${Math.max(0, nB - I.slots.filter(s => s.job).length)}/${nB} free</span></div><div class="body">${cards}${gobLine("b", "Goblin builder")}</div></div>`;
   }
   // Lab + Squads
   {
-    const labPinOpts = (kind, sel) => {
-      if (kind === "sq") {
-        const its = R.rows.filter(r => isLabSq(r.o) && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
-        return opt("", "Any squad", sel) + `<optgroup label="One squad">${its.map(x => opt("i:" + x.i, x.n, sel)).join("")}</optgroup>`;
-      }
-      const gs = LAB_GROUPS.filter(g => R.rows.some(r => r.o.g === g && r.rem > 0));
-      const its = R.rows.filter(r => isLabReg(r.o) && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
+    const labPinOpts = sel => {
+      const gs = LAB_GROUPS.concat("Squads").filter(g => R.rows.some(r => r.o.g === g && r.rem > 0) || "g:" + g === sel);
+      const its = R.rows.filter(r => isLab(r.o) && (r.rem > 0 || "i:" + r.o.i === sel)).map(r => r.o).sort((a, b) => a.n.localeCompare(b.n));
       return opt("", "Anything", sel) + `<optgroup label="A group">${gs.map(g => opt("g:" + g, g, sel)).join("")}</optgroup><optgroup label="One research">${its.map(x => opt("i:" + x.i, x.n, sel)).join("")}</optgroup>`;
     };
     const cards = I.labSlots.map(s => {
-      const qe = s.q.length ? I.lq[s.q[0]] : null, cq = qe ? qe.q : null, auto = cq ? null : s.auto, pred = s.kind === "sq" ? isLabSq : isLabReg;
-      return slotCard({ id: "nx-l" + s.i, name: s.label, job: s.jobs[0], more: s.jobs.slice(1),
-        nextSel: nextSel(`data-lnext="${s.i}"`, pred, s.pin, cq, auto),
-        pinSel: `<select class="pin${s.pin ? " on" : ""}" data-lpin="${s.i}">${labPinOpts(s.kind, s.pin)}</select>`,
-        start: startOf(cq, auto, s.jobs.length ? s.jobs[0].x.left : 0) });
+      const qe = s.q.length ? I.lq[s.q[0]] : null, cq = qe ? qe.q : null, auto = cq ? null : s.auto;
+      return slotCard({ id: "nx-l" + s.i, name: s.label, job: s.jobs[0], more: s.jobs.slice(1), gobFree: !!G.l && s.jobs.length === 1,
+        nextSel: nextSel(`data-lnext="${s.i}"`, isLab, s.pin, cq, auto),
+        pinSel: `<select class="pin${s.pin ? " on" : ""}" data-lpin="${s.i}">${labPinOpts(s.pin)}</select>`,
+        start: startOf(cq, auto, s.jobs.length ? s.jobs[0].x.left : 0), warn: s.jobs.length && !cq });
     }).join("");
-    const freeL = I.labSlots.some(s => !s.jobs.length);
-    h += `<div class="sec open nxsec"><div class="head"><span class="nm">Lab</span><span class="pc">${I.labSlots.filter(s => !s.jobs.length).length ? "free" : "busy"}</span></div><div class="body">${cards}
+    const capL = 1 + (G.l ? 1 : 0), busyL = I.labSlots[0].jobs.length, freeL = busyL < capL;
+    h += `<div class="sec open nxsec"><div class="head"><span class="nm">Lab</span><span class="pc">${freeL ? "free" : "busy"}</span></div><div class="body">${cards}${gobLine("l", "Goblin researcher")}
       <div class="subh">Lab queue<span>${I.lq.length || ""}</span></div>${listRows("l", I.lq, freeL) || `<div class="more">Nothing queued.</div>`}<button class="editbtn" data-padd="l">+ Add troop, spell, or squad</button></div></div>`;
   }
   // Pet House
@@ -1109,7 +1131,7 @@ function setNext(w, si, val){
 }
 // scroll to the Next section at the bottom of the page: one builder ("id:ix"), the first free builder ("free"), or a card ("#nx-…")
 function goNext(t){
-  BOPEN = false; render();
+  BOPEN = false; NXOPEN = true; render();
   let el = null;
   if (t === "free") el = document.querySelector("#app .slot.isfree[id^='nx-b']");
   else if (t[0] === "#") el = document.querySelector(t);
@@ -1140,7 +1162,8 @@ function pickerList(){
 function openPicker(w){ PK = w; $("#pkT").innerHTML = w === "b" ? "Add to the <b>builder plan</b>" : w === "p" ? "Add to the <b>pet plan</b>" : "Add to the <b>lab plan</b>"; $("#pkQ").value = ""; pickerList(); $("#psheet").classList.add("show"); }
 function closePicker(){ PK = null; $("#psheet").classList.remove("show"); render(); }
 let BAROPEN = false; // progress bars start folded to the Overall bar; tap it to show each category
-let BOPEN = true; // builder dropdown starts open on page load; Done or the pill closes it
+let BOPEN = false; // builder dropdown starts closed; the builders pill opens it
+let NXOPEN = false; // the whole Next section starts folded on every load and tab switch
 function builderData(v, R){
   const bld = [], lab = [], pet = [];
   if (!v || v.apiOnly) return { bld, lab, pet, freeB: 0 };
@@ -1153,14 +1176,15 @@ function builderData(v, R){
   bld.sort((a, b) => a.x.left - b.x.left);
   lab.sort((a, b) => a.x.left - b.x.left);
   pet.sort((a, b) => a.x.left - b.x.left);
-  const freeB = Math.max(0, (R.builders || 0) - bld.length);
-  return { bld, lab, pet, freeB };
+  const nB = (R.builders || 0) + (R.gob && R.gob.b ? 1 : 0);
+  const freeB = Math.max(0, nB - bld.length);
+  return { bld, lab, pet, freeB, nB };
 }
 function builderPopover(v, R, now, c, BD){
   if (!BOPEN || v.apiOnly) return "";
-  const { bld, lab, pet, freeB } = BD;
+  const { bld, lab, pet, freeB, nB } = BD;
   const end0 = bld.length ? now + Math.round(bld[0].x.left) : 0;
-  const hdr = freeB > 0 ? `<b>${freeB}/${R.builders} free</b>${bld.length ? ` · next <b class="mono" data-end="${end0}">${dur(bld[0].x.left)}</b>` : ""}` : (bld.length ? `<b>0/${R.builders} free</b> · next <b class="mono" data-end="${end0}">${dur(bld[0].x.left)}</b> (${eta(end0)})` : `all idle`);
+  const hdr = freeB > 0 ? `<b>${freeB}/${nB} free</b>${bld.length ? ` · next <b class="mono" data-end="${end0}">${dur(bld[0].x.left)}</b> · ${whenAt(end0)}` : ""}` : (bld.length ? `<b>0/${nB} free</b> · next <b class="mono" data-end="${end0}">${dur(bld[0].x.left)}</b> · ${whenAt(end0)}` : `all idle`);
   const tiles = [];
   if (!bld.length && R.builders) {
     tiles.push(`<button class="bslot free" data-gonext="free"><span class="bslot-n">All ${R.builders} builders free</span><span class="bslot-tm">UP NEXT →</span></button>`);
@@ -1208,7 +1232,7 @@ function render(){
   const timed = (AO ? ["heroes","lab","pets"] : ["build","heroes","lab","pets"]).reduce((a, k) => ({ rem: a.rem + c[k].rem, tot: a.tot + c[k].tot }), { rem: 0, tot: 0 });
   const overall = pct(timed);
   const BD = builderData(v, R);
-  const bPill = !AO && R.builders ? `<button class="bpill${BD.freeB > 0 ? " free" : ""}${BOPEN ? " open" : ""}" type="button" data-bsnap="1" title="Builder timers"><img src="assets/builder.webp" alt="Builders"><span class="bc">${BD.freeB}/${R.builders}</span><span class="bcar">${BOPEN ? "▴" : "▾"}</span></button>` : "";
+  const bPill = !AO && R.builders ? `<button class="bpill${BD.freeB > 0 ? " free" : ""}${BOPEN ? " open" : ""}" type="button" data-bsnap="1" title="Builder timers"><img src="assets/builder.webp" alt="Builders"><span class="bc">${BD.freeB}/${BD.nB}</span><span class="bcar">${BOPEN ? "▴" : "▾"}</span></button>` : "";
   chips.innerHTML = ACCOUNTS.map(a => `<button class="chip${a.tag === S.cur ? " on" : ""}" data-tag="${esc(a.tag)}">${esc(a.name)}</button>`).join("") +
     (gp ? `<button class="gp-tag" id="btnGpTag" type="button" title="Gold Pass boost">GP ${gp}%</button>` : "") + bPill;
 
@@ -1248,7 +1272,7 @@ function render(){
     const costHtml = c => c ? `<span class="cs"><i class="dot" style="background:var(--${isW ? "g" : r.o.r})"></i>${num(c)}</span>` : "";
     if (isW) {
       if (onlyUp) return [];
-      const m = {}; r.inst.forEach(x => { if (x.l < r.M) m[x.l] = (m[x.l] || 0) + 1; });
+      const m = {}; r.inst.forEach(x => { if (x.l < x.M) m[x.l] = (m[x.l] || 0) + 1; });
       return Object.keys(m).map(Number).sort((a, b) => b - a).map(l => ({ id: "w:" + l, time: 0, cost: r.o.co[l] || 0, h:
         `<div class="row i"><div class="l"><div class="n">${name} <span class="x">×${m[l]}</span></div><div class="lvl mono">${l ? l + "/" + r.M : "not built"}</div></div><div class="nx">${costHtml(r.o.co[l])}</div>${act("q", l, "+10", "s")}${act("q", l, "+1")}</div>` }));
     }
@@ -1382,8 +1406,13 @@ document.addEventListener("click", e => {
   const gob = e.target.closest("[data-go]");
   if (gob) { S.go = S.go || {}; S.go[gob.dataset.go] = !S.go[gob.dataset.go]; store.set(S); render(); return; }
   const tb = e.target.closest("[data-tab]");
-  if (tb) { if (EDIT) finishEdit(); BOPEN = false; CATOPEN = false; MAXOPEN = false; S.go = {}; S.tab = tb.dataset.tab; store.set(S); render(); return; }
+  if (tb) { if (EDIT) finishEdit(); BOPEN = false; NXOPEN = false; CATOPEN = false; MAXOPEN = false; S.go = {}; S.tab = tb.dataset.tab; store.set(S); render(); return; }
   if (e.target.closest("[data-cat]")) { CATOPEN = !CATOPEN; render(); return; }
+  if (e.target.closest("[data-nxfold]")) { NXOPEN = !NXOPEN; render(); return; }
+  const ga = e.target.closest("[data-goba]");
+  if (ga) { openGobSheet(ga.dataset.goba); return; }
+  const gx = e.target.closest("[data-gobx]");
+  if (gx) { const P = plan(S.cur); P.gob = P.gob || {}; delete P.gob[gx.dataset.gobx]; savePlan(S.cur); toast(gx.dataset.gobx === "b" ? "Goblin builder removed" : "Goblin researcher removed"); render(); return; }
   const alb = e.target.closest("[data-allead],[data-altype]");
   if (alb) { const al = alGet(); if (alb.dataset.allead) al.lead = +alb.dataset.allead; else { al.types = al.types || { b: true, l: true, p: true }; al.types[alb.dataset.altype] = !(al.types[alb.dataset.altype] !== false); } alSave(al); render(); return; }
   if (e.target.id === "btnAlSave") { saveAlerts(); return; }
@@ -1458,12 +1487,17 @@ document.addEventListener("click", e => {
 // time-left sheet: separate days / hours / minutes boxes with number keypads
 let TS = null;
 function openTimeSheet(key, lv, name, left, ix){
-  TS = { key, lv, ix };
+  TS = { key, lv, ix }; $("#tsheet .sheet-sub").style.display = "";
   const d = Math.floor(left / 86400), h = Math.floor(left % 86400 / 3600), m = Math.floor(left % 3600 / 60);
   $("#tsName").textContent = name;
   $("#tsD").value = d || ""; $("#tsH").value = h || ""; $("#tsM").value = m || "";
   $("#tsErr").textContent = "";
   $("#tsheet").classList.add("show");
+}
+// goblin builder / researcher: put in how long he stays, saved with the plan as an end time
+function openGobSheet(k){
+  openTimeSheet("", 0, k === "b" ? "Goblin builder" : "Goblin researcher", 0, -1);
+  TS = { gob: k }; $("#tsheet .sheet-sub").style.display = "none";
 }
 function closeTimeSheet(){ TS = null; $("#tsheet").classList.remove("show"); document.activeElement && document.activeElement.blur && document.activeElement.blur(); }
 function saveTimeSheet(){
@@ -1471,13 +1505,14 @@ function saveTimeSheet(){
   const n = id => Math.max(0, parseInt($(id).value, 10) || 0);
   const secs = n("#tsD") * 86400 + n("#tsH") * 3600 + n("#tsM") * 60;
   if (!secs) { $("#tsErr").textContent = "Put in at least a minute."; return; }
+  if (TS.gob) { const k = TS.gob, P = plan(S.cur); closeTimeSheet(); P.gob = P.gob || {}; P.gob[k] = Math.floor(Date.now() / 1000) + secs; savePlan(S.cur); toast((k === "b" ? "Goblin builder" : "Goblin researcher") + " · " + dur(secs) + " left"); render(); return; }
   const { key, lv, ix } = TS; closeTimeSheet();
   changeCopy(key, lv, h => { const age = Math.floor(Date.now() / 1000) - view(S.cur).ts; h.t = age + secs; }, row => `${row.o.n} · ${dur(secs)} left`, true, ix);
 }
 document.addEventListener("click", e => {
   if (e.target.id === "tsSave") { e.preventDefault(); saveTimeSheet(); }
-  else if (e.target.id === "tsDone" && TS) { e.preventDefault(); const { key, lv, ix } = TS; closeTimeSheet(); changeCopy(key, lv, h => { h.l++; h.t = 0; }, (row, h) => `${row.o.n} done · level ${h.l}`, true, ix); }
-  else if (e.target.id === "tsDrop" && TS) { e.preventDefault(); const { key, lv, ix } = TS; closeTimeSheet(); changeCopy(key, lv, h => { h.t = 0; }, row => `${row.o.n} upgrade cancelled`, true, ix); }
+  else if (e.target.id === "tsDone" && TS && !TS.gob) { e.preventDefault(); const { key, lv, ix } = TS; closeTimeSheet(); changeCopy(key, lv, h => { h.l++; h.t = 0; }, (row, h) => `${row.o.n} done · level ${h.l}`, true, ix); }
+  else if (e.target.id === "tsDrop" && TS && !TS.gob) { e.preventDefault(); const { key, lv, ix } = TS; closeTimeSheet(); changeCopy(key, lv, h => { h.t = 0; }, row => `${row.o.n} upgrade cancelled`, true, ix); }
   else if (e.target.id === "tsCancel" || e.target.id === "tsheet") { e.preventDefault(); closeTimeSheet(); }
 });
 document.addEventListener("input", e => { if (e.target.id === "pkQ" && PK) pickerList(); });
