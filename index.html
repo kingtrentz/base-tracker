@@ -1003,7 +1003,7 @@ function nextSection(v, R, now){
       (by[grp] = by[grp] || []).push({ r, l, t });
     });
     const order = Object.keys(by).sort((a, b) => (b === "★") - (a === "★") || (b === firstG) - (a === firstG) || GROUPS.indexOf(a) - GROUPS.indexOf(b));
-    return order.map(g => `<optgroup label="${esc(g === "★" ? pinName(pin) : g)}">${by[g].sort((x, y) => x.r.o.n.localeCompare(y.r.o.n)).map(e => opt(e.r.o.i + ":" + e.l, `${e.r.o.n} ${e.l} → ${e.l + 1} · ${dur(e.t)}`, cur)).join("")}</optgroup>`).join("");
+    return order.map(g => `<optgroup label="${esc(g === "★" ? pinName(pin) : g)}">${by[g].sort((x, y) => x.r.o.n.localeCompare(y.r.o.n)).map(e => opt(e.r.o.i + ":" + e.l, `${e.r.o.n} ${e.l} → ${e.l + 1}${e.t ? " · " + dur(e.t) : ""}`, cur)).join("")}</optgroup>`).join("");
   };
   // one card per builder / lab / pet house: what it's doing now, what it does next, and what it stays on
   const slotCard = o => {
@@ -1429,7 +1429,7 @@ document.addEventListener("click", e => {
   const eb = e.target.closest("[data-ed]");
   if (eb && EDIT) { bump(eb.dataset.ed, +eb.dataset.d); render(); return; }
   const chip = e.target.closest(".chip");
-  if (chip) { if (EDIT) finishEdit(); S.cur = chip.dataset.tag; store.set(S); render(); return; }
+  if (chip) { if (EDIT) finishEdit(); S.cur = chip.dataset.tag; CATOPEN = false; MAXOPEN = false; S.go = {}; store.set(S); render(); return; }
   const fb = e.target.closest("[data-ft],[data-fr],[data-st],[data-fclear]");
   if (fb) {
     e.preventDefault();
