@@ -970,7 +970,7 @@ function pickerList(){
 }
 function openPicker(w){ PK = w; $("#pkT").innerHTML = w === "b" ? "Add to the <b>builder plan</b>" : w === "p" ? "Add to the <b>pet plan</b>" : "Add to the <b>lab plan</b>"; $("#pkQ").value = ""; pickerList(); $("#psheet").classList.add("show"); }
 function closePicker(){ PK = null; $("#psheet").classList.remove("show"); render(); }
-let BOPEN = false;
+let BOPEN = true; // builder dropdown starts open on page load; Done or the pill closes it
 function builderData(v, R){
   const bld = [], lab = [], pet = [];
   if (!v || v.apiOnly) return { bld, lab, pet, freeB: 0 };
