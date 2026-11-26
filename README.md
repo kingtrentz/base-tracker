@@ -18,6 +18,7 @@ Clash of Clans base progress tracker for two accounts (KingTrents and Khnum-Atum
   - "⚠ N need a next" shows when a busy builder or lab has nothing picked.
   - Small "+ goblin builder" and "+ goblin researcher" links add a countdown for the goblin helpers.
   - No queues in Next for any slot (builders, lab, pets, goblins). Each slot only has its next and lane dropdowns (Nov 26, 2026).
+- Look: gold and black. Black page (#0d0b08), dark cards (#17140e), gold accent (#f5a524). One gradient (#fde68a > #f5a524 > #c2410c) on every progress bar, the town hall ring, Paste, the active tab and the account pill. The town hall picture in the ring is unchanged. Light mode (☀/☾) has a matching cream and gold version. TH16 to TH18 still get their own tints; both accounts are TH19 (Nov 26, 2026).
 - Push alerts: when a builder or lab frees up, and when an upgrade finishes ("X upgraded to level N. Next upgrade: Lvl M Y").
 
 ## TH19 rules in the code
@@ -34,3 +35,4 @@ Clash of Clans base progress tracker for two accounts (KingTrents and Khnum-Atum
 - PR #6 lab and pet queues removed from Next, so no slot has a queue
 - PR #7 Traps tab gets the same per-building dropdown as Defenses
 - PR #8 builder dropdown starts open again; its lab rows read Lab and Goblin lab (no separate squad row)
+- PR #9 gold and black theme across the site, light mode matched, TH picture unchanged
