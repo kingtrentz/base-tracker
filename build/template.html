@@ -478,6 +478,9 @@ button.nxhd{width:calc(100% - 8px);border:0;background:none;font-family:inherit;
 .gfree{color:var(--acc);font-weight:600}
 .gobl{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:var(--mut);padding:6px 0 2px;box-shadow:inset 0 1px 0 var(--line)}
 .gobl button{border:0;background:none;color:var(--mut);font-size:12px;padding:2px 4px;cursor:pointer}
+.gpick{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto}
+.gpick button{display:flex;justify-content:space-between;gap:10px;padding:12px 14px;border:0;border-radius:12px;background:var(--soft);color:var(--tx);font-family:inherit;font-size:14px;text-align:left;cursor:pointer}
+.gpick button .mono{color:var(--mut)}
 .goba{display:block;margin:2px 0 4px auto;border:0;background:none;color:var(--mut);font-family:inherit;font-size:11.5px;padding:4px 2px;cursor:pointer;opacity:.75}
 </style>
 <link id="lnkMan" rel="manifest" href="manifest.webmanifest">
@@ -600,6 +603,11 @@ button.nxhd{width:calc(100% - 8px);border:0;background:none;font-family:inherit;
     <div class="err" id="tsErr"></div>
     <div class="sheet-a"><button id="tsCancel" type="button">Cancel</button><button id="tsSave" class="pri" type="button">Save</button></div>
     <div class="sheet-a sheet-sub"><button id="tsDrop" type="button" class="bad">Cancel upgrade</button><button id="tsDone" type="button" class="ok">Mark done ✓</button></div>
+  </div></div>
+  <div id="gsheet" class="sheet"><div class="sheet-c" role="dialog" aria-label="Goblin builder">
+    <div class="sheet-t">Which upgrade is the <b>goblin builder</b> on?</div>
+    <div class="gpick" id="gsList"></div>
+    <div class="sheet-a"><button id="gsCancel" type="button">Cancel</button><button id="gsTime" type="button">Set a time instead</button></div>
   </div></div>
   <div id="psheet" class="sheet"><div class="sheet-c" role="dialog" aria-label="Add to plan">
     <div class="sheet-t" id="pkT"></div>
@@ -852,8 +860,22 @@ function compute(v, now){
   }
   const builders = owned(1000015) + (owned(1000064) ? 1 : 0);
   const G = (S.plan[v.tag] || S.plan[S.cur] || {}).gob || {}, nowS = Math.floor(Date.now() / 1000);
-  const gob = { b: G.b > nowS ? G.b : 0, l: G.l > nowS ? G.l : 0 };
+  const gob = { b: G.b > nowS ? G.b : 0, l: G.l > nowS ? G.l : 0, bj: "" };
+  // goblin builder put on one upgrade: he stays until that upgrade is done
+  if (gob.b && G.bj) { const j = gobFind(G.bj, rows); if (j) gob.bj = G.bj; else gob.b = 0; }
   return { t, rows, ups, cats, builders, gob, age };
+}
+// "id:ix:level" of the upgrade the goblin builder is on; matches the busy job (same slot first, else same level)
+function gobFind(k, rows){
+  const [gi, gx, gl] = String(k).split(":").map(Number), r = rows.find(r => r.o.i === gi);
+  if (!r) return null;
+  const x = r.inst.find(x => x.up && x.ix === gx) || r.inst.find(x => x.up && x.l === gl);
+  return x ? { r, x } : null;
+}
+function isGobJob(R, j){
+  if (!R.gob || !R.gob.bj) return false;
+  const g = gobFind(R.gob.bj, R.rows);
+  return !!g && g.r === j.r && g.x === j.x;
 }
 
 const pct = c => c.tot ? Math.floor(1000 * (1 - c.rem / c.tot)) / 10 : 100;
@@ -974,8 +996,11 @@ function planInfo(v, R){
   const N = AOof(v) ? 0 : Math.max((R.builders || 0) + (R.gob && R.gob.b ? 1 : 0), busyB.length);
   const slots = Array.from({ length: N }, (_, i) => ({ i, extra: i >= (R.builders || 0), pin: P.pins[i] || "", job: null, free: 0, q: [] }));
   const lastEnd = {};
+  const gs = slots.find(s => s.extra), gi = gs ? busyB.findIndex(bj => isGobJob(R, bj)) : -1;
+  if (gi >= 0) { const bj = busyB.splice(gi, 1)[0]; gs.job = bj; gs.free = bj.x.left; gs.gob = true; if (bj.r.n === 1) lastEnd[bj.r.o.i] = bj.x.left; }
+  const reg = slots.filter(s => !s.extra), ext = slots.filter(s => s.extra);
   busyB.forEach(bj => {
-    const s = slots.find(s => !s.job && pinMatch(s.pin, bj.r.o)) || slots.find(s => !s.job && !s.pin) || slots.find(s => !s.job);
+    const s = reg.find(s => !s.job && pinMatch(s.pin, bj.r.o)) || reg.find(s => !s.job && !s.pin) || reg.find(s => !s.job) || ext.find(s => !s.job);
     if (s) { s.job = bj; s.free = bj.x.left; }
     if (bj.r.n === 1) lastEnd[bj.r.o.i] = bj.x.left;
   });
@@ -1124,8 +1149,8 @@ function nextSection(v, R, now){
     if (cq) return { i: cq.i, l: cq.l, ix: -1 };
     return null;
   };
-  const G = R.gob || {}, gobLine = (k, lbl) => G[k]
-    ? `<div class="gobl"><span>${lbl} · here <span class="mono" data-end="${G[k]}">${dur(G[k] - now)}</span></span><button type="button" data-gobx="${k}" title="Remove">✕</button></div>`
+  const G = R.gob || {}, gj = G.bj ? gobFind(G.bj, R.rows) : null, gobLine = (k, lbl) => G[k]
+    ? `<div class="gobl"><span>${lbl}${k === "b" && gj ? " · on " + esc(gj.r.o.n) : ""} · here <span class="mono" data-end="${G[k]}">${dur(G[k] - now)}</span></span><button type="button" data-gobx="${k}" title="Remove">✕</button></div>`
     : `<button type="button" class="goba" data-goba="${k}">+ ${lbl.toLowerCase()}</button>`;
   // a builder or the lab that is working with nothing picked next gets a small warning
   const warnB = I.slots.filter(s => !s.extra && s.job && !s.q.length).length, warnL = I.labSlots.filter(s => s.jobs.length && !s.q.length).length, warnN = warnB + warnL;
@@ -1263,7 +1288,7 @@ function builderPopover(v, R, now, c, BD){
       const key = r.o.i || "weapon", nm = esc(r.o.n), step = (r.o.t || [])[x.l] || 0;
       const p = step ? Math.max(4, Math.min(100, Math.round(100 * (1 - x.left / step)))) : 50;
       const endSec = now + Math.round(x.left);
-      tiles.push(`<button class="bslot${idx === 0 && freeB === 0 ? " next" : ""}" data-gonext="${key}:${x.ix}" title="See this builder in Up Next"><span class="bslot-n">${nm}</span><span class="bslot-tm mono" data-end="${endSec}">${dur(x.left)}</span><span class="bslot-bar"><i style="width:${p}%"></i></span></button>`);
+      tiles.push(`<button class="bslot${idx === 0 && freeB === 0 ? " next" : ""}" data-gonext="${key}:${x.ix}" title="See this builder in Up Next"><span class="bslot-n">${isGobJob(R, { r, x }) ? "Goblin · " : ""}${nm}</span><span class="bslot-tm mono" data-end="${endSec}">${dur(x.left)}</span><span class="bslot-bar"><i style="width:${p}%"></i></span></button>`);
     });
   }
   const ex = [];
@@ -1494,9 +1519,13 @@ document.addEventListener("click", e => {
   if (e.target.closest("[data-cat]")) { CATOPEN = !CATOPEN; render(); return; }
   if (e.target.closest("[data-nxfold]")) { NXOPEN = !NXOPEN; render(); return; }
   const ga = e.target.closest("[data-goba]");
-  if (ga) { openGobSheet(ga.dataset.goba); return; }
+  if (ga) { if (ga.dataset.goba === "b" && openGobPick()) return; openGobSheet(ga.dataset.goba); return; }
+  const gp = e.target.closest("[data-gobpick]");
+  if (gp) { const [i, ix, l, left] = gp.dataset.gobpick.split(":").map(Number), P = plan(S.cur); closeGobPick(); P.gob = P.gob || {}; P.gob.b = Math.floor(Date.now() / 1000) + left; P.gob.bj = i + ":" + ix + ":" + l; savePlan(S.cur); toast("Goblin builder on " + ((BY[i] || {}).n || "that upgrade")); render(); return; }
+  if (e.target.id === "gsTime") { closeGobPick(); openGobSheet("b"); return; }
+  if (e.target.id === "gsCancel" || e.target.id === "gsheet") { closeGobPick(); return; }
   const gx = e.target.closest("[data-gobx]");
-  if (gx) { const P = plan(S.cur); P.gob = P.gob || {}; delete P.gob[gx.dataset.gobx]; savePlan(S.cur); toast(gx.dataset.gobx === "b" ? "Goblin builder removed" : "Goblin researcher removed"); render(); return; }
+  if (gx) { const P = plan(S.cur); P.gob = P.gob || {}; delete P.gob[gx.dataset.gobx]; if (gx.dataset.gobx === "b") delete P.gob.bj; savePlan(S.cur); toast(gx.dataset.gobx === "b" ? "Goblin builder removed" : "Goblin researcher removed"); render(); return; }
   const alb = e.target.closest("[data-allead],[data-altype]");
   if (alb) { const al = alGet(); if (alb.dataset.allead) al.lead = +alb.dataset.allead; else { al.types = al.types || { b: true, l: true, p: true }; al.types[alb.dataset.altype] = !(al.types[alb.dataset.altype] !== false); } alSave(al); render(); return; }
   if (e.target.id === "btnAlSave") { saveAlerts(); return; }
@@ -1578,6 +1607,18 @@ function openTimeSheet(key, lv, name, left, ix){
   $("#tsErr").textContent = "";
   $("#tsheet").classList.add("show");
 }
+// goblin builder: pick which running upgrade he's on; he counts as a builder until it's done
+function openGobPick(){
+  const v = view(S.cur); if (!v || v.apiOnly) return false;
+  const R = compute(v, Math.floor(Date.now() / 1000)), jobs = [];
+  R.rows.forEach(r => { if (r.o.i && isBld(r.o)) r.inst.forEach(x => { if (x.up) jobs.push({ r, x }); }); });
+  if (!jobs.length) return false;
+  jobs.sort((a, b) => a.x.left - b.x.left);
+  $("#gsList").innerHTML = jobs.map(({ r, x }) => `<button type="button" data-gobpick="${r.o.i}:${x.ix}:${x.l}:${Math.round(x.left)}"><span>${esc(r.o.n)} <span class="mono">${x.l} → ${x.l + 1}</span></span><span class="mono">${dur(x.left)}</span></button>`).join("");
+  $("#gsheet").classList.add("show");
+  return true;
+}
+function closeGobPick(){ $("#gsheet").classList.remove("show"); }
 // goblin builder / researcher: put in how long he stays, saved with the plan as an end time
 function openGobSheet(k){
   openTimeSheet("", 0, k === "b" ? "Goblin builder" : "Goblin researcher", 0, -1);
@@ -1589,7 +1630,7 @@ function saveTimeSheet(){
   const n = id => Math.max(0, parseInt($(id).value, 10) || 0);
   const secs = n("#tsD") * 86400 + n("#tsH") * 3600 + n("#tsM") * 60;
   if (!secs) { $("#tsErr").textContent = "Put in at least a minute."; return; }
-  if (TS.gob) { const k = TS.gob, P = plan(S.cur); closeTimeSheet(); P.gob = P.gob || {}; P.gob[k] = Math.floor(Date.now() / 1000) + secs; savePlan(S.cur); toast((k === "b" ? "Goblin builder" : "Goblin researcher") + " · " + dur(secs) + " left"); render(); return; }
+  if (TS.gob) { const k = TS.gob, P = plan(S.cur); closeTimeSheet(); P.gob = P.gob || {}; P.gob[k] = Math.floor(Date.now() / 1000) + secs; if (k === "b") delete P.gob.bj; savePlan(S.cur); toast((k === "b" ? "Goblin builder" : "Goblin researcher") + " · " + dur(secs) + " left"); render(); return; }
   const { key, lv, ix } = TS; closeTimeSheet();
   changeCopy(key, lv, h => { const age = Math.floor(Date.now() / 1000) - view(S.cur).ts; h.t = age + secs; }, row => `${row.o.n} · ${dur(secs)} left`, true, ix);
 }
