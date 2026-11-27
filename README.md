@@ -21,6 +21,7 @@ Clash of Clans base progress tracker for two accounts (KingTrents and Khnum-Atum
   - Next never auto-picks. The suggestion is only listed first.
   - "⚠ N need a next" shows when a busy builder or lab has nothing picked.
   - Small "+ goblin builder" and "+ goblin researcher" links add a countdown for the goblin helpers.
+  - "+ goblin builder" asks which running upgrade he is on (or "set a time instead"). That upgrade moves to the Goblin row, the builder count goes up by one (top pill too, its tile reads "Goblin · ..."), and the goblin leaves when that upgrade finishes. Only B1 to B6 get the "needs a next" warning (Nov 27, 2026).
   - No queues in Next for any slot (builders, lab, pets, goblins). Each slot only has its next and lane dropdowns (Nov 26, 2026).
 - Look: gold and black. Black page (#0d0b08), dark cards (#17140e), gold accent (#f5a524). One gradient (#fde68a > #f5a524 > #c2410c) on every progress bar, the town hall ring, Paste, the active tab and the account pill. The town hall picture in the ring is unchanged. Light mode (☀/☾) has a matching cream and gold version. TH16 to TH18 still get their own tints; both accounts are TH19 (Nov 26, 2026).
 - Push alerts: when a builder or lab frees up, and when an upgrade finishes ("X upgraded to level N. Next upgrade: Lvl M Y").
@@ -45,3 +46,4 @@ Clash of Clans base progress tracker for two accounts (KingTrents and Khnum-Atum
 - PR #12 KingTrents account pill reads KingTrents⚡
 - PR #13 Next moved above the tabs, right under the overall card; flickering lightning bolts replace the ember dots on KingTrents
 - PR #14 real-looking lightning strikes replace the bolt icons on KingTrents
+- PR #15 goblin builder tied to the upgrade he is on, so a finished upgrade shows its builder free and the goblin counts as an extra builder
